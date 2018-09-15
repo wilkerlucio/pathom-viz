@@ -22,12 +22,12 @@ function registerTooltip(nodes, labelF) {
     .on('mouseout.tooltip', _ => tooltipElement.style('visibility', 'hidden'))
 }
 
-function renderRule(element, {vizHeight}) {
+function renderRule(element, {svgHeight}) {
   const vruler = element
     .append('line')
     .attr('class', 'pathom-vruler')
     .attr('y1', 0)
-    .attr('y2', vizHeight)
+    .attr('y2', svgHeight)
 
   element
     .on('mousemove.pathom-rule', function () {
@@ -78,6 +78,20 @@ function layoutTrace (node, {xScale, yScale, barSize}) {
   return node;
 }
 
+function applyDataStyles(selection) {
+  selection.each(function ({style}) {
+    if (!style) return
+
+    const sel = d3.select(this)
+
+    for (let name in style) {
+      sel.style(name, style[name])
+    }
+  })
+
+  return selection
+}
+
 function renderTrace(selection, settings) {
   const {data, transitionDuration, xScale} = settings
 
@@ -115,6 +129,7 @@ function renderTrace(selection, settings) {
 
   nodes
     .merge(nodeRoots)
+    .style('opacity', 1)
     .transition().duration(transitionDuration)
     .attr('transform', function (d) {
       return 'translate(' + [d.x0, d.y0] + ')'
@@ -173,6 +188,14 @@ function renderTrace(selection, settings) {
   detailsNodesEnter
     .attr('class', d => 'pathom-detail-marker ' + 'pathom-event-' + d.event + (d.error ? ' pathom-event-error' : ''))
     .merge(detailsNodesRoots.select('rect.pathom-detail-marker'))
+    .attr('width', d => Math.max(1, xScale(d.duration)))
+    .attr('height', function (d) {
+      return d.y1 - d.y0;
+    })
+    .attr('transform', function (d) {
+      return 'translate(' + [xScale(d.rts), 0] + ')'
+    })
+    .call(applyDataStyles)
     .transition().duration(transitionDuration) // these down here are not updating...
     .attr('width', d => Math.max(1, xScale(d.duration)))
     .attr('height', function (d) {
