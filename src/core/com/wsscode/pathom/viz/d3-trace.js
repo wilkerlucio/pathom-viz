@@ -150,7 +150,7 @@ function renderTrace(selection, settings) {
       if (xv > (detail.rts + (detail.duration || xScale.invert(1)))) return false;
 
       return true;
-    }).map(d => d.duration + ' ms ' + d.event);
+    }).map(d => (d.duration ? d.duration + ' ms ' : '') + d.event)
 
     const childCount = d.data.children ? ' (' + d.data.children.length + ')' : '';
 
