@@ -10,6 +10,7 @@
   (let [trace (-> this fp/props ::trace-data)
         container (gobj/get this "svgContainer")
         svg (gobj/get this "svg")]
+    (gobj/set svg "innerHTML" "")
     (gobj/set this "renderedData"
       (renderPathomTrace svg
         (clj->js {:svgWidth  (gobj/get container "clientWidth")
