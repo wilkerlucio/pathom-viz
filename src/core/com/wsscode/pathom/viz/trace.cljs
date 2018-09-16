@@ -67,20 +67,20 @@
       {:stroke "#e5e5e5"}]]
 
     [:$pathom-tooltip
-     {:position "absolute"
+     {:position       "absolute"
       :pointer-events "none"
-      :font-size "12px"
-      :font-family "sans-serif"
-      :background "#fff"
-      :padding "1px 6px"
-      :box-shadow "#00000069 0px 1px 3px 0px"
-      :white-space "nowrap"}]]
+      :font-size      "12px"
+      :font-family    "sans-serif"
+      :background     "#fff"
+      :padding        "1px 6px"
+      :box-shadow     "#00000069 0px 1px 3px 0px"
+      :white-space    "nowrap"}]]
 
    :componentDidMount
    (fn []
-     (let [trace     (-> this fp/props ::trace-data)
+     (let [trace (-> this fp/props ::trace-data)
            container (gobj/get this "svgContainer")
-           svg       (gobj/get this "svg")]
+           svg (gobj/get this "svg")]
        (gobj/set this "renderedData"
          (renderPathomTrace svg
            (clj->js {:svgWidth  (gobj/get container "clientWidth")
@@ -88,12 +88,20 @@
                      :data      trace})))))
 
    :componentDidUpdate
-   (fn [_ _]
+   (fn [prev-props _]
      (let [container (gobj/get this "svgContainer")]
-       (updateTraceSize
-         (doto (gobj/get this "renderedData")
-           (gobj/set "svgWidth" (gobj/get container "clientWidth"))
-           (gobj/set "svgHeight" (gobj/get container "clientHeight"))))))}
+       (if (= (-> prev-props ::trace-data)
+             (-> this fp/props ::trace-data))
+         (updateTraceSize
+           (doto (gobj/get this "renderedData")
+             (gobj/set "svgWidth" (gobj/get container "clientWidth"))
+             (gobj/set "svgHeight" (gobj/get container "clientHeight"))))
+         (let [svg (gobj/get this "svg")]
+           (gobj/set svg "innerHTML" "")
+           (renderPathomTrace svg
+             (clj->js {:svgWidth  (gobj/get container "clientWidth")
+                       :svgHeight (gobj/get container "clientHeight")
+                       :data      (-> this fp/props ::trace-data)}))))))}
 
   (dom/div :.container {:ref #(gobj/set this "svgContainer" %)}
     (dom/svg {:ref #(gobj/set this "svg" %)})))
