@@ -1,9 +1,27 @@
 (ns com.wsscode.pathom.viz.trace
   (:require ["./d3-trace" :refer [renderPathomTrace updateTraceSize]]
+            ["./detect-element-size"]
             [fulcro.client.localized-dom :as dom]
             [fulcro.client.primitives :as fp]
             [goog.object :as gobj]
             [fulcro.client.mutations :as fm]))
+
+(defn render-trace [this]
+  (let [trace (-> this fp/props ::trace-data)
+        container (gobj/get this "svgContainer")
+        svg (gobj/get this "svg")]
+    (gobj/set this "renderedData"
+      (renderPathomTrace svg
+        (clj->js {:svgWidth  (gobj/get container "clientWidth")
+                  :svgHeight (gobj/get container "clientHeight")
+                  :data      trace})))))
+
+(defn recompute-trace-size [this]
+  (let [container (gobj/get this "svgContainer")]
+    (updateTraceSize
+      (doto (gobj/get this "renderedData")
+        (gobj/set "svgWidth" (gobj/get container "clientWidth"))
+        (gobj/set "svgHeight" (gobj/get container "clientHeight"))))))
 
 (fp/defsc D3Trace [this _]
   {:css
@@ -24,11 +42,10 @@
       :visibility       "hidden"}]
 
     [:$pathom-detail-marker
-     {:fill    "#4ac380"
-      :opacity "0.5"}
-
+     {:fill    "#a4e3bf"
+      :opacity "0.9"}
      [:&:hover
-      {:opacity "0.7"}]]
+      {:opacity "1"}]]
 
     [:$pathom-event-waiting-resolver
      {:fill "#de5615"}]
@@ -40,7 +57,7 @@
      {:fill "#de5615"}]
 
     [:$pathom-event-call-resolver
-     {:fill "#7452fb"}]
+     {:fill "#af9df4"}]
 
     [:$pathom-event-call-resolver-batch
      {:fill "#2900cc"}]
@@ -74,34 +91,20 @@
       :background     "#fff"
       :padding        "1px 6px"
       :box-shadow     "#00000069 0px 1px 3px 0px"
-      :white-space    "nowrap"}]]
+      :white-space    "nowrap"
+      :z-index        "10"}]]
 
    :componentDidMount
    (fn []
-     (let [trace (-> this fp/props ::trace-data)
-           container (gobj/get this "svgContainer")
-           svg (gobj/get this "svg")]
-       (gobj/set this "renderedData"
-         (renderPathomTrace svg
-           (clj->js {:svgWidth  (gobj/get container "clientWidth")
-                     :svgHeight (gobj/get container "clientHeight")
-                     :data      trace})))))
+     (render-trace this)
+     (js/addResizeListener (gobj/get this "svgContainer") #(recompute-trace-size this)))
 
    :componentDidUpdate
    (fn [prev-props _]
-     (let [container (gobj/get this "svgContainer")]
-       (if (= (-> prev-props ::trace-data)
-             (-> this fp/props ::trace-data))
-         (updateTraceSize
-           (doto (gobj/get this "renderedData")
-             (gobj/set "svgWidth" (gobj/get container "clientWidth"))
-             (gobj/set "svgHeight" (gobj/get container "clientHeight"))))
-         (let [svg (gobj/get this "svg")]
-           (gobj/set svg "innerHTML" "")
-           (renderPathomTrace svg
-             (clj->js {:svgWidth  (gobj/get container "clientWidth")
-                       :svgHeight (gobj/get container "clientHeight")
-                       :data      (-> this fp/props ::trace-data)}))))))}
+     (if (= (-> prev-props ::trace-data)
+            (-> this fp/props ::trace-data))
+       (recompute-trace-size this)
+       (render-trace this)))}
 
   (dom/div :.container {:ref #(gobj/set this "svgContainer" %)}
     (dom/svg {:ref #(gobj/set this "svg" %)})))
@@ -118,9 +121,9 @@
                        :height "500px"}]]
    :componentDidMount
           (fn []
-            (let [trace     (-> this fp/props :trace-data)
+            (let [trace (-> this fp/props :trace-data)
                   container (gobj/get this "svgContainer")
-                  svg       (gobj/get this "svg")]
+                  svg (gobj/get this "svg")]
               (gobj/set this "renderedData"
                 (renderPathomTrace svg
                   (clj->js {:svgWidth  (gobj/get container "clientWidth")
