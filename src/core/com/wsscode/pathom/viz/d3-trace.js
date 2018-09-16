@@ -162,6 +162,7 @@ function renderTrace(selection, settings) {
     .attr('width', d => d.x1 - d.x0 + 1)
     .merge(nodeRoots.select('rect.pathom-attribute-bounds'))
     .transition().duration(transitionDuration)
+    .attr('width', d => d.x1 - d.x0 + 1)
     .attr('height', d => d.y2 ? d.y2 - d.y0 + 1 : 0)
 
   const attributeNodes = nodesEnter.append('rect')
@@ -176,18 +177,20 @@ function renderTrace(selection, settings) {
     .merge(nodeRoots.select('g.pathom-details-container'))
     .selectAll('rect.pathom-detail-marker')
     .data(d => {
-      d.data.details.forEach((dt) => {
+      d.data.details.forEach((dt, i) => {
         dt.x0 = d.x0, dt.x1 = d.x1, dt.y0 = d.y0, dt.y1 = d.y1
         dt.rts = dt.start - d.data.start
+        dt.id = i
       })
-      return d.data.details;
+      return d.data.details
+    }, dt => {
+      return dt.id
     })
 
   const detailsNodesEnter = detailsNodesRoots.enter().append('rect')
 
-  detailsNodesEnter
+  const allDetails = detailsNodesEnter
     .attr('class', d => 'pathom-detail-marker ' + 'pathom-event-' + d.event + (d.error ? ' pathom-event-error' : ''))
-    .merge(detailsNodesRoots.select('rect.pathom-detail-marker'))
     .attr('width', d => Math.max(1, xScale(d.duration)))
     .attr('height', function (d) {
       return d.y1 - d.y0;
@@ -196,7 +199,10 @@ function renderTrace(selection, settings) {
       return 'translate(' + [xScale(d.rts), 0] + ')'
     })
     .call(applyDataStyles)
-    .transition().duration(transitionDuration) // these down here are not updating...
+    .merge(detailsNodesRoots)
+
+  allDetails
+    .transition().duration(transitionDuration)
     .attr('width', d => Math.max(1, xScale(d.duration)))
     .attr('height', function (d) {
       return d.y1 - d.y0;
