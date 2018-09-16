@@ -128,8 +128,8 @@ function renderTrace(selection, settings) {
     })
 
   nodes
+    .style('opacity', 0)
     .merge(nodeRoots)
-    .style('opacity', 1)
     .transition().duration(transitionDuration)
     .attr('transform', function (d) {
       return 'translate(' + [d.x0, d.y0] + ')'
@@ -167,10 +167,11 @@ function renderTrace(selection, settings) {
 
   const attributeNodes = nodesEnter.append('rect')
     .attr('class', 'pathom-attribute')
+    .attr('width', d => d.x1 - d.x0)
+    .attr('height', d => d.y1 - d.y0)
     .merge(nodeRoots.select('rect.pathom-attribute'))
     .transition().duration(transitionDuration)
     .attr('width', d => d.x1 - d.x0)
-    .attr('height', d => d.y1 - d.y0)
 
   const detailsNodesRoots = nodesEnter.append('g')
     .attr('class', 'pathom-details-container')
