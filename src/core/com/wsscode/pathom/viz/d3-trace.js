@@ -131,7 +131,16 @@ function renderTrace(selection, settings) {
       d3.select(this.childNodes[0]).style('visibility', 'hidden');
     })
     .on('click', function (d) {
-      showDetails(d.data.details);
+      showDetails(d.data.details.map(x => {
+        const d = Object.assign({}, x)
+
+        delete d.x0
+        delete d.x1
+        delete d.y0
+        delete d.y1
+
+        return d
+      }));
     })
 
   nodes
@@ -246,8 +255,6 @@ function renderTrace(selection, settings) {
     .text(function (d) {
       if (d.data.name) return d.data.name;
     })
-
-  if (settings.vruler) settings.vruler.attr('y2', svgHeight)
 }
 
 const traceDefaults = {
@@ -351,6 +358,8 @@ export function updateTraceSize(settings) {
 
   updateScale(settings)
   renderTrace(svg.select('.pathom-view-nodes-container'), settings)
+
+  settings.vruler.attr('y2', svgHeight)
 
   svg
     .attr('width', svgWidth)

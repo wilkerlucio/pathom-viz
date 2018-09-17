@@ -22,7 +22,7 @@
     x))
 
 (defn render-trace [this]
-  (let [trace (-> this fp/props ::trace-data)
+  (let [{::keys [trace-data on-show-details]} (-> this fp/props)
         container (gobj/get this "svgContainer")
         svg (gobj/get this "svg")]
     (gobj/set svg "innerHTML" "")
@@ -30,8 +30,8 @@
       (renderPathomTrace svg
         (clj->js {:svgWidth    (gobj/get container "clientWidth")
                   :svgHeight   (gobj/get container "clientHeight")
-                  :data        (stringify-keyword-values trace)
-                  :showDetails (fn [details] (js/console.log "DETAILS" details))})))))
+                  :data        (stringify-keyword-values trace-data)
+                  :showDetails (or on-show-details identity)})))))
 
 (defn recompute-trace-size [this]
   (let [container (gobj/get this "svgContainer")]
