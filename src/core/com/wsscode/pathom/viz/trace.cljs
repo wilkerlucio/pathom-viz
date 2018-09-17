@@ -114,6 +114,20 @@
       :left           "-1000px"
       :z-index        "10"}]
 
+    [:$pathom-details-count
+     {:background "#8bdc47"
+      :border-radius "7px"
+      :padding "1px 5px"
+      :font-size "10px"
+      :font-family "sans-serif"}]
+
+    [:$pathom-children-count
+     {:background "#d2a753"
+      :border-radius "7px"
+      :padding "1px 5px"
+      :font-size "10px"
+      :font-family "sans-serif"}]
+
     [:$pathom-attribute-toggle-children
      {:cursor      "default"
       :fill        "#757575"

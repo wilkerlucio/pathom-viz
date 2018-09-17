@@ -149,11 +149,14 @@ function renderTrace(selection, settings) {
   registerTooltip(nodes, (d, target) => {
     const label = d.data.name || d.data.hint;
     const details = eventsOnMouse(settings, d, target)
-    const detailsTimes = details.map(d => (d.duration ? d.duration + ' ms ' : '') + d.event + (d.label ? ' ' + d.label : ''))
+    const detailsTimes = details.map(d => {
+      return (d.duration ? d.duration + ' ms ' : '') + '<strong>' + d.event + '</strong>' + (d.label ? ' ' + d.label : '')
+    })
 
-    const childCount = d.data.children ? ' [' + d.data.details.length + '/' + d.data.children.length + ']' : ' [' + d.data.details.length + ']';
+    const detailsCount = ' <span class="pathom-details-count">' + d.data.details.length + '</span>'
+    const childCount = d.data.children ? ' <span class="pathom-children-count">' + d.data.children.length + '</span>' : '';
 
-    return [d.data.duration + ' ms ' + label + childCount].concat(detailsTimes).join("<br>");
+    return [d.data.duration + ' ms <strong>' + label + '</strong>' + detailsCount + childCount].concat(detailsTimes).join("<br>");
   });
 
   const boundNodes = nodesEnter.append('rect')
@@ -237,7 +240,6 @@ function renderTrace(selection, settings) {
     .attr('class', 'pathom-label-text')
     .attr('dx', 2)
     .attr('dy', 13)
-    .style('font-family', d => d.data.children ? "monospace" : "")
     .text(function (d) {
       if (d.data.name) return d.data.name;
     })
