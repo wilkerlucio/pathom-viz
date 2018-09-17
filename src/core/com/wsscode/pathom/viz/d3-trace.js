@@ -92,8 +92,19 @@ function applyDataStyles(selection) {
   return selection
 }
 
+function eventsOnMouse({xScale}, d, target) {
+  const xv = xScale.invert(d3.mouse(target)[0]);
+
+  return details = d.data.details.filter(detail => {
+    if (xv < detail.rts) return false;
+    if (xv > (detail.rts + (detail.duration || xScale.invert(1)))) return false;
+
+    return true;
+  })
+}
+
 function renderTrace(selection, settings) {
-  const {data, transitionDuration, xScale} = settings
+  const {data, transitionDuration, xScale, showDetails} = settings
 
   const nodeRoots = selection
     .selectAll('g.pathom-attr-group')
@@ -116,15 +127,8 @@ function renderTrace(selection, settings) {
     .on('mouseout', function (d, i) {
       d3.select(this.childNodes[0]).style('visibility', 'hidden');
     })
-    .on('click', d => {
-      if (d.children && d.children.length && d.data.name) {
-        d._children = d.children;
-        d.children = null;
-        renderTrace(selection, settings);
-      } else if (d._children) {
-        d.children = d._children;
-        renderTrace(selection, settings);
-      }
+    .on('click', function (d) {
+      showDetails(d.data.details);
     })
 
   nodes
@@ -144,17 +148,12 @@ function renderTrace(selection, settings) {
 
   registerTooltip(nodes, (d, target) => {
     const label = d.data.name || d.data.hint;
-    const xv = xScale.invert(d3.mouse(target)[0]);
-    const details = d.data.details.filter(detail => {
-      if (xv < detail.rts) return false;
-      if (xv > (detail.rts + (detail.duration || xScale.invert(1)))) return false;
+    const details = eventsOnMouse(settings, d, target)
+    const detailsTimes = details.map(d => (d.duration ? d.duration + ' ms ' : '') + d.event + (d.label ? ' ' + d.label : ''))
 
-      return true;
-    }).map(d => (d.duration ? d.duration + ' ms ' : '') + d.event)
+    const childCount = d.data.children ? ' [' + d.data.details.length + '/' + d.data.children.length + ']' : ' [' + d.data.details.length + ']';
 
-    const childCount = d.data.children ? ' (' + d.data.children.length + ')' : '';
-
-    return [d.data.duration + ' ms ' + label + childCount].concat(details).join("<br>");
+    return [d.data.duration + ' ms ' + label + childCount].concat(detailsTimes).join("<br>");
   });
 
   const boundNodes = nodesEnter.append('rect')
@@ -164,6 +163,26 @@ function renderTrace(selection, settings) {
     .transition().duration(transitionDuration)
     .attr('width', d => d.x1 - d.x0 + 1)
     .attr('height', d => d.y2 ? d.y2 - d.y0 + 1 : 0)
+
+  const toggleChildrenNodes = nodesEnter.append('text')
+    .attr('class', 'pathom-attribute-toggle-children')
+    .style('visibility', d => d.children || d._children ? '' : 'hidden')
+    .on('click', function (d) {
+      if (d.children && d.children.length && d.data.name) {
+        d._children = d.children;
+        d.children = null;
+        renderTrace(selection, settings);
+      } else if (d._children) {
+        d.children = d._children;
+        renderTrace(selection, settings);
+      }
+    })
+    .merge(nodeRoots.select('.pathom-attribute-toggle-children'))
+    .text((d, i) => {
+      if (i === 0) return ''
+
+      return d.children ? '-' : '+'
+    })
 
   const attributeNodes = nodesEnter.append('rect')
     .attr('class', 'pathom-attribute')
@@ -225,7 +244,8 @@ function renderTrace(selection, settings) {
 }
 
 const traceDefaults = {
-  barSize: 17
+  barSize: 17,
+  showDetails: x => x
 }
 
 function initTrace(element, settings) {

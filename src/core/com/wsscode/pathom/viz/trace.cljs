@@ -4,7 +4,22 @@
             [fulcro.client.localized-dom :as dom]
             [fulcro.client.primitives :as fp]
             [goog.object :as gobj]
-            [fulcro.client.mutations :as fm]))
+            [fulcro.client.mutations :as fm]
+            [clojure.walk :as walk]))
+
+(defn stringify-keyword-values [x]
+  (walk/prewalk
+    (fn [x]
+      (cond
+        (simple-keyword? x)
+        (name x)
+
+        (keyword x)
+        (str x)
+
+        :else
+        x))
+    x))
 
 (defn render-trace [this]
   (let [trace (-> this fp/props ::trace-data)
@@ -13,9 +28,10 @@
     (gobj/set svg "innerHTML" "")
     (gobj/set this "renderedData"
       (renderPathomTrace svg
-        (clj->js {:svgWidth  (gobj/get container "clientWidth")
-                  :svgHeight (gobj/get container "clientHeight")
-                  :data      trace})))))
+        (clj->js {:svgWidth    (gobj/get container "clientWidth")
+                  :svgHeight   (gobj/get container "clientHeight")
+                  :data        (stringify-keyword-values trace)
+                  :showDetails (fn [details] (js/console.log "DETAILS" details))})))))
 
 (defn recompute-trace-size [this]
   (let [container (gobj/get this "svgContainer")]
@@ -26,7 +42,7 @@
 
 (fp/defsc D3Trace [this _]
   {:css
-   [[:.container {:flex 1
+   [[:.container {:flex      1
                   :max-width "100%"}]
 
     [:$pathom-attribute
@@ -94,7 +110,18 @@
       :padding        "1px 6px"
       :box-shadow     "#00000069 0px 1px 3px 0px"
       :white-space    "nowrap"
-      :z-index        "10"}]]
+      :top            "-1000px"
+      :left           "-1000px"
+      :z-index        "10"}]
+
+    [:$pathom-attribute-toggle-children
+     {:cursor      "default"
+      :fill        "#757575"
+      :font-size   "16px"
+      :font-family "monospace"
+      :font-weight "bold"
+      :text-anchor "middle"
+      :transform   "translate(-8px, 13px)"}]]
 
    :componentDidMount
    (fn []
