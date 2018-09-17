@@ -22,7 +22,8 @@ function registerTooltip(nodes, labelF) {
     .on('mouseout.tooltip', _ => tooltipElement.style('visibility', 'hidden'))
 }
 
-function renderRule(element, {svgHeight}) {
+function renderRule(element, settings) {
+  const {svgHeight} = settings
   const vruler = element
     .append('line')
     .attr('class', 'pathom-vruler')
@@ -42,6 +43,8 @@ function renderRule(element, {svgHeight}) {
     .on('keyup.pathom-rule', e => {
       if (d3.event.keyCode === 16) vruler.style('visibility', 'hidden')
     })
+
+  settings.vruler = vruler
 }
 
 function layoutTrace (node, {xScale, yScale, barSize}) {
@@ -104,7 +107,7 @@ function eventsOnMouse({xScale}, d, target) {
 }
 
 function renderTrace(selection, settings) {
-  const {data, transitionDuration, xScale, showDetails} = settings
+  const {data, transitionDuration, xScale, showDetails, svgHeight} = settings
 
   const nodeRoots = selection
     .selectAll('g.pathom-attr-group')
@@ -243,6 +246,8 @@ function renderTrace(selection, settings) {
     .text(function (d) {
       if (d.data.name) return d.data.name;
     })
+
+  if (settings.vruler) settings.vruler.attr('y2', svgHeight)
 }
 
 const traceDefaults = {
