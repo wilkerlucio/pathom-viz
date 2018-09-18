@@ -6,8 +6,7 @@
 
  :aliases
  {:provided
-  {:extra-deps {com.wsscode/pathom        {:mvn/version "2.2.0-beta6"}
-                org.clojure/clojure       {:mvn/version "1.9.0"}
+  {:extra-deps {org.clojure/clojure       {:mvn/version "1.9.0"}
                 org.clojure/clojurescript {:mvn/version "1.10.339"}}}
 
   :dev
