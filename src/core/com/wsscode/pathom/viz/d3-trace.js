@@ -131,7 +131,9 @@ function renderTrace(selection, settings) {
       d3.select(this.childNodes[0]).style('visibility', 'hidden');
     })
     .on('click', function (d) {
-      showDetails(d.data.details.map(x => {
+      const details = d3.event.altKey ? eventsOnMouse(settings, d, this) : d.data.details
+
+      showDetails(details.map(x => {
         const d = Object.assign({}, x)
 
         delete d.x0
