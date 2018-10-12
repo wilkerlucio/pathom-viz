@@ -1,5 +1,6 @@
 .cpcache
 .nrepl-port
 .shadow-cljs
+.idea
 node_modules
 workspaces/assets/js

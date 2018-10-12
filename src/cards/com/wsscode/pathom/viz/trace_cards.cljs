@@ -310,9 +310,10 @@
                 :name     ":com.wsscode.pathom/trace"}],
     :hint     "Query"})
 
+#_
 (ws/defcard trace-view-card
   {::wsm/align {:flex 1}}
   (ct.fulcro/fulcro-card
-    {::f.portal/root          trace/TraceView
+    {::f.portal/root          trace/D3Trace
      ::f.portal/initial-state (fn [_]
                                 {:trace-data sample-trace})}))
