@@ -130,6 +130,20 @@ function renderTrace(selection, settings) {
     .on('mouseout', function (d, i) {
       d3.select(this.childNodes[0]).style('visibility', 'hidden');
     })
+    .on('click', function (d) {
+      const details = d3.event.altKey ? eventsOnMouse(settings, d, this) : d.data.details
+
+      showDetails(details.map(x => {
+        const d = Object.assign({}, x)
+
+        delete d.x0
+        delete d.x1
+        delete d.y0
+        delete d.y1
+
+        return d
+      }));
+    })
 
   nodes
     .style('opacity', 0)
@@ -170,7 +184,9 @@ function renderTrace(selection, settings) {
   const toggleChildrenNodes = nodesEnter.append('text')
     .attr('class', 'pathom-attribute-toggle-children')
     .style('visibility', d => d.children || d._children ? '' : 'hidden')
-    .on('click', function (d) {
+    .on('click', function (d, e) {
+      d3.event.stopPropagation();
+
       if (d.children && d.children.length && d.data.name) {
         d._children = d.children;
         d.children = null;
@@ -191,20 +207,6 @@ function renderTrace(selection, settings) {
     .attr('class', 'pathom-attribute')
     .attr('width', d => d.x1 - d.x0)
     .attr('height', d => d.y1 - d.y0)
-    .on('click', function (d) {
-      const details = d3.event.altKey ? eventsOnMouse(settings, d, this) : d.data.details
-
-      showDetails(details.map(x => {
-        const d = Object.assign({}, x)
-
-        delete d.x0
-        delete d.x1
-        delete d.y0
-        delete d.y1
-
-        return d
-      }));
-    })
     .merge(nodeRoots.select('rect.pathom-attribute'))
     .transition().duration(transitionDuration)
     .attr('width', d => d.x1 - d.x0)
