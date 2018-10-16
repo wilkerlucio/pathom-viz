@@ -27,15 +27,10 @@
 (defmulti mutation-fn pc/mutation-dispatch)
 (def defmutation (pc/mutation-factory mutation-fn indexes))
 
-(defn open-ident-reader [env]
-  (if-let [key (p/ident-key env)]
-    (p/join (atom {key (p/ident-value env)}) env)
-    ::p/continue))
-
 (def card-parser
   (p/parallel-parser {::p/env     (fn [env]
                                     (merge
-                                      {::p/reader             [p/map-reader pc/parallel-reader open-ident-reader]
+                                      {::p/reader             [p/map-reader pc/parallel-reader pc/open-ident-reader]
                                        ::pc/resolver-dispatch resolver-fn
                                        ::pc/mutate-dispatch   mutation-fn
                                        ::pc/indexes           @indexes}
@@ -94,6 +89,7 @@
                     [:$cm-atom-composite {:color "#ab890d"}]
                     [:$cm-atom-ident {:color       "#219"
                                       :font-weight "bold"}]]
+                   [:$CodeMirror-hint {:font-size "10px"}]
                    [:.container {:border         "1px solid #ddd"
                                  :display        "flex"
                                  :flex-direction "column"
@@ -116,7 +112,8 @@
                                  :border-right "0"
                                  :z-index      "2"}]
                    [:.result {:flex     "1"
-                              :position "relative"}]
+                              :position "relative"}
+                    [:$CodeMirror {:background "#f6f7f8"}]]
                    [:.trace {:display     "flex"
                              :padding-top "18px"}]]
    :css-include   [pvt/D3Trace]}
@@ -132,7 +129,7 @@
                                   {"Cmd-Enter"   run-query
                                    "Ctrl-Enter"  run-query
                                    "Shift-Enter" run-query
-                                   "Cmd-J"       "ogeJoin"
+                                   "Cmd-J"       "pathomJoin"
                                    "Ctrl-Space"  "autocomplete"}}
                     :onChange    #(fm/set-value! this ::query %)})
         (pvh/drag-resize this {:attribute :query-width
