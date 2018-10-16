@@ -8,7 +8,7 @@
  {:provided
   {:extra-deps {org.clojure/clojure       {:mvn/version "1.9.0"}
                 org.clojure/clojurescript {:mvn/version "1.10.339"}
-                com.wsscode/pathom        {:mvn/version "2.2.0-beta12"}}}
+                com.wsscode/pathom        {:mvn/version "2.2.0-beta13"}}}
 
   :dev
   {:extra-deps {nubank/workspaces          {:mvn/version "1.0.0-preview8"}

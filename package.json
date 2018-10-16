@@ -19,6 +19,6 @@
     "react-dom": "^16.5.0",
     "react-draggable": "^3.0.5",
     "react-grid-layout": "^0.16.6",
-    "shadow-cljs": "^2.6.7"
+    "shadow-cljs": "^2.6.12"
   }
 }
