@@ -162,12 +162,13 @@
         (ct.fulcro/fulcro-card-init
           card
           {::f.portal/root PathomCard
-           ::f.portal/app  {:started-callback load-indexes
+           ::f.portal/app  {:started-callback
+                            load-indexes
 
                             :networking
-                                              (pfn/pathom-remote
-                                                (fn [env tx]
-                                                  (card-parser (assoc env ::client-parser parser) tx)))}})]
+                            (pfn/pathom-remote
+                              (fn [env tx]
+                                (card-parser (assoc env ::client-parser parser) tx)))}})]
     (assoc fulcro-card
       ::wsm/refresh
       (fn [node]
