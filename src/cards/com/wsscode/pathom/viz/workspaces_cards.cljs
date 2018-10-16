@@ -3,16 +3,9 @@
             [com.wsscode.common.async-cljs :refer [<? go-catch]]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.core :as p]
-            [com.wsscode.pathom.fulcro.network :as pfn]
-            [com.wsscode.pathom.viz.codemirror :as cm]
-            [nubank.workspaces.card-types.fulcro :as ct.fulcro]
-            [nubank.workspaces.card-types.react :as ct.react]
-            [nubank.workspaces.core :as ws]
-            [nubank.workspaces.lib.fulcro-portal :as f.portal]
             [nubank.workspaces.model :as wsm]
-            [com.wsscode.pathom.viz.workspaces :as pvw]
-            [fulcro.client.primitives :as fp]
-            [fulcro.client.localized-dom :as dom]))
+            [nubank.workspaces.core :as ws]
+            [com.wsscode.pathom.viz.workspaces :as pvw]))
 
 (def indexes (atom {}))
 
@@ -23,17 +16,20 @@
 (def defmutation (pc/mutation-factory mutation-fn indexes))
 
 (def parser
-  (p/parallel-parser {::p/env     (fn [env]
-                                    (merge
-                                      {::p/reader             [p/map-reader pc/parallel-reader pc/ident-reader pc/index-reader]
-                                       ::pc/resolver-dispatch resolver-fn
-                                       ::pc/indexes           (assoc-in @indexes [::pc/index-io #{} :com.wsscode.pathom/trace] {})}
-                                      env))
-                      ::p/mutate  pc/mutate-async
-                      ::p/plugins [p/error-handler-plugin
-                                   p/request-cache-plugin
-                                   p/trace-plugin
-                                   (p/post-process-parser-plugin p/elide-not-found)]}))
+  (p/parallel-parser {::p/env          (fn [env]
+                                         (merge
+                                           {::p/reader             [p/map-reader pc/parallel-reader pc/ident-reader]
+                                            ::pc/resolver-dispatch resolver-fn
+                                            ::pc/mutate-dispatch   mutation-fn
+                                            ::pc/indexes           @indexes}
+                                           env))
+                      ::pc/defresolver defresolver
+                      ::pc/defmutation defmutation
+                      ::p/mutate       pc/mutate-async
+                      ::p/plugins      [p/error-handler-plugin
+                                        p/request-cache-plugin
+                                        p/trace-plugin
+                                        pc/connect-plugin]}))
 
 (def email->name
   {"wilkerlucio@gmail.com" {:first-name "Wilker"
@@ -41,7 +37,27 @@
    "power@ranger.com"      {:first-name "Power"
                             :last-name  "Ranger"}
    "spy@ranger.com"        {:first-name "Spy"
-                            :last-name  "Ranger"}})
+                            :last-name  "Ranger"}
+   "dull1@dall.com"        {:first-name "Hi 1"
+                            :last-name  "Hey"}
+   "dull2@dall.com"        {:first-name "Hi 2"
+                            :last-name  "Hey"}
+   "dull3@dall.com"        {:first-name "Hi 3"
+                            :last-name  "Hey"}
+   "dull4@dall.com"        {:first-name "Hi 4"
+                            :last-name  "Hey"}
+   "dull5@dall.com"        {:first-name "Hi 5"
+                            :last-name  "Hey"}
+   "dull6@dall.com"        {:first-name "Hi 6"
+                            :last-name  "Hey"}
+   "dull7@dall.com"        {:first-name "Hi 7"
+                            :last-name  "Hey"}
+   "dull8@dall.com"        {:first-name "Hi 8"
+                            :last-name  "Hey"}
+   "dull9@dall.com"        {:first-name "Hi 9"
+                            :last-name  "Hey"}
+   "dull10@dall.com"       {:first-name "Hi 10"
+                            :last-name  "Hey"}})
 
 (defresolver `email->name
   {::pc/input  #{:email}
@@ -66,9 +82,7 @@
 (defresolver `wanted-emails
   {::pc/output [{:wanted-emails [:email]}]}
   (fn [_ _]
-    {:wanted-emails [{:email "power@ranger.com"}
-                     {:email "spy@ranger.com"}
-                     {:email "wilkerlucio@gmail.com"}]}))
+    {:wanted-emails (mapv #(hash-map :email %) (keys email->name))}))
 
 (defresolver `pi
   {::pc/output [:pi]}
@@ -77,6 +91,6 @@
       (<! (async/timeout 10))
       {:pi js/Math.PI})))
 
-(ws/defcard conj-demo-card
+(ws/defcard simple-parser-demo
   (pvw/pathom-card {::pvw/parser parser})
   #_{::wsm/align {:flex "1"}})
