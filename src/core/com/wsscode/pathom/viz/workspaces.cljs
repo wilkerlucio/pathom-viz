@@ -28,17 +28,20 @@
 (def defmutation (pc/mutation-factory mutation-fn indexes))
 
 (def card-parser
-  (p/parallel-parser {::p/env     (fn [env]
-                                    (merge
-                                      {::p/reader             [p/map-reader pc/parallel-reader pc/open-ident-reader]
-                                       ::pc/resolver-dispatch resolver-fn
-                                       ::pc/mutate-dispatch   mutation-fn
-                                       ::pc/indexes           @indexes}
-                                      env))
-                      ::p/mutate  pc/mutate-async
-                      ::p/plugins [p/error-handler-plugin
-                                   p/request-cache-plugin
-                                   p/trace-plugin]}))
+  (p/parallel-parser {::p/env          (fn [env]
+                                         (merge
+                                           {::p/reader             [p/map-reader pc/parallel-reader pc/open-ident-reader]
+                                            ::pc/resolver-dispatch resolver-fn
+                                            ::pc/mutate-dispatch   mutation-fn
+                                            ::pc/indexes           @indexes}
+                                           env))
+                      ::pc/defresolver defresolver
+                      ::pc/defmutation defmutation
+                      ::p/mutate       pc/mutate-async
+                      ::p/plugins      [p/error-handler-plugin
+                                        p/request-cache-plugin
+                                        (dissoc pc/connect-plugin ::pc/resolvers)
+                                        p/trace-plugin]}))
 
 (defresolver `indexes
   {::pc/output [::pc/indexes]}
@@ -176,8 +179,7 @@
         (refresh node)))))
 
 (defn pathom-card [config]
-  {::wsm/init
-               #(pathom-card-init % config)
+  {::wsm/init #(pathom-card-init % config)
 
    ::wsm/align {:flex    1
                 :display "flex"}})
