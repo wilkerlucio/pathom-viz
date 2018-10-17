@@ -1,6 +1,6 @@
 # Change Log
 
-## [1.0.1]
+## [1.0.2]
 - Fix trace: don't log trace details when click to expand/contract groups
 - Add codemirror editor with pathom settings (from old OgE)
 - Add workspaces card helper to create a pathom editor card
