@@ -51,10 +51,11 @@
 (defmutation `run-query
   {::pc/params [::query]
    ::pc/output [::id ::result]}
-  (fn [{::keys [client-parser]} {::keys [id query]}]
+  (fn [{::keys [client-parser]} {::keys [id query request-trace?]}]
     (go
       (let [pull-keys [:com.wsscode.pathom/trace]
-            response  (<! (client-parser {} (read-string query)))]
+            query     (cond-> (read-string query) request-trace? (conj :com.wsscode.pathom/trace))
+            response  (<! (client-parser {} query))]
         (merge
           {::id                      id
            ::result                  (pvh/pprint (apply dissoc response pull-keys))
@@ -76,15 +77,17 @@
    :query [::id ::result :com.wsscode.pathom/trace]})
 
 (fp/defsc PathomCard
-  [this {::keys                   [id query result]
+  [this {::keys                   [id query result request-trace?]
          :com.wsscode.pathom/keys [trace]
          ::pc/keys                [indexes]} _ css]
   {:initial-state (fn [_]
-                    {::id     (random-uuid)
-                     ::query  ""
-                     ::result ""})
+                    {::id             (random-uuid)
+                     ::request-trace? true
+                     ::query          ""
+                     ::result         ""})
    :ident         [::id ::id]
-   :query         [::id ::query ::result ::pc/indexes :com.wsscode.pathom/trace]
+   :query         [::id ::request-trace? ::query ::result
+                   ::pc/indexes :com.wsscode.pathom/trace]
    :css           [[:$CodeMirror {:height   "100%"
                                   :width    "100%"
                                   :position "absolute"
@@ -101,6 +104,17 @@
                    [:.query-row {:display  "flex"
                                  :flex     "1"
                                  :position "relative"}]
+                   [:.toolbar {:background    "#eeeeee"
+                               :border-bottom "1px solid #e0e0e0"
+                               :padding       "5px 4px"
+                               :display       "flex"
+                               :align-items   "center"
+                               :font-family   "sans-serif"
+                               :font-size     "13px"}
+                    [:label {:display     "flex"
+                             :align-items "center"}
+                     [:input {:margin-right "5px"}]]]
+                   [:.flex {:flex "1"}]
                    [:.editor {}]
                    [:.divisor-v {:width         "20px"
                                  :background    "#eee"
@@ -120,9 +134,16 @@
                    [:.trace {:display     "flex"
                              :padding-top "18px"}]]
    :css-include   [pvt/D3Trace]}
-  (let [run-query #(let [query (-> (fp/props this) ::query)]
-                     (fp/transact! this [`(run-query ~{::id id ::query query})]))]
+  (let [run-query #(fp/transact! this [`(run-query ~(fp/props this))])]
     (dom/div :.container
+      (dom/div :.toolbar
+        (dom/label
+          (dom/input {:type     "checkbox"
+                      :checked  request-trace?
+                      :onChange #(fm/toggle! this ::request-trace?)})
+          "Request trace")
+        (dom/div :.flex)
+        (dom/button {:onClick run-query} "Run query"))
       (dom/div :.query-row
         (cm/pathom {:className   (:editor css)
                     :style       {:width (str (or (fp/get-state this :query-width) 400) "px")}
