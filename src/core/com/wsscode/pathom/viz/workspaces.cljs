@@ -78,6 +78,7 @@
 
 (fp/defsc PathomCard
   [this {::keys                   [id query result request-trace?]
+         :ui/keys                 [query-running?]
          :com.wsscode.pathom/keys [trace]
          ::pc/keys                [indexes]} _ css]
   {:initial-state (fn [_]
@@ -86,7 +87,7 @@
                      ::query          ""
                      ::result         ""})
    :ident         [::id ::id]
-   :query         [::id ::request-trace? ::query ::result
+   :query         [::id ::request-trace? ::query ::result :ui/query-running?
                    ::pc/indexes :com.wsscode.pathom/trace]
    :css           [[:$CodeMirror {:height   "100%"
                                   :width    "100%"
@@ -134,7 +135,9 @@
                    [:.trace {:display     "flex"
                              :padding-top "18px"}]]
    :css-include   [pvt/D3Trace]}
-  (let [run-query #(fp/transact! this [`(run-query ~(fp/props this))])]
+  (let [run-query #(fp/ptransact! this [`(fm/set-props {:ui/query-running? true})
+                                        `(run-query ~(fp/props this))
+                                        `(fm/set-props {:ui/query-running? false})])]
     (dom/div :.container
       (dom/div :.toolbar
         (dom/label
@@ -143,7 +146,8 @@
                       :onChange #(fm/toggle! this ::request-trace?)})
           "Request trace")
         (dom/div :.flex)
-        (dom/button {:onClick run-query} "Run query"))
+        (dom/button {:onClick  run-query
+                     :disabled query-running?} "Run query"))
       (dom/div :.query-row
         (cm/pathom {:className   (:editor css)
                     :style       {:width (str (or (fp/get-state this :query-width) 400) "px")}
