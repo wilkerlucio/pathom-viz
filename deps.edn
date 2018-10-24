@@ -11,6 +11,6 @@
                 com.wsscode/pathom        {:mvn/version "2.2.0-beta13"}}}
 
   :dev
-  {:extra-deps {nubank/workspaces          {:mvn/version "1.0.0-preview8"}
+  {:extra-deps {nubank/workspaces          {:mvn/version "1.0.0-preview9"}
                 fulcrologic/fulcro-inspect {:mvn/version "2.2.3"}
                 binaryage/devtools         {:mvn/version "0.9.10"}}}}}
