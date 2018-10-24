@@ -86,6 +86,32 @@
   {:ident [::id ::id]
    :query [::id ::result :com.wsscode.pathom/trace]})
 
+(fp/defsc Button
+  [this props]
+  {:css [[:.container
+          {:font-size   "11px"
+           :font-family "'Open Sans', sans-serif"
+           :font-weight "600"}
+          {:background-color "#4b5b6d"
+           :border           "none"
+           :border-radius    "3px"
+           :color            "#fff"
+           :cursor           "pointer"
+           :display          "inline-block"
+           :padding          "2px 8px"
+           :line-height      "1.5"
+           :margin-bottom    "0"
+           :text-align       "center"
+           :white-space      "nowrap"
+           :vertical-align   "middle"
+           :user-select      "none"
+           :outline          "none"}
+          [:&:disabled {:background "#b0c1d6"
+                        :color      "#eaeaea"}]]]}
+  (dom/button :.container props (fp/children this)))
+
+(def button (fp/factory Button))
+
 (fp/defsc QueryEditor
   [this {::keys                   [query result request-trace?]
          :ui/keys                 [query-running?]
@@ -144,14 +170,19 @@
                         [:$CodeMirror {:background "#f6f7f8"}]]
                        [:.trace {:display     "flex"
                                  :padding-top "18px"}]]
-   :css-include       [pvt/D3Trace]
+   :css-include       [pvt/D3Trace Button]
    :componentDidMount (fn []
                         (js/setTimeout
                           #(fp/set-state! this {:render? true})
-                          100))}
-  (let [run-query #(fp/ptransact! this [`(fm/set-props {:ui/query-running? true})
-                                        `(run-query ~(fp/props this))
-                                        `(fm/set-props {:ui/query-running? false})])]
+                          100))
+   :initLocalState    (fn []
+                        {:run-query (fn []
+                                      (let [{:ui/keys [query-running?] :as props} (fp/props this)]
+                                        (if-not query-running?
+                                          (fp/ptransact! this [`(fm/set-props {:ui/query-running? true})
+                                                               `(run-query ~props)
+                                                               `(fm/set-props {:ui/query-running? false})]))))})}
+  (let [run-query (fp/get-state this :run-query)]
     (dom/div :.container
 
       (dom/div :.toolbar
@@ -161,10 +192,12 @@
                       :onChange #(fm/toggle! this ::request-trace?)})
           "Request trace")
         (dom/div :.flex)
-        (dom/button {:onClick #(load-indexes (fp/get-reconciler this))} "Refresh index")
-        (dom/button {:onClick  run-query
-                     :disabled query-running?} "Run query"))
-
+        (button {:onClick #(load-indexes (fp/get-reconciler this))
+                 :style   {:marginRight "6px"}}
+          "Refresh index")
+        (button {:onClick  run-query
+                 :disabled query-running?}
+          "Run query"))
 
       (dom/div :.query-row
         (if (fp/get-state this :render?)
