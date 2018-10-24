@@ -4,6 +4,7 @@
 - Fix trace: don't log trace details when click to expand/contract groups
 - Add codemirror editor with pathom settings (from old OgE)
 - Add workspaces card helper to create a pathom editor card
+- Add workspaces card helper for pathom explorer
 
 ## [1.0.1]
 - Show details of events on mouse when click with alt key

@@ -73,10 +73,12 @@
     (fm/returning ast state TransactionResponse)))
 
 (defn load-indexes
-  [app]
-  (let [root-ident (-> app :reconciler fp/app-state deref :ui/root)]
-    (df/load app root-ident QueryEditor {:focus  [::pc/indexes]
-                                         :remote remote-key})))
+  [app-or-reconciler]
+  (let [reconciler (or (:reconciler app-or-reconciler) app-or-reconciler)
+        root-ident (-> reconciler fp/app-state deref :ui/root)]
+    (df/load reconciler root-ident QueryEditor
+      {:focus  [::pc/indexes]
+       :remote remote-key})))
 
 ;; UI
 
@@ -85,68 +87,73 @@
    :query [::id ::result :com.wsscode.pathom/trace]})
 
 (fp/defsc QueryEditor
-  [this {::keys                   [id query result request-trace?]
+  [this {::keys                   [query result request-trace?]
          :ui/keys                 [query-running?]
          :com.wsscode.pathom/keys [trace]
          ::pc/keys                [indexes]} _ css]
-  {:initial-state (fn [_]
-                    {::id             (random-uuid)
-                     ::request-trace? true
-                     ::query          ""
-                     ::result         ""})
-   :ident         [::id ::id]
-   :query         [::id ::request-trace? ::query ::result :ui/query-running?
-                   ::pc/indexes :com.wsscode.pathom/trace]
-   :css           [[:$CodeMirror {:height   "100%"
-                                  :width    "100%"
-                                  :position "absolute"
-                                  :z-index  "1"}
-                    [:$cm-atom-composite {:color "#ab890d"}]
-                    [:$cm-atom-ident {:color       "#219"
-                                      :font-weight "bold"}]]
-                   [:$CodeMirror-hint {:font-size "10px"}]
-                   [:.container {:border         "1px solid #ddd"
-                                 :display        "flex"
-                                 :flex-direction "column"
-                                 :flex           "1"
-                                 :max-width      "100%"}]
-                   [:.query-row {:display  "flex"
-                                 :flex     "1"
-                                 :position "relative"}]
-                   [:.toolbar {:background    "#eeeeee"
-                               :border-bottom "1px solid #e0e0e0"
-                               :padding       "5px 4px"
-                               :display       "flex"
-                               :align-items   "center"
-                               :font-family   "sans-serif"
-                               :font-size     "13px"}
-                    [:label {:display     "flex"
-                             :align-items "center"}
-                     [:input {:margin-right "5px"}]]]
-                   [:.flex {:flex "1"}]
-                   [:.editor {:position "relative"}]
-                   [:.divisor-v {:width         "20px"
-                                 :background    "#eee"
-                                 :border        "1px solid #e0e0e0"
-                                 :border-top    "0"
-                                 :border-bottom "0"
-                                 :z-index       "2"}]
-                   [:.divisor-h {:height       "20px"
-                                 :background   "#eee"
-                                 :border       "1px solid #e0e0e0"
-                                 :border-left  "0"
-                                 :border-right "0"
-                                 :z-index      "2"}]
-                   [:.result {:flex     "1"
-                              :position "relative"}
-                    [:$CodeMirror {:background "#f6f7f8"}]]
-                   [:.trace {:display     "flex"
-                             :padding-top "18px"}]]
-   :css-include   [pvt/D3Trace]}
+  {:initial-state     (fn [_]
+                        {::id             (random-uuid)
+                         ::request-trace? true
+                         ::query          "[]"
+                         ::result         ""})
+   :ident             [::id ::id]
+   :query             [::id ::request-trace? ::query ::result :ui/query-running?
+                       ::pc/indexes :com.wsscode.pathom/trace]
+   :css               [[:$CodeMirror {:height   "100% !important"
+                                      :width    "100% !important"
+                                      :position "absolute !important"
+                                      :z-index  "1"}
+                        [:$cm-atom-composite {:color "#ab890d"}]
+                        [:$cm-atom-ident {:color       "#219"
+                                          :font-weight "bold"}]]
+                       [:$CodeMirror-hint {:font-size "10px"}]
+                       [:.container {:border         "1px solid #ddd"
+                                     :display        "flex"
+                                     :flex-direction "column"
+                                     :flex           "1"
+                                     :max-width      "100%"}]
+                       [:.query-row {:display  "flex"
+                                     :flex     "1"
+                                     :position "relative"}]
+                       [:.toolbar {:background    "#eeeeee"
+                                   :border-bottom "1px solid #e0e0e0"
+                                   :padding       "5px 4px"
+                                   :display       "flex"
+                                   :align-items   "center"
+                                   :font-family   "sans-serif"
+                                   :font-size     "13px"}
+                        [:label {:display     "flex"
+                                 :align-items "center"}
+                         [:input {:margin-right "5px"}]]]
+                       [:.flex {:flex "1"}]
+                       [:.editor {:position "relative"}]
+                       [:.divisor-v {:width         "20px"
+                                     :background    "#eee"
+                                     :border        "1px solid #e0e0e0"
+                                     :border-top    "0"
+                                     :border-bottom "0"
+                                     :z-index       "2"}]
+                       [:.divisor-h {:height       "20px"
+                                     :background   "#eee"
+                                     :border       "1px solid #e0e0e0"
+                                     :border-left  "0"
+                                     :border-right "0"
+                                     :z-index      "2"}]
+                       [:.result {:flex     "1"
+                                  :position "relative"}
+                        [:$CodeMirror {:background "#f6f7f8"}]]
+                       [:.trace {:display     "flex"
+                                 :padding-top "18px"}]]
+   :css-include       [pvt/D3Trace]
+   :componentDidMount (fn []
+                        (js/setTimeout
+                          #(fp/set-state! this {:render? true})
+                          100))}
   (let [run-query #(fp/ptransact! this [`(fm/set-props {:ui/query-running? true})
                                         `(run-query ~(fp/props this))
                                         `(fm/set-props {:ui/query-running? false})])]
     (dom/div :.container
+
       (dom/div :.toolbar
         (dom/label
           (dom/input {:type     "checkbox"
@@ -154,29 +161,34 @@
                       :onChange #(fm/toggle! this ::request-trace?)})
           "Request trace")
         (dom/div :.flex)
+        (dom/button {:onClick #(load-indexes (fp/get-reconciler this))} "Refresh index")
         (dom/button {:onClick  run-query
                      :disabled query-running?} "Run query"))
+
+
       (dom/div :.query-row
-        (cm/pathom {:className   (:editor css)
-                    :style       {:width (str (or (fp/get-state this :query-width) 400) "px")}
-                    :value       (or (str query) "")
-                    ::pc/indexes (p/elide-not-found indexes)
-                    ::cm/options {::cm/extraKeys
-                                  {"Cmd-Enter"   run-query
-                                   "Ctrl-Enter"  run-query
-                                   "Shift-Enter" run-query
-                                   "Cmd-J"       "pathomJoin"
-                                   "Ctrl-Space"  "autocomplete"}}
-                    :onChange    #(fm/set-value! this ::query %)})
+        (if (fp/get-state this :render?)
+          (cm/pathom {:className   (:editor css)
+                      :style       {:width (str (or (fp/get-state this :query-width) 400) "px")}
+                      :value       (or (str query) "")
+                      ::pc/indexes (p/elide-not-found indexes)
+                      ::cm/options {::cm/extraKeys
+                                    {"Cmd-Enter"   run-query
+                                     "Ctrl-Enter"  run-query
+                                     "Shift-Enter" run-query
+                                     "Cmd-J"       "pathomJoin"
+                                     "Ctrl-Space"  "autocomplete"}}
+                      :onChange    #(fm/set-value! this ::query %)}))
         (pvh/drag-resize this {:attribute :query-width
                                :axis      "x"
                                :default   400
                                :props     {:className (:divisor-v css)}}
           (dom/div))
-        (cm/clojure {:className   (:result css)
-                     :value       result
-                     ::cm/options {::cm/readOnly    true
-                                   ::cm/lineNumbers true}}))
+        (if (fp/get-state this :render?)
+          (cm/clojure {:className   (:result css)
+                       :value       result
+                       ::cm/options {::cm/readOnly    true
+                                     ::cm/lineNumbers true}})))
       (if trace
         (pvh/drag-resize this {:attribute :trace-height
                                :default   400
