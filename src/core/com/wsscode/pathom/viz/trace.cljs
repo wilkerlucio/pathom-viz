@@ -115,18 +115,18 @@
       :z-index        "10"}]
 
     [:$pathom-details-count
-     {:background "#8bdc47"
+     {:background    "#8bdc47"
       :border-radius "7px"
-      :padding "1px 5px"
-      :font-size "10px"
-      :font-family "sans-serif"}]
+      :padding       "1px 5px"
+      :font-size     "10px"
+      :font-family   "sans-serif"}]
 
     [:$pathom-children-count
-     {:background "#d2a753"
+     {:background    "#d2a753"
       :border-radius "7px"
-      :padding "1px 5px"
-      :font-size "10px"
-      :font-family "sans-serif"}]
+      :padding       "1px 5px"
+      :font-size     "10px"
+      :font-family   "sans-serif"}]
 
     [:$pathom-attribute-toggle-children
      {:cursor      "default"
@@ -147,9 +147,15 @@
      (if (= (-> prev-props ::trace-data)
             (-> this fp/props ::trace-data))
        (recompute-trace-size this)
-       (render-trace this)))}
+       (render-trace this)))
+
+   :componentDidCatch
+   (fn [error info]
+     (fp/set-state! this {::error-catch? true}))}
 
   (dom/div :.container {:ref #(gobj/set this "svgContainer" %)}
-    (dom/svg {:ref #(gobj/set this "svg" %)})))
+    (if (fp/get-state this ::error-catch?)
+      (dom/div "Error rendering trace, check console for details")
+      (dom/svg {:ref #(gobj/set this "svg" %)}))))
 
 (def d3-trace (fp/factory D3Trace))
