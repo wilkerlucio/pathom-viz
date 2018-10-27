@@ -8,15 +8,22 @@
             [nubank.workspaces.model :as wsm]))
 
 (defn pathom-card-init
-  [card {::keys [parser]}]
-  (let [{::wsm/keys       [refresh]
+  [card {::keys [parser app load-index-at-start?]
+         :or    {load-index-at-start? true}}]
+  (let [{:keys [started-callback]} app
+        {::wsm/keys       [refresh]
          ::ct.fulcro/keys [app*]
          :as              fulcro-card}
         (ct.fulcro/fulcro-card-init
           card
           {::f.portal/root pv.query-editor/QueryEditor
            ::f.portal/app  {:started-callback
-                            pv.query-editor/load-indexes
+                            (fn [app]
+                              (if started-callback
+                                (started-callback app))
+
+                              (if load-index-at-start?
+                                (pv.query-editor/load-indexes app)))
 
                             :networking
                             {pv.query-editor/remote-key
@@ -29,7 +36,8 @@
         (refresh node)))))
 
 (defn pathom-card [config]
-  {::wsm/init #(pathom-card-init % config)
-
-   ::wsm/align {:flex    1
-                :display "flex"}})
+  {::wsm/align       {:flex    1
+                      :display "flex"}
+   ::wsm/init        #(pathom-card-init % config)
+   ::wsm/card-width  7
+   ::wsm/card-height 18})
