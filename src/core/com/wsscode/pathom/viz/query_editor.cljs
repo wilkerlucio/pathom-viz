@@ -18,29 +18,31 @@
 
 ;; Parser
 
-(def indexes (atom {}))
+(pc/defresolver indexes [{::keys [client-parser]} _]
+  {::pc/output [::pc/indexes]}
+  (client-parser {} [{::pc/indexes [::pc/idents ::pc/index-io ::pc/autocomplete-ignore]}]))
 
-(defmulti resolver-fn pc/resolver-dispatch)
-(def defresolver (pc/resolver-factory resolver-fn indexes))
-
-(defmulti mutation-fn pc/mutation-dispatch)
-(def defmutation (pc/mutation-factory mutation-fn indexes))
+(pc/defmutation run-query [{::keys [client-parser]} {::keys [id query request-trace?]}]
+  {::pc/params [::query]
+   ::pc/output [::id ::result]}
+  (go
+    (let [pull-keys [:com.wsscode.pathom/trace]
+          query     (cond-> (read-string query) request-trace? (conj :com.wsscode.pathom/trace))
+          response  (<! (client-parser {} query))]
+      (merge
+        {::id                      id
+         ::result                  (pvh/pprint (apply dissoc response pull-keys))
+         :com.wsscode.pathom/trace nil}
+        (select-keys response pull-keys)))))
 
 (def card-parser
-  (p/parallel-parser {::p/env          (fn [env]
-                                         (merge
-                                           {::p/reader             [p/map-reader pc/parallel-reader pc/open-ident-reader]
-                                            ::pc/resolver-dispatch resolver-fn
-                                            ::pc/mutate-dispatch   mutation-fn
-                                            ::pc/indexes           @indexes}
-                                           env))
-                      ::pc/defresolver defresolver
-                      ::pc/defmutation defmutation
-                      ::p/mutate       pc/mutate-async
-                      ::p/plugins      [p/error-handler-plugin
-                                        p/request-cache-plugin
-                                        (dissoc pc/connect-plugin ::pc/resolvers)
-                                        p/trace-plugin]}))
+  (p/parallel-parser {::p/env     {::p/reader [p/map-reader pc/parallel-reader pc/open-ident-reader]}
+                      ::p/mutate  pc/mutate-async
+                      ::p/plugins [p/error-handler-plugin
+                                   p/request-cache-plugin
+                                   (-> (pc/connect-plugin {::pc/register [indexes run-query]})
+                                       (dissoc ::pc/register))
+                                   p/trace-plugin]}))
 
 (defn client-card-parser
   "Returns a new parser that will use the card-parser setting the client
@@ -48,25 +50,6 @@
   [client-parser]
   (fn [env tx]
     (card-parser (assoc env ::client-parser client-parser) tx)))
-
-(defresolver `indexes
-  {::pc/output [::pc/indexes]}
-  (fn [{::keys [client-parser]} _]
-    (client-parser {} [{::pc/indexes [::pc/idents ::pc/index-io ::pc/autocomplete-ignore]}])))
-
-(defmutation `run-query
-  {::pc/params [::query]
-   ::pc/output [::id ::result]}
-  (fn [{::keys [client-parser]} {::keys [id query request-trace?]}]
-    (go
-      (let [pull-keys [:com.wsscode.pathom/trace]
-            query     (cond-> (read-string query) request-trace? (conj :com.wsscode.pathom/trace))
-            response  (<! (client-parser {} query))]
-        (merge
-          {::id                      id
-           ::result                  (pvh/pprint (apply dissoc response pull-keys))
-           :com.wsscode.pathom/trace nil}
-          (select-keys response pull-keys))))))
 
 (fm/defmutation run-query [_]
   (pathom-query-editor-remote [{:keys [ast state]}]
@@ -113,10 +96,13 @@
 (def button (fp/factory Button))
 
 (fp/defsc QueryEditor
-  [this {::keys                   [query result request-trace?]
+  [this
+   {::keys                        [query result request-trace?]
          :ui/keys                 [query-running?]
          :com.wsscode.pathom/keys [trace]
-         ::pc/keys                [indexes]} _ css]
+    ::pc/keys                     [indexes]}
+   {::keys [default-trace-size]
+    :or {default-trace-size 400}} css]
   {:initial-state     (fn [_]
                         {::id             (random-uuid)
                          ::request-trace? true
@@ -137,7 +123,8 @@
                                      :display        "flex"
                                      :flex-direction "column"
                                      :flex           "1"
-                                     :max-width      "100%"}]
+                                     :max-width      "100%"
+                                     :min-height     "200px"}]
                        [:.query-row {:display  "flex"
                                      :flex     "1"
                                      :position "relative"}]
@@ -224,10 +211,12 @@
                                      ::cm/lineNumbers true}})))
       (if trace
         (pvh/drag-resize this {:attribute :trace-height
-                               :default   400
+                               :default   default-trace-size
                                :props     {:className (:divisor-h css)}}
           (dom/div)))
       (if trace
-        (dom/div :.trace {:style {:height (str (or (fp/get-state this :trace-height) 400) "px")}}
+        (dom/div :.trace {:style {:height (str (or (fp/get-state this :trace-height) default-trace-size) "px")}}
           (pvt/d3-trace {::pvt/trace-data      trace
                          ::pvt/on-show-details #(js/console.log %)}))))))
+
+(def query-editor (fp/computed-factory QueryEditor))
