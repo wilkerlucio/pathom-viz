@@ -16,6 +16,11 @@
 
 (def remote-key :pathom-query-editor-remote)
 
+(defn safe-read [s]
+  (try
+    (read-string s)
+    (catch :default _ nil)))
+
 ;; Parser
 
 (pc/defresolver indexes [{::keys [client-parser]} _]
@@ -27,7 +32,7 @@
    ::pc/output [::id ::result]}
   (go
     (let [pull-keys [:com.wsscode.pathom/trace]
-          query     (cond-> (read-string query) request-trace? (conj :com.wsscode.pathom/trace))
+          query     (cond-> (safe-read query) request-trace? (conj :com.wsscode.pathom/trace))
           response  (<! (client-parser {} query))]
       (merge
         {::id                      id
@@ -35,21 +40,23 @@
          :com.wsscode.pathom/trace nil}
         (select-keys response pull-keys)))))
 
-(def card-parser
-  (p/parallel-parser {::p/env     {::p/reader [p/map-reader pc/parallel-reader pc/open-ident-reader]}
-                      ::p/mutate  pc/mutate-async
-                      ::p/plugins [p/error-handler-plugin
-                                   p/request-cache-plugin
-                                   (-> (pc/connect-plugin {::pc/register [indexes run-query]})
-                                       (dissoc ::pc/register))
-                                   p/trace-plugin]}))
-
 (defn client-card-parser
   "Returns a new parser that will use the card-parser setting the client
   parser to be `client-parser`."
-  [client-parser]
-  (fn [env tx]
-    (card-parser (assoc env ::client-parser client-parser) tx)))
+  ([client-parser] (client-card-parser client-parser {}))
+  ([client-parser {::keys [wrap-run-query]}]
+   (let [card-parser
+         (p/parallel-parser {::p/env     {::p/reader [p/map-reader pc/parallel-reader pc/open-ident-reader]}
+                             ::p/mutate  pc/mutate-async
+                             ::p/plugins [p/error-handler-plugin
+                                          p/request-cache-plugin
+                                          (-> (pc/connect-plugin {::pc/register [indexes (cond-> run-query
+                                                                                           wrap-run-query
+                                                                                           (update ::pc/mutate wrap-run-query))]})
+                                              (dissoc ::pc/register))
+                                          p/trace-plugin]})]
+     (fn [env tx]
+       (card-parser (assoc env ::client-parser client-parser) tx)))))
 
 (fm/defmutation run-query [_]
   (pathom-query-editor-remote [{:keys [ast state]}]
@@ -97,12 +104,12 @@
 
 (fp/defsc QueryEditor
   [this
-   {::keys                        [query result request-trace?]
-         :ui/keys                 [query-running?]
-         :com.wsscode.pathom/keys [trace]
-    ::pc/keys                     [indexes]}
+   {::keys                   [query result request-trace?]
+    :ui/keys                 [query-running?]
+    :com.wsscode.pathom/keys [trace]
+    ::pc/keys                [indexes]}
    {::keys [default-trace-size]
-    :or {default-trace-size 400}} css]
+    :or    {default-trace-size 400}} css]
   {:initial-state     (fn [_]
                         {::id             (random-uuid)
                          ::request-trace? true

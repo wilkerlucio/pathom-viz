@@ -1,5 +1,15 @@
 # Change Log
 
+## [1.0.3]
+- Fixes for prod releases in tracer
+- Improvements on error handlers
+- Increase pathom-card default size
+- Trace tooltip takes window scroll into account to position hint
+- Update query editor to latest pathom, support custom trace initial size
+- Add error boundary around trace component
+- Auto index load is configurable on workspaces pathom card
+- Support wrap-run-query on query editor to extend text
+
 ## [1.0.2]
 - Fix trace: don't log trace details when click to expand/contract groups
 - Add codemirror editor with pathom settings (from old OgE)
