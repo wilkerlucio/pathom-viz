@@ -102,7 +102,7 @@
       {:stroke "#e5e5e5"}]]
 
     [:$pathom-tooltip
-     {:position       "absolute"
+     {:position       "fixed"
       :pointer-events "none"
       :font-size      "12px"
       :font-family    "sans-serif"

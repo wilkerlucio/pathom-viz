@@ -16,8 +16,8 @@ function registerTooltip(nodes, labelF) {
 
       tooltipElement
         .html(labelF(d, this))
-        .style('left', window.scrollX + x + 'px')
-        .style('top', window.scrollY + y + 'px')
+        .style('left', x + 'px')
+        .style('top', y + 'px')
     })
     .on('mouseout.tooltip', _ => tooltipElement.style('visibility', 'hidden'))
 }
