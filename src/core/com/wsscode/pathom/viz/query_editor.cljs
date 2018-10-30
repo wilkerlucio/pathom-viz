@@ -194,11 +194,11 @@
           "Run query"))
 
       (dom/div :.query-row
-        (if (fp/get-state this :render?)
+        (when (fp/get-state this :render?)
           (cm/pathom {:className   (:editor css)
                       :style       {:width (str (or (fp/get-state this :query-width) 400) "px")}
                       :value       (or (str query) "")
-                      ::pc/indexes (p/elide-not-found indexes)
+                      ::pc/indexes (if (map? indexes) (p/elide-not-found indexes))
                       ::cm/options {::cm/extraKeys
                                     {"Cmd-Enter"   run-query
                                      "Ctrl-Enter"  run-query
