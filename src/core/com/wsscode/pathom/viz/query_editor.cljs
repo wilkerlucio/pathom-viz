@@ -108,7 +108,7 @@
     :ui/keys                 [query-running?]
     :com.wsscode.pathom/keys [trace]
     ::pc/keys                [indexes]}
-   {::keys [default-trace-size]
+   {::keys [default-trace-size editor-props]
     :or    {default-trace-size 400}} css]
   {:initial-state     (fn [_]
                         {::id             (random-uuid)
@@ -195,27 +195,31 @@
 
       (dom/div :.query-row
         (when (fp/get-state this :render?)
-          (cm/pathom {:className   (:editor css)
-                      :style       {:width (str (or (fp/get-state this :query-width) 400) "px")}
-                      :value       (or (str query) "")
-                      ::pc/indexes (if (map? indexes) (p/elide-not-found indexes))
-                      ::cm/options {::cm/extraKeys
-                                    {"Cmd-Enter"   run-query
-                                     "Ctrl-Enter"  run-query
-                                     "Shift-Enter" run-query
-                                     "Cmd-J"       "pathomJoin"
-                                     "Ctrl-Space"  "autocomplete"}}
-                      :onChange    #(fm/set-value! this ::query %)}))
+          (cm/pathom
+            (merge {:className   (:editor css)
+                    :style       {:width (str (or (fp/get-state this :query-width) 400) "px")}
+                    :value       (or (str query) "")
+                    ::pc/indexes (if (map? indexes) (p/elide-not-found indexes))
+                    ::cm/options {::cm/extraKeys
+                                  {"Cmd-Enter"   run-query
+                                   "Ctrl-Enter"  run-query
+                                   "Shift-Enter" run-query
+                                   "Cmd-J"       "pathomJoin"
+                                   "Ctrl-Space"  "autocomplete"}}
+                    :onChange    #(fm/set-value! this ::query %)}
+              editor-props)))
         (pvh/drag-resize this {:attribute :query-width
                                :axis      "x"
                                :default   400
                                :props     {:className (:divisor-v css)}}
           (dom/div))
         (if (fp/get-state this :render?)
-          (cm/clojure {:className   (:result css)
-                       :value       result
-                       ::cm/options {::cm/readOnly    true
-                                     ::cm/lineNumbers true}})))
+          (cm/clojure
+            (merge {:className   (:result css)
+                    :value       result
+                    ::cm/options {::cm/readOnly    true
+                                  ::cm/lineNumbers true}}
+              editor-props))))
       (if trace
         (pvh/drag-resize this {:attribute :trace-height
                                :default   default-trace-size

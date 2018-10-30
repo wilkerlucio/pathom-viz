@@ -77,18 +77,18 @@
                                       (js/setTimeout
                                         (fn []
                                           (gobj/set this "editorHold" false))
-                                        800))
+                                        300))
                                     (prop-call this :onChange (.getValue %))))
         (.setValue codemirror (-> this fp/props :value))
         (if process (process codemirror))
         (catch :default e (js/console.warn "Error setting up CodeMirror" e)))
       (gobj/set this "codemirror" codemirror)))
 
-  (componentWillReceiveProps [this {:keys     [value]
+  (componentWillReceiveProps [this {:keys     [value force-index-update?]
                                     ::pc/keys [indexes]}]
     (let [cm        (gobj/get this "codemirror")
           cur-index (gobj/getValueByKeys cm #js ["options" "pathomIndex"])]
-      (when (and cur-index (not= indexes @cur-index))
+      (when (and cur-index (or force-index-update? (not= indexes @cur-index)))
         (reset! pathom-cache {})
         (reset! cur-index indexes)
         (gobj/set (gobj/getValueByKeys cm #js ["options" "hintOptions"]) "hint" (partial autocomplete indexes)))
@@ -107,7 +107,7 @@
 
   (render [this]
     (let [props (fp/props this)]
-      (dom/div (-> props (dissoc :value :onChange) (html-props))
+      (dom/div (-> props (dissoc :value :onChange :force-index-update?) (html-props))
         (js/React.createElement "textarea"
           #js {:ref          #(gobj/set this "textNode" %)
                :defaultValue (:value props)})))))
