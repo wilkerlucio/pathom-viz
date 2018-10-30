@@ -1,5 +1,6 @@
 (ns com.wsscode.pathom.viz.helpers
   (:require ["react-draggable" :refer [DraggableCore]]
+            [cljs.pprint]
             [goog.object :as gobj]
             [fulcro.client.primitives :as fp]
             [fulcro.client.dom :as dom]))

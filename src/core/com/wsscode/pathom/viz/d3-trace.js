@@ -98,7 +98,7 @@ function applyDataStyles(selection) {
 function eventsOnMouse({xScale}, d, target) {
   const xv = xScale.invert(d3.mouse(target)[0]);
 
-  return details = d.data.details.filter(detail => {
+  return d.data.details.filter(detail => {
     if (xv < detail.rts) return false;
     if (xv > (detail.rts + (detail.duration || xScale.invert(1)))) return false;
 
