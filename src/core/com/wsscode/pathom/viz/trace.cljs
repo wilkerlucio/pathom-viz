@@ -78,7 +78,7 @@
      {:fill "#af9df4"}]
 
     [:$pathom-event-call-resolver-batch
-     {:fill "#2900cc"}]
+     {:fill "rgba(42, 0, 208, 0.5)"}]
 
     [:$pathom-event-schedule-resolver
      {:fill "#efaf42"}]
@@ -108,6 +108,7 @@
       :font-family    "sans-serif"
       :background     "#fff"
       :padding        "1px 6px"
+      :word-break     "break-all"
       :box-shadow     "#00000069 0px 1px 3px 0px"
       :white-space    "nowrap"
       :top            "-1000px"
