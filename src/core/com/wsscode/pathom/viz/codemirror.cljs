@@ -1,5 +1,6 @@
 (ns com.wsscode.pathom.viz.codemirror
   (:require [cljs.reader :refer [read-string]]
+            [com.wsscode.fuzzy :as fuzzy]
             [cljs.spec.alpha :as s]
             [clojure.string :as str]
             [cljsjs.codemirror]
@@ -193,6 +194,17 @@
         reg   (subs (.-string token) 0 (- ch (.-start token)))]
     (completions index token reg)))
 
+(defn fuzzy-match [blank? reg options]
+  (if blank?
+    (mapv str options)
+    (->> options
+         (map (comp #(hash-map ::fuzzy/string %) str))
+         (hash-map ::blank? blank?
+                   ::fuzzy/search-input reg
+                   ::fuzzy/options)
+         (fuzzy/fuzzy-match)
+         (map ::fuzzy/string))))
+
 (defn autocomplete [index cm options]
   (let [cur    (.getCursor cm)
         line   (.-line cur)
@@ -205,15 +217,13 @@
         words  (->> (cm-completions index cm) (mapv first))]
 
     (if words
-      (let [fuzzy (if blank? #".*" (fuzzy-re reg))]
-        #js {:list (->> words
-                        (remove (get index ::pc/autocomplete-ignore #{}))
-                        (map str)
-                        (filter #(re-find fuzzy %))
-                        sort
-                        clj->js)
-             :from start
-             :to   end}))))
+      #js {:list (->> words
+                      (remove (get index ::pc/autocomplete-ignore #{}))
+                      (fuzzy-match blank? reg)
+                      sort
+                      clj->js)
+           :from start
+           :to   end})))
 
 (defn def-cm-command [name f]
   (gobj/set (gobj/get js/CodeMirror "commands") name f))
