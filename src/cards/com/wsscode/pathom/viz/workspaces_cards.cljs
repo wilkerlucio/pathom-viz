@@ -7,30 +7,6 @@
             [nubank.workspaces.core :as ws]
             [com.wsscode.pathom.viz.workspaces :as pvw]))
 
-(def indexes (atom {}))
-
-(defmulti resolver-fn pc/resolver-dispatch)
-(def defresolver (pc/resolver-factory resolver-fn indexes))
-
-(defmulti mutation-fn pc/mutation-dispatch)
-(def defmutation (pc/mutation-factory mutation-fn indexes))
-
-(def parser
-  (p/parallel-parser {::p/env          (fn [env]
-                                         (merge
-                                           {::p/reader             [p/map-reader pc/parallel-reader pc/ident-reader]
-                                            ::pc/resolver-dispatch resolver-fn
-                                            ::pc/mutate-dispatch   mutation-fn
-                                            ::pc/indexes           @indexes}
-                                           env))
-                      ::pc/defresolver defresolver
-                      ::pc/defmutation defmutation
-                      ::p/mutate       pc/mutate-async
-                      ::p/plugins      [p/error-handler-plugin
-                                        p/request-cache-plugin
-                                        p/trace-plugin
-                                        pc/connect-plugin]}))
-
 (def email->name
   {"wilkerlucio@gmail.com" {:first-name "Wilker"
                             :last-name  "Silva"}
@@ -59,37 +35,50 @@
    "dull10@dall.com"       {:first-name "Hi 10"
                             :last-name  "Hey"}})
 
-(defresolver `email->name
-  {::pc/input  #{:email}
-   ::pc/output [:first-name :last-name]
-   ::pc/batch? true}
-  (pc/batch-resolver
-    (fn [_ {:keys [email]}]
-      (go
-        (<! (async/timeout 40))
-        (get email->name email)))
-    (fn [_ inputs]
-      (go
-        (<! (async/timeout 50))
-        (mapv #(get email->name (:email %)) inputs)))))
+(pc/defresolver email->name-resolver [_ _]
+  {::pc/input   #{:email}
+   ::pc/output  [:first-name :last-name]
+   ::pc/batch?  true
+   ::pc/resolve (pc/batch-resolver
+                  (fn [_ {:keys [email]}]
+                    (go
+                      (<! (async/timeout 40))
+                      (get email->name email)))
+                  (fn [_ inputs]
+                    (go
+                      (<! (async/timeout 50))
+                      (mapv #(get email->name (:email %)) inputs))))})
 
-(defresolver `full-name
+(pc/defresolver full-name-resolver [_ {:keys [first-name last-name]}]
   {::pc/input  #{:first-name :last-name}
    ::pc/output [:full-name]}
-  (fn [_ {:keys [first-name last-name]}]
-    {:full-name (str first-name " " last-name)}))
+  {:full-name (str first-name " " last-name)})
 
-(defresolver `wanted-emails
+(pc/defresolver wanted-emails-resolver [_ _]
   {::pc/output [{:wanted-emails [:email]}]}
-  (fn [_ _]
-    {:wanted-emails (mapv #(hash-map :email %) (keys email->name))}))
+  {:wanted-emails (mapv #(hash-map :email %) (keys email->name))})
 
-(defresolver `pi
+(pc/defresolver pi-resolver [_ _]
   {::pc/output [:pi]}
-  (fn [_ _]
-    (go
-      (<! (async/timeout 10))
-      {:pi js/Math.PI})))
+  (go
+    (<! (async/timeout 10))
+    {:pi js/Math.PI}))
+
+(def app-registry
+  [email->name-resolver full-name-resolver wanted-emails-resolver pi-resolver])
+
+(def parser
+  (p/parallel-parser
+    {::p/env     {::p/reader               [p/map-reader
+                                            pc/parallel-reader
+                                            pc/open-ident-reader
+                                            p/env-placeholder-reader]
+                  ::p/placeholder-prefixes #{">"}}
+     ::p/mutate  pc/mutate-async
+     ::p/plugins [(pc/connect-plugin {::pc/register app-registry})
+                  p/error-handler-plugin
+                  p/request-cache-plugin
+                  p/trace-plugin]}))
 
 (ws/defcard simple-parser-demo
   (pvw/pathom-card {::pvw/parser parser})

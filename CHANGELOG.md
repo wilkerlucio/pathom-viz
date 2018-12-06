@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.0.4]
+- Improved fuzzy search algoritm
+- Change style for batch resolver on trace
+
 ## [1.0.3]
 - Fixes for prod releases in tracer
 - Improvements on error handlers
