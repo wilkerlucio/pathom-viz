@@ -12,6 +12,6 @@
                 fulcrologic/fulcro        {:mvn/version "2.6.10"}}}
 
   :dev
-  {:extra-deps {nubank/workspaces          {:mvn/version "1.0.0-preview9"}
+  {:extra-deps {nubank/workspaces          {:mvn/version "1.0.1"}
                 fulcrologic/fulcro-inspect {:mvn/version "2.2.3"}
                 binaryage/devtools         {:mvn/version "0.9.10"}}}}}
