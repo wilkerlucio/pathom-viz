@@ -1,9 +1,9 @@
 {:deps   {:aliases [:provided :dev]}
  :nrepl  {:port 59122}
- :builds {:workspaces {:target     :browser
+ :builds {:workspaces {:target     nubank.workspaces.shadow-cljs.target
+                       :ns-regexp  "-(test|cards)$"
                        :output-dir "workspaces/assets/js"
                        :asset-path "/js"
                        :devtools   {:preloads  [devtools.preload fulcro.inspect.preload]
                                     :http-root "workspaces/assets"
-                                    :http-port 8086}
-                       :modules    {:main {:entries [com.wsscode.pathom.viz.workspaces-main]}}}}}
+                                    :http-port 8086}}}}
