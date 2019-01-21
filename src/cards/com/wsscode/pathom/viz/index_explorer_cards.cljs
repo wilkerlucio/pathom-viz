@@ -32,17 +32,20 @@
                   ::p.http/driver          p.http.fetch/request-async}
      ::p/mutate  pc/mutate-async
      ::p/plugins [(pc/connect-plugin {::pc/register [index-resolver]})
+                  (p/post-process-parser-plugin p/elide-not-found)
                   p/error-handler-plugin
                   p/request-cache-plugin
                   p/trace-plugin]}))
 
 (ws/defcard index-explorer
   {::wsm/align ::wsm/stretch-flex}
-  (ct.fulcro/fulcro-card
-    {::f.portal/root iex/IndexExplorer
-     ::f.portal/app  {:networking       (-> (p.network/pathom-remote parser)
-                                            (p.network/trace-remote))
-                      :started-callback (fn [app]
-                                          (df/load app ::sample-index iex/IndexExplorer
-                                            {:params {::iex/id (random-uuid)}
-                                             :target [:ui/root]}))}}))
+  (let [id (random-uuid)]
+    (ct.fulcro/fulcro-card
+      {::f.portal/root iex/IndexExplorer
+       ::f.portal/app  {:networking       (-> (p.network/pathom-remote parser)
+                                              (p.network/trace-remote))
+                        :initial-state    {::id id}
+                        :started-callback (fn [app]
+                                            (df/load app ::sample-index iex/IndexExplorer
+                                              {:params {::iex/id id}
+                                               :target [:ui/root]}))}})))
