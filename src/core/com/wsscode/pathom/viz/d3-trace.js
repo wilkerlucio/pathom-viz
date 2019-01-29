@@ -19,7 +19,7 @@ function registerTooltip(nodes, labelF) {
         .style('left', x + 'px')
         .style('top', y + 'px')
     })
-    .on('mouseout.tooltip', _ => tooltipElement.style('visibility', 'hidden'))
+    .on('mouseout.tooltip', () => tooltipElement.style('visibility', 'hidden'))
 }
 
 function renderRule(element, settings) {

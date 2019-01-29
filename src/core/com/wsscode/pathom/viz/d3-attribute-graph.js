@@ -20,9 +20,24 @@ export function render(element, data) {
 
   const {nodes, links} = settings.data
 
+  // const {nodes, links} = {
+  //   nodes: [
+  //     {attribute: "foo"},
+  //     {attribute: "bar"},
+  //     {attribute: "foo2"},
+  //     {attribute: "bar2"}
+  //   ],
+  //   links: [
+  //     {source: "foo", target: "bar"},
+  //     {source: "foo2", target: "bar2"},
+  //     {source: "bar2", target: "foo2"}
+  //   ]
+  // }
+
   const simulation = d3.forceSimulation(nodes)
-    .force("link", d3.forceLink(links).id(d => d.attribute))
-    .force("charge", d3.forceManyBody())
+    .force("link", d3.forceLink(links).id(d => d.attribute).distance(60).strength(1))
+    .force("charge", d3.forceManyBody().strength(-15))
+    // .force("charge", d3.forceManyBody())
     .force("center", d3.forceCenter(svgWidth / 2, svgHeight / 2))
 
   const link = svg.append("g")
@@ -57,14 +72,24 @@ export function render(element, data) {
       .on("end", dragended);
   }
 
+  const label = svg.append('text')
+    .attr('x', 10)
+    .attr('y', 30)
+    .html('Hello')
+
   const node = svg.append("g")
     .attr("stroke", "#fff")
     .attr("stroke-width", 1.5)
     .selectAll("circle")
     .data(nodes)
     .enter().append("circle")
-    .attr("r", 5)
+    .attr("r", d => Math.sqrt(d.weight || 1) + 2)
     .attr("fill", "#000")
+    // .enter().append("text")
+    // .attr("text-anchor", "middle")
+    // .html(d => d.attribute)
+    .on('click', d => console.log(d))
+    .on('mouseenter', d => label.html(d.attribute))
     .call(drag(simulation))
 
   node.append("title")

@@ -13,13 +13,17 @@
 
 ;; Views
 
-(defn attribute->node [{::pc/keys [attribute]}]
-  {:attribute (pr-str attribute)})
+(defn attribute->node [{::pc/keys [attribute] ::keys [attr-provides]}]
+  {:attribute (pr-str attribute)
+   :weight    (count attr-provides)})
 
 (defn compute-nodes-links [{::pc/keys [attribute]
                             ::keys    [attr-provides]
                             :as       props}]
-  {:nodes (mapv attribute->node (into [props] attr-provides))
+  {:nodes (let [[first & rest] (->> (into [props] attr-provides)
+                                    (map attribute->node)
+                                    (distinct))]
+            (concat [(assoc first :weight 5)] rest))
    :links (keep
             (fn [provided]
               (if (not= attribute (::pc/attribute provided))
@@ -27,17 +31,60 @@
                  :target (pr-str (::pc/attribute provided))}))
             attr-provides)})
 
+(defn merge-attr [a b]
+  (merge a b))
+
+(defn compute-nodes-links-all-extended [{::keys [attributes]}]
+  (let [all-attributes (volatile! {})
+        _              (doall
+                         (mapcat
+                           (fn [{::keys [attr-provides] :as attr}]
+                             (vswap! all-attributes #(merge-with merge-attr % {(::pc/attribute attr) attr}))
+                             (doall
+                               (keep
+                                 (fn [provided]
+                                   (vswap! all-attributes #(merge-with merge-attr % {(::pc/attribute provided) provided})))
+                                 attr-provides)))
+                           attributes))
+        attrs          (vals @all-attributes)]
+    ;(js/console.log "all attr" (sort (map (juxt ::pc/attribute (comp count ::attr-provides)) attrs)))
+    {:nodes (->> attrs
+                 (map attribute->node))
+     :links (mapcat
+              (fn [{::pc/keys [attribute] ::keys [attr-provides]}]
+                (keep
+                  (fn [provided]
+                    (if (not= attribute (::pc/attribute provided))
+                      {:source (pr-str attribute)
+                       :target (pr-str (::pc/attribute provided))}))
+                  attr-provides))
+              attrs)}))
+
+(defn compute-nodes-links-all [{::keys [attributes]}]
+  {:nodes (->> attributes
+               (map attribute->node)
+               (distinct))
+   :links (mapcat
+            (fn [{::pc/keys [attribute] ::keys [attr-provides]}]
+              (keep
+                (fn [provided]
+                  (if (not= attribute (::pc/attribute provided))
+                    {:source (pr-str attribute)
+                     :target (pr-str (::pc/attribute provided))}))
+                attr-provides))
+            attributes)})
+
 (defn render-attribute-graph [this]
   (let [{::keys [on-show-details] :as props} (-> this fp/props)
         container (gobj/get this "svgContainer")
         svg       (gobj/get this "svg")]
     (gobj/set svg "innerHTML" "")
-    (js/console.log (compute-nodes-links props))
+    (js/console.log (into [] (map (fn [[k v]] [k (count v)])) (compute-nodes-links-all-extended props)))
     (gobj/set this "renderedData"
       (d3attr/render svg
         (clj->js {:svgWidth    (gobj/get container "clientWidth")
                   :svgHeight   (gobj/get container "clientHeight")
-                  :data        (compute-nodes-links props)
+                  :data        (compute-nodes-links-all-extended props)
                   :showDetails (or on-show-details identity)})))))
 
 (fp/defsc AttributeGraph
@@ -144,10 +191,12 @@
                  [:.path {:margin-bottom "6px"}]
                  [:.graph {:height  "300px"
                            :display "flex"
-                           :border  "1px solid #000"}]]
+                           :border  "1px solid #000"}
+                  [:text {:font "bold 36px Verdana, Helvetica, Arial, sans-serif"}]]]
    :css-include [AttributeGraph]}
   (dom/div :.container
     (attribute-line-view header-view)
+    #_
     (dom/div :.graph
       (attribute-graph (select-keys props [::pc/attribute ::attr-provides])))
     (dom/div
@@ -346,7 +395,7 @@
                        (sort-by ::pc/sym)
                        vec)
      ; TODO remove me
-     :ui/page     {::pc/attribute :customer/id}}))
+     :ui/page     {::pc/attribute :customer/cpf}}))
 
 ;; Query
 
@@ -370,7 +419,7 @@
       :replace (conj ref :ui/page))))
 
 (fp/defsc IndexExplorer
-  [this {::keys   [index]
+  [this {::keys   [index attributes]
          :ui/keys [menu page]}]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
                      (merge
@@ -393,11 +442,17 @@
                     {::idents (fp/get-query AttributeIndex)}
                     {::resolvers (fp/get-query ResolverIndex)}
                     {:ui/page (fp/get-query MainViewUnion)}]
-   :css            [[:.container {:flex "1"}]]
+   :css            [[:.container {:flex "1"}]
+                    [:.graph {:height  "1000px"
+                              :display "flex"
+                              :border  "1px solid #000"}
+                     [:text {:font "bold 18px Verdana, Helvetica, Arial, sans-serif"}]]]
    :initLocalState (fn [] {:select-attribute #(fp/transact! this [`(navigate-to-attribute {::pc/attribute ~%})])
                            :select-resolver  #(fp/transact! this [`(navigate-to-resolver {::pc/sym ~%})])})}
   (dom/div :.container
     (search-everything menu {::on-select-attribute (fp/get-state this :select-attribute)})
+    (dom/div :.graph
+      (attribute-graph {::attributes attributes}))
     (if page
       (main-view-union page (assoc index
                               ::on-select-attribute (fp/get-state this :select-attribute)
