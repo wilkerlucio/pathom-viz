@@ -11,7 +11,8 @@
             [nubank.workspaces.card-types.fulcro :as ct.fulcro]
             [nubank.workspaces.core :as ws]
             [nubank.workspaces.lib.fulcro-portal :as f.portal]
-            [nubank.workspaces.model :as wsm]))
+            [nubank.workspaces.model :as wsm]
+            [fulcro.client.primitives :as fp]))
 
 (pc/defresolver index-resolver [env _]
   {::pc/output [::sample-index]}
@@ -49,3 +50,18 @@
                                             (df/load app ::sample-index iex/IndexExplorer
                                               {:params {::iex/id id}
                                                :target [:ui/root]}))}})))
+
+(fp/defsc AttributeGraphDemo
+  [this {::keys []}]
+  {:pre-merge     (fn [{:keys [current-normalized data-tree]}]
+                    (merge {:ui/id (random-uuid)} current-normalized data-tree))
+   :initial-state {}
+   :ident         [:ui/id :ui/id]
+   :query         [:ui/id]
+   :css-include   [iex/AttributeGraph]}
+  (iex/attribute-graph {::pc/attribute :customer/id}))
+
+(ws/defcard attribute-graph-card
+  {::wsm/card-width 4 ::wsm/card-height 12}
+  (ct.fulcro/fulcro-card
+    {::f.portal/root AttributeGraphDemo}))

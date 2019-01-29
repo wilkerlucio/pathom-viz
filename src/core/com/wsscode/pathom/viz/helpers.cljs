@@ -1,9 +1,33 @@
 (ns com.wsscode.pathom.viz.helpers
   (:require ["react-draggable" :refer [DraggableCore]]
-            [cljs.pprint]
-            [goog.object :as gobj]
+            [clojure.pprint]
+            [fulcro.client.dom :as dom]
             [fulcro.client.primitives :as fp]
-            [fulcro.client.dom :as dom]))
+            [goog.object :as gobj]
+            [clojure.walk :as walk]))
+
+(defn pd [f]
+  (fn [e]
+    (.preventDefault e)
+    (f e)))
+
+(defn stringify-keyword-values [x]
+  (walk/prewalk
+    (fn [x]
+      (cond
+        (simple-keyword? x)
+        (name x)
+
+        (keyword x)
+        (str x)
+
+        :else
+        x))
+    x))
+
+(defn pprint-str [x]
+  (with-out-str
+    (clojure.pprint/pprint x)))
 
 (defn drag-resize [this {:keys [attribute default axis props] :or {axis "y"}} child]
   (js/React.createElement DraggableCore

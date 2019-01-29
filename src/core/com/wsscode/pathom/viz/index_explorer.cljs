@@ -1,23 +1,72 @@
 (ns com.wsscode.pathom.viz.index-explorer
-  (:require [com.wsscode.pathom.connect :as pc]
+  (:require ["./d3-attribute-graph" :as d3attr]
+            ["./detect-element-size" :refer [addResizeListener]]
             [com.wsscode.fuzzy :as fuzzy]
-            [clojure.pprint]
+            [com.wsscode.pathom.connect :as pc]
+            [com.wsscode.pathom.core :as p]
+            [com.wsscode.pathom.viz.helpers :as h]
+            [goog.object :as gobj]
+            [edn-query-language.core :as eql]
             [fulcro.client.localized-dom :as dom]
             [fulcro.client.mutations :as fm]
-            [fulcro.client.primitives :as fp]
-            [edn-query-language.core :as eql]
-            [com.wsscode.pathom.core :as p]))
-
-(defn pd [f]
-  (fn [e]
-    (.preventDefault e)
-    (f e)))
-
-(defn pprint-str [x]
-  (with-out-str
-    (clojure.pprint/pprint x)))
+            [fulcro.client.primitives :as fp]))
 
 ;; Views
+
+(defn attribute->node [{::pc/keys [attribute]}]
+  {:attribute (pr-str attribute)})
+
+(defn compute-nodes-links [{::pc/keys [attribute]
+                            ::keys    [attr-provides]
+                            :as       props}]
+  {:nodes (mapv attribute->node (into [props] attr-provides))
+   :links (keep
+            (fn [provided]
+              (if (not= attribute (::pc/attribute provided))
+                {:source (pr-str attribute)
+                 :target (pr-str (::pc/attribute provided))}))
+            attr-provides)})
+
+(defn render-attribute-graph [this]
+  (let [{::keys [on-show-details] :as props} (-> this fp/props)
+        container (gobj/get this "svgContainer")
+        svg       (gobj/get this "svg")]
+    (gobj/set svg "innerHTML" "")
+    (js/console.log (compute-nodes-links props))
+    (gobj/set this "renderedData"
+      (d3attr/render svg
+        (clj->js {:svgWidth    (gobj/get container "clientWidth")
+                  :svgHeight   (gobj/get container "clientHeight")
+                  :data        (compute-nodes-links props)
+                  :showDetails (or on-show-details identity)})))))
+
+(fp/defsc AttributeGraph
+  [this {::keys []}]
+  {:css
+   [[:.container {:flex      1
+                  :max-width "100%"}]]
+
+   :componentDidMount
+   (fn []
+     (render-attribute-graph this)
+     #_(addResizeListener (gobj/get this "svgContainer") #(recompute-trace-size this)))
+
+   :componentDidUpdate
+   (fn [prev-props _]
+     #_(if (= (-> prev-props ::trace-data)
+              (-> this fp/props ::trace-data))
+         (recompute-trace-size this)
+         (render-trace this)))
+
+   :componentDidCatch
+   (fn [error info]
+     (fp/set-state! this {::error-catch? true}))}
+  (dom/div :.container {:ref #(gobj/set this "svgContainer" %)}
+    (if (fp/get-state this ::error-catch?)
+      (dom/div "Error rendering trace, check console for details")
+      (dom/svg {:ref #(gobj/set this "svg" %)}))))
+
+(def attribute-graph (fp/factory AttributeGraph))
 
 (fp/defsc AttributeLineView
   [this {::pc/keys    [attribute]
@@ -50,7 +99,7 @@
                          :text-align  "center"
                          :font-weight "bold"
                          :margin-left "5px"}]]}
-  (dom/div :.attribute {:onClick (pd #(on-select-attribute attribute))}
+  (dom/div :.attribute {:onClick (h/pd #(on-select-attribute attribute))}
     (dom/div :.link
       (cond-> {}
         (and highlight? match-hl)
@@ -69,30 +118,38 @@
     ::keys    [on-select-attribute]}
    attr]
   (if (contains? index-oir attr)
-    (dom/a {:href "#" :onClick (pd #(on-select-attribute attr))}
+    (dom/a {:href "#" :onClick (h/pd #(on-select-attribute attr))}
       (pr-str attr))
     (pr-str attr)))
 
 (fp/defsc AttributeView
-  [this {::pc/keys [attribute attribute-paths]
-         :>/keys [header-view]}
+  [this {::pc/keys [attribute-paths]
+         ::keys    [attr-provides]
+         :>/keys   [header-view]
+         :as       props}
    {::keys    [on-select-resolver]
-    ::pc/keys [index-io]
     :as       computed}]
-  {:pre-merge (fn [{:keys [current-normalized data-tree]}]
-                (merge
-                  {:>/header-view {::pc/attribute (or (::pc/attribute data-tree)
-                                                      (::pc/attribute current-normalized))}}
-                  current-normalized
-                  data-tree))
-   :ident     [::pc/attribute ::pc/attribute]
-   :query     [::pc/attribute ::pc/attribute-paths
-               {:>/header-view (fp/get-query AttributeLineView)}]
-   :css       [[:.container {:flex     "1"
-                             :overflow "auto"}]
-               [:.path {:margin-bottom "6px"}]]}
+  {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
+                  (merge
+                    {:>/header-view {::pc/attribute (or (::pc/attribute data-tree)
+                                                        (::pc/attribute current-normalized))}}
+                    current-normalized
+                    data-tree))
+   :ident       [::pc/attribute ::pc/attribute]
+   :query       [::pc/attribute ::pc/attribute-paths
+                 {::attr-provides [::pc/attribute]}
+                 {:>/header-view (fp/get-query AttributeLineView)}]
+   :css         [[:.container {:flex     "1"
+                               :overflow "auto"}]
+                 [:.path {:margin-bottom "6px"}]
+                 [:.graph {:height  "300px"
+                           :display "flex"
+                           :border  "1px solid #000"}]]
+   :css-include [AttributeGraph]}
   (dom/div :.container
     (attribute-line-view header-view)
+    (dom/div :.graph
+      (attribute-graph (select-keys props [::pc/attribute ::attr-provides])))
     (dom/div
       (for [[input resolvers] attribute-paths]
         (dom/div :.path {:key (pr-str input)}
@@ -106,15 +163,15 @@
             "#{"
             (for [sym resolvers]
               (dom/span {:key (pr-str sym)}
-                (dom/a {:href "#" :onClick (pd #(on-select-resolver sym))}
+                (dom/a {:href "#" :onClick (h/pd #(on-select-resolver sym))}
                   (pr-str sym))
                 ", "))
             "}"))))
     (dom/div
       (dom/div "Provides:")
-      (for [provided-attr (-> index-io (get #{attribute}) keys sort)]
-        (dom/div {:key (pr-str provided-attr)}
-          (attribute-link computed provided-attr))))))
+      (for [{::pc/keys [attribute]} attr-provides]
+        (dom/div {:key (pr-str attribute)}
+          (attribute-link computed attribute))))))
 
 (def attribute-view (fp/computed-factory AttributeView {:keyfn ::pc/attribute}))
 
@@ -148,7 +205,7 @@
   (dom/div :.container
     "Resolver: " (pr-str sym)
     (dom/div "Input: "
-      (dom/pre (pprint-str input)))
+      (dom/pre (h/pprint-str input)))
     (if output
       (dom/div "Output: "
         (for [ast (-> output eql/query->ast :children)]
@@ -192,7 +249,12 @@
    :ident          [::id ::id]
    :query          [::id ::text
                     {::search-results (fp/get-query AttributeLineView)}]
-   :css            [[:.input {:width "100%"}]]
+   :css            [[:.input {:display    "block"
+                              :padding    "4px"
+                              :outline    "none"
+                              :border     "1px solid #233339"
+                              :width      "100%"
+                              :box-sizing "border-box"}]]
    :initLocalState (fn [] {::on-select-attribute
                            (fn [attr]
                              (if-let [orig (-> this fp/props fp/get-computed ::on-select-attribute)]
@@ -260,13 +322,15 @@
 
 (def main-view-union (fp/computed-factory MainViewUnion {:keyfn #(or (::pc/attribute %) (::pc/sym %))}))
 
-(defn process-index [{::pc/keys [index-oir index-resolvers idents]}]
+(defn process-index [{::pc/keys [index-oir index-io index-resolvers idents]}]
   (let [attrs (->> index-oir
                    (reduce
                      (fn [attributes [attr paths]]
                        (update attributes attr merge
                          {::pc/attribute       attr
                           ::pc/attribute-paths paths
+                          ::attr-provides      (-> index-io (get #{attr}) keys sort
+                                                   (->> (mapv #(hash-map ::pc/attribute %))))
                           ::global-attribute?  (boolean (some (comp empty? first) paths))
                           ::ident-attribute?   (contains? idents attr)}))
                      {})
@@ -280,13 +344,16 @@
      ::resolvers  (->> index-resolvers
                        vals
                        (sort-by ::pc/sym)
-                       vec)}))
+                       vec)
+     ; TODO remove me
+     :ui/page     {::pc/attribute :customer/id}}))
 
 ;; Query
 
 (fp/defsc AttributeIndex [_ _]
   {:ident [::pc/attribute ::pc/attribute]
-   :query [::pc/attribute ::pc/attribute-paths]})
+   :query [::pc/attribute ::pc/attribute-paths
+           {::attr-provides 1}]})
 
 (fp/defsc ResolverIndex [_ _]
   {:ident [::pc/sym ::pc/sym]
