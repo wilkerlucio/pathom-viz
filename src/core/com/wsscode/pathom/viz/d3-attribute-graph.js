@@ -36,8 +36,8 @@ export function render(element, data) {
 
   const simulation = d3.forceSimulation(nodes)
     .force("link", d3.forceLink(links).id(d => d.attribute).distance(60).strength(1))
-    .force("charge", d3.forceManyBody().strength(-15))
-    // .force("charge", d3.forceManyBody())
+    // .force("charge", d3.forceManyBody().strength(-1))
+    .force("charge", d3.forceManyBody())
     .force("center", d3.forceCenter(svgWidth / 2, svgHeight / 2))
 
   const link = svg.append("g")
@@ -46,6 +46,7 @@ export function render(element, data) {
     .selectAll("line")
     .data(links)
     .enter().append("line")
+    .each(function (d) { d.ownerLine = d3.select(this)})
     .attr("stroke-width", d => 1);
 
   const drag = simulation => {
@@ -72,28 +73,67 @@ export function render(element, data) {
       .on("end", dragended);
   }
 
-  const label = svg.append('text')
-    .attr('x', 10)
-    .attr('y', 30)
-    .html('Hello')
+  let label
 
   const node = svg.append("g")
-    .attr("stroke", "#fff")
-    .attr("stroke-width", 1.5)
     .selectAll("circle")
     .data(nodes)
     .enter().append("circle")
+    .attr('class', 'pathom-viz-index-explorer-attr-node')
+    .attr("stroke-width", d => Math.sqrt(d.reach || 1) + 1)
     .attr("r", d => Math.sqrt(d.weight || 1) + 2)
-    .attr("fill", "#000")
     // .enter().append("text")
     // .attr("text-anchor", "middle")
     // .html(d => d.attribute)
-    .on('click', d => console.log(d))
-    .on('mouseenter', d => label.html(d.attribute))
+    .each(function(d) {
+      d.lineTargets = links.filter(l => {
+        return l.source.attribute === d.attribute;
+      });
+      d.lineSources = links.filter(l => {
+        return l.target.attribute === d.attribute;
+      });
+    })
+    .on('click', function(d) {
+      console.log(d, this)
+    })
+    .on('mouseenter', function(d) {
+      d3.select(this).attr('fill', '#f00')
+
+      d.lineTargets.forEach(line => {
+        line.ownerLine
+          .attr('stroke', '#0c0')
+          .attr('stroke-width', 3)
+      })
+
+      d.lineSources.forEach(line => {
+        line.ownerLine
+          .attr('stroke', '#cc1a9d')
+          .attr('stroke-width', 2)
+      })
+
+      return label.html(d.attribute)
+    })
+    .on('mouseleave', function(d) {
+      d3.select(this).attr('fill', '#000')
+
+      d.lineTargets.forEach(line => {
+        line.ownerLine
+          .attr('stroke', '#999')
+          .attr('stroke-width', 1)
+      })
+
+      d.lineSources.forEach(line => {
+        line.ownerLine
+          .attr('stroke', '#999')
+          .attr('stroke-width', 1)
+      })
+    })
     .call(drag(simulation))
 
-  node.append("title")
-    .text(d => d.id);
+  label = svg.append('text')
+    .attr('x', 10)
+    .attr('y', 30)
+    .html('Hello')
 
   simulation.on("tick", () => {
     link

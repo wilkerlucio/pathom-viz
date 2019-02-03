@@ -13,23 +13,35 @@
 
 ;; Views
 
-(defn attribute->node [{::pc/keys [attribute] ::keys [attr-provides]}]
+(defn attribute->node [{::pc/keys [attribute attr-provides attr-reach-via]}]
   {:attribute (pr-str attribute)
-   :weight    (count attr-provides)})
+   :weight    (count attr-provides)
+   :reach     (count attr-reach-via)})
 
-(defn compute-nodes-links [{::pc/keys [attribute]
-                            ::keys    [attr-provides]
-                            :as       props}]
-  {:nodes (let [[first & rest] (->> (into [props] attr-provides)
-                                    (map attribute->node)
-                                    (distinct))]
-            (concat [(assoc first :weight 5)] rest))
-   :links (keep
-            (fn [provided]
-              (if (not= attribute (::pc/attribute provided))
-                {:source (pr-str attribute)
-                 :target (pr-str (::pc/attribute provided))}))
-            attr-provides)})
+(defn compute-nodes-links [{::keys [attributes]}]
+  {:nodes (mapv attribute->node attributes)
+   :links (mapcat
+            (fn [{::pc/keys [attribute attr-provides attr-reach-via]}]
+              (let [attr-str (pr-str attribute)]
+                (let [res (-> []
+                              (into
+                                (map (fn [[provided]]
+                                       {:source attr-str
+                                        :target (pr-str provided)}))
+                                attr-provides)
+                              (into
+                                (keep (fn [[input]]
+                                        (cond
+                                          (empty? input)
+                                          {:source (pr-str input)
+                                           :target attr-str}
+
+                                          (= 1 (count input))
+                                          {:source (pr-str (first input))
+                                           :target attr-str})))
+                                attr-reach-via))]
+                  res)))
+            attributes)})
 
 (defn merge-attr [a b]
   (merge a b))
@@ -79,12 +91,12 @@
         container (gobj/get this "svgContainer")
         svg       (gobj/get this "svg")]
     (gobj/set svg "innerHTML" "")
-    (js/console.log (into [] (map (fn [[k v]] [k (count v)])) (compute-nodes-links-all-extended props)))
+    (js/console.log (into [] (map (fn [[k v]] [k (count v)])) (compute-nodes-links props)))
     (gobj/set this "renderedData"
       (d3attr/render svg
         (clj->js {:svgWidth    (gobj/get container "clientWidth")
                   :svgHeight   (gobj/get container "clientHeight")
-                  :data        (compute-nodes-links-all-extended props)
+                  :data        (compute-nodes-links props)
                   :showDetails (or on-show-details identity)})))))
 
 (fp/defsc AttributeGraph
@@ -279,8 +291,6 @@
       (swap! state fp/merge-component SearchEverything (into {::search-results (vec fuzzy-res)} [ref]))
       (swap! state update-in ref assoc ::text text))))
 
-(defn target-value [e] (.. e -target -value))
-
 (defn remove-not-found [x]
   (p/transduce-maps
     (remove (fn [[_ v]] (contains? #{::p/not-found ::fp/not-found} v)))
@@ -315,7 +325,7 @@
       (dom/input :.input
         {:type     "text"
          :value    text
-         :onChange #(fp/transact! this [`(search {::text ~(target-value %)})])}))
+         :onChange #(fp/transact! this [`(search {::text ~(h/target-value %)})])}))
     (if (seq search-results)
       (dom/div
         (for [item (take 20 search-results)]
@@ -371,21 +381,15 @@
 
 (def main-view-union (fp/computed-factory MainViewUnion {:keyfn #(or (::pc/attribute %) (::pc/sym %))}))
 
-(defn process-index [{::pc/keys [index-oir index-io index-resolvers idents]}]
-  (let [attrs (->> index-oir
-                   (reduce
-                     (fn [attributes [attr paths]]
-                       (update attributes attr merge
-                         {::pc/attribute       attr
-                          ::pc/attribute-paths paths
-                          ::attr-provides      (-> index-io (get #{attr}) keys sort
-                                                   (->> (mapv #(hash-map ::pc/attribute %))))
-                          ::global-attribute?  (boolean (some (comp empty? first) paths))
-                          ::ident-attribute?   (contains? idents attr)}))
-                     {})
-                   (vals)
-                   (sort-by ::pc/attribute)
-                   vec)]
+(defn process-index [{::pc/keys [index-resolvers idents index-attributes]}]
+  (let [attrs (->> index-attributes
+                   (map (fn [[attr {::pc/keys [attr-reach-via] :as data}]]
+                          (assoc data
+                            ::pc/attribute attr
+                            ::global-attribute? (contains? attr-reach-via #{})
+                            ::ident-attribute? (contains? idents attr))))
+                   (sort-by (comp pr-str ::pc/attribute))
+                   (vec))]
     {::attributes attrs
      ::globals    (filterv ::global-attribute? attrs)
      ::idents     (filterv ::ident-attribute? attrs)
@@ -401,8 +405,7 @@
 
 (fp/defsc AttributeIndex [_ _]
   {:ident [::pc/attribute ::pc/attribute]
-   :query [::pc/attribute ::pc/attribute-paths
-           {::attr-provides 1}]})
+   :query [::pc/attribute ::pc/attribute-paths ::pc/attr-provides ::pc/attr-reach-via]})
 
 (fp/defsc ResolverIndex [_ _]
   {:ident [::pc/sym ::pc/sym]
@@ -446,6 +449,9 @@
                     [:.graph {:height  "1000px"
                               :display "flex"
                               :border  "1px solid #000"}
+                     [:$pathom-viz-index-explorer-attr-node
+                      {:stroke "#f34545b3"
+                       :fill "#000A"}]
                      [:text {:font "bold 18px Verdana, Helvetica, Arial, sans-serif"}]]]
    :initLocalState (fn [] {:select-attribute #(fp/transact! this [`(navigate-to-attribute {::pc/attribute ~%})])
                            :select-resolver  #(fp/transact! this [`(navigate-to-resolver {::pc/sym ~%})])})}

@@ -11,6 +11,8 @@
     (.preventDefault e)
     (f e)))
 
+(defn target-value [e] (gobj/getValueByKeys e "target" "value"))
+
 (defn stringify-keyword-values [x]
   (walk/prewalk
     (fn [x]
