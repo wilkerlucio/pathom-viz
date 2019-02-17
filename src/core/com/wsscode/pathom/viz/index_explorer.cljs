@@ -14,8 +14,9 @@
 ;; Views
 
 (defn attribute->node [{::pc/keys [attribute]
-                        ::keys    [weight reach]}]
+                        ::keys    [weight reach center?]}]
   {:attribute (pr-str attribute)
+   :mainNode  center?
    :weight    weight
    :reach     reach})
 
@@ -89,7 +90,9 @@
                   :max-width "100%"}
      [:$pathom-viz-index-explorer-attr-node
       {:stroke "#f34545b3"
-       :fill   "#000A"}]
+       :fill   "#000A"}
+      [:&$pathom-viz-index-explorer-attr-node-main
+       {:fill "#f9e943e3"}]]
      [:$pathom-viz-index-explorer-attr-link
       {:stroke         "#999"
        :stroke-opacity "0.6"
@@ -239,7 +242,9 @@
           (keys attr-provides))))))
 
 (defn attribute-network [options source]
-  (vals (attribute-network* options source)))
+  (-> (attribute-network* options source)
+      (update source assoc ::center? true)
+      (vals)))
 
 (defn attr-provides-key-root [x]
   (if (vector? x) (first x) x))

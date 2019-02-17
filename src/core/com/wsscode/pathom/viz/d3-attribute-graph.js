@@ -141,6 +141,8 @@ export function render(element, data) {
     .each(function(d) {
       d.nodeElement = d3.select(this)
 
+      if (d.mainNode) d.nodeElement.attr('class', 'pathom-viz-index-explorer-attr-node pathom-viz-index-explorer-attr-node-main')
+
       d.lineTargets = links.filter(l => {
         return l.source.attribute === d.attribute;
       });
