@@ -19,8 +19,9 @@
    :weight    weight
    :reach     reach})
 
-(defn single-input? [input]
-  (and (set? input) (= 1 (count input))))
+(defn single-input [input]
+  (let [input (if (vector? input) (first input) input)]
+    (and (= 1 (count input)) (first input))))
 
 (defn global-input? [input]
   (and (set? input) (empty? input)))
@@ -51,9 +52,10 @@
                                                 {:source (pr-str input)
                                                  :target attr-str}
 
-                                            (and (single-input? input)
-                                                 (contains? index (first input)))
-                                            {:source (pr-str (first input))
+                                            (and (single-input input)
+                                                 (contains? index (single-input input)))
+                                            {:source (pr-str (single-input input))
+                                             :deep   (vector? input)
                                              :target attr-str})))
                                   attr-reach-via))]
                     res)))
@@ -120,7 +122,8 @@
   [this {::pc/keys    [attribute]
          ::fuzzy/keys [match-hl]
          ::keys       [global-attribute? ident-attribute?]}
-   {::keys [on-select-attribute highlight?]}]
+   {::keys [on-select-attribute highlight?]
+    :or    {on-select-attribute identity}}]
   {:pre-merge (fn [{:keys [current-normalized data-tree]}]
                 (merge {} current-normalized data-tree))
    :ident     [::pc/attribute ::pc/attribute]
@@ -175,9 +178,10 @@
 
 (defn attribute-network*
   [{::keys [attr-depth attributes sub-index attr-index attr-visited
-            direct-reaches? direct-provides? nested-provides?]
+            direct-reaches? nested-reaches? direct-provides? nested-provides?]
     :or    {attr-depth       1
-            direct-reaches? true
+            direct-reaches?  true
+            nested-reaches?  false
             direct-provides? true
             nested-provides? false
             sub-index        {}
@@ -185,17 +189,19 @@
     :as    options} source]
   (if (contains? attr-visited source)
     sub-index
-    (let [index    (h/index-by ::pc/attribute attributes)
+    (let [index    (or attr-index (h/index-by ::pc/attribute attributes))
           base     (merge sub-index (select-keys index [source]))
           {::pc/keys [attr-reach-via attr-provides]} (get index source)
-          options' (assoc options ::attr-index (or attr-index index)
+          options' (assoc options ::attr-index index
                                   ::attr-depth (dec attr-depth)
                                   ::attr-visited (conj attr-visited source))]
       (as-> base <>
+        ; reach
         (reduce
           (fn [out input]
-            (if (and direct-reaches? (single-input? input))
-              (let [attr (first input)]
+            (if (or (and direct-reaches? (set? input) (single-input input))
+                    (and nested-reaches? (vector? input) (single-input input)))
+              (let [attr (single-input input)]
                 (if (> attr-depth 1)
                   (attribute-network*
                     (assoc options' ::sub-index out)
@@ -204,6 +210,7 @@
               out))
           <>
           (keys attr-reach-via))
+        ; provides
         (reduce
           (fn [out attr]
             (cond
@@ -216,7 +223,7 @@
 
               (and nested-provides? (vector? attr))
               (let [attr (peek attr)]
-                    (update out attr merge (simple-attr index attr)))
+                (update out attr merge (simple-attr index attr)))
 
               :else
               out))
@@ -226,33 +233,38 @@
 (defn attribute-network [options source]
   (vals (attribute-network* options source)))
 
+(defn attr-provides-key-root [x]
+  (if (vector? x) (first x) x))
+
 (fp/defsc AttributeView
-  [this {::pc/keys [attribute-paths attribute]
-         ::keys    [attr-provides attr-depth direct-reaches? direct-provides? nested-provides?]
-         :>/keys   [header-view]
-         :as       props}
+  [this {::pc/keys [attribute-paths attribute attr-provides]
+         ::keys    [attr-depth direct-reaches? nested-reaches? direct-provides? nested-provides?]
+         :>/keys   [header-view]}
    {::keys [on-select-resolver on-select-attribute attributes]
     :as    computed}]
   {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
                   (merge
                     {::attr-depth       1
                      ::direct-reaches?  true
+                     ::nested-reaches?  false
                      ::direct-provides? true
                      ::nested-provides? false
                      :>/header-view     {::pc/attribute (or (::pc/attribute data-tree)
-                                                        (::pc/attribute current-normalized))}}
+                                                            (::pc/attribute current-normalized))}}
                     current-normalized
                     data-tree))
    :ident       [::pc/attribute ::pc/attribute]
-   :query       [::pc/attribute ::pc/attribute-paths ::attr-depth ::direct-reaches?
-                 ::direct-provides? ::nested-provides?
+   :query       [::pc/attribute ::pc/attribute-paths ::attr-depth ::direct-reaches? ::nested-reaches?
+                 ::direct-provides? ::nested-provides? ::pc/attr-provides
                  {::attr-provides [::pc/attribute]}
                  {:>/header-view (fp/get-query AttributeLineView)}]
-   :css         [[:.container {:flex     "1"
-                               :overflow "auto"}]
-                 [:.toolbar {:display "grid"
-                             :grid-template-columns "repeat(4, max-content)"
-                             :grid-gap "10px"}]
+   :css         [[:.container {:flex "1"}]
+                 [:.toolbar {:display               "grid"
+                             :grid-template-columns "repeat(5, max-content)"
+                             :grid-gap              "10px"}]
+                 [:.data-list {:white-space  "nowrap"
+                               :border-right "1px solid #000"
+                               :overflow     "auto"}]
                  [:.path {:margin-bottom "6px"}]
                  [:.graph {:height  "500px"
                            :display "flex"
@@ -271,6 +283,10 @@
                     :onChange #(fm/set-value! this ::direct-reaches? (gobj/getValueByKeys % "target" "checked"))})
         "Direct inputs")
       (dom/label
+        (dom/input {:type     "checkbox" :checked nested-reaches?
+                    :onChange #(fm/set-value! this ::nested-reaches? (gobj/getValueByKeys % "target" "checked"))})
+        "Nested inputs")
+      (dom/label
         (dom/input {:type     "checkbox" :checked direct-provides?
                     :onChange #(fm/set-value! this ::direct-provides? (gobj/getValueByKeys % "target" "checked"))})
         "Direct outputs")
@@ -278,13 +294,22 @@
         (dom/input {:type     "checkbox" :checked nested-provides?
                     :onChange #(fm/set-value! this ::nested-provides? (gobj/getValueByKeys % "target" "checked"))})
         "Nested outputs"))
-    (dom/div :.graph
-      (attribute-graph {::attributes      (attribute-network {::attr-depth       attr-depth
-                                                              ::attributes       attributes
-                                                              ::direct-reaches?  direct-reaches?
-                                                              ::direct-provides? direct-provides?
-                                                              ::nested-provides? nested-provides?} attribute)
-                        ::on-show-details on-select-attribute}))
+    (let [index (h/index-by ::pc/attribute attributes)]
+      (dom/div :.graph
+        (dom/div :.data-list
+          (for [[k v] (->> (group-by (comp attr-provides-key-root first) attr-provides)
+                           (sort-by (comp attr-provides-key-root first)))]
+            (dom/div {:key (pr-str k)}
+              (dom/div (pr-str k))
+              #_(dom/div (pr-str (into #{} (mapcat second) v))))))
+        (attribute-graph {::attributes      (attribute-network {::attr-depth       attr-depth
+                                                                ::attr-index       index
+                                                                ::attributes       attributes
+                                                                ::direct-reaches?  direct-reaches?
+                                                                ::nested-reaches?  nested-reaches?
+                                                                ::direct-provides? direct-provides?
+                                                                ::nested-provides? nested-provides?} attribute)
+                          ::on-show-details on-select-attribute})))
     (dom/div
       (for [[input resolvers] attribute-paths]
         (dom/div :.path {:key (pr-str input)}
@@ -302,6 +327,7 @@
                   (pr-str sym))
                 ", "))
             "}"))))
+    #_
     (dom/div
       (dom/div "Provides:")
       (for [{::pc/keys [attribute]} attr-provides]
