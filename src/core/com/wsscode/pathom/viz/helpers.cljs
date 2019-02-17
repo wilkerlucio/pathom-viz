@@ -53,3 +53,11 @@
 
 (defn map-vals [f m]
   (into {} (fn [[k v]] [k (f v)]) m))
+
+(defn index-by [f coll]
+  (persistent!
+    (reduce
+      (fn [ret x]
+        (let [k (f x)]
+          (assoc! ret k x)))
+      (transient {}) coll)))

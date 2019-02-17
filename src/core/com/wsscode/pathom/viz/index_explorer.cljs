@@ -13,83 +13,60 @@
 
 ;; Views
 
-(defn attribute->node [{::pc/keys [attribute attr-provides attr-reach-via]}]
+(defn attribute->node [{::pc/keys [attribute]
+                        ::keys    [weight reach]}]
   {:attribute (pr-str attribute)
-   :weight    (count attr-provides)
-   :reach     (count attr-reach-via)})
+   :weight    weight
+   :reach     reach})
+
+(defn single-input? [input]
+  (and (set? input) (= 1 (count input))))
+
+(defn global-input? [input]
+  (and (set? input) (empty? input)))
 
 (defn compute-nodes-links [{::keys [attributes]}]
-  {:nodes (mapv attribute->node attributes)
-   :links (mapcat
-            (fn [{::pc/keys [attribute attr-provides attr-reach-via]}]
-              (let [attr-str (pr-str attribute)]
-                (let [res (-> []
-                              (into
-                                (map (fn [[provided]]
-                                       {:source attr-str
-                                        :target (pr-str provided)}))
-                                attr-provides)
-                              (into
-                                (keep (fn [[input]]
-                                        (cond
-                                          (empty? input)
-                                          {:source (pr-str input)
-                                           :target attr-str}
+  (let [index       (h/index-by ::pc/attribute attributes)
+        attributes' (filter (comp #(or (keyword? %) (= % #{})) ::pc/attribute) attributes)]
+    {:nodes (mapv attribute->node attributes')
+     :links (mapcat
+              (fn [{::pc/keys [attribute attr-provides attr-reach-via]}]
+                (let [attr-str (pr-str attribute)]
+                  (let [res (-> []
+                                (into
+                                  (keep (fn [[provided]]
+                                          (if (vector? provided)
+                                            (when (contains? index (peek provided))
+                                              {:source attr-str
+                                               :deep   true
+                                               :target (pr-str (peek provided))})
+                                            (when (contains? index provided)
+                                              {:source attr-str
+                                               :target (pr-str provided)}))))
+                                  attr-provides)
+                                (into
+                                  (keep (fn [[input]]
+                                          (cond
+                                            #_#_(global-input? input)
+                                                {:source (pr-str input)
+                                                 :target attr-str}
 
-                                          (= 1 (count input))
-                                          {:source (pr-str (first input))
-                                           :target attr-str})))
-                                attr-reach-via))]
-                  res)))
-            attributes)})
+                                            (and (single-input? input)
+                                                 (contains? index (first input)))
+                                            {:source (pr-str (first input))
+                                             :target attr-str})))
+                                  attr-reach-via))]
+                    res)))
+              attributes')}))
 
 (defn merge-attr [a b]
   (merge a b))
 
-(defn compute-nodes-links-all-extended [{::keys [attributes]}]
-  (let [all-attributes (volatile! {})
-        _              (doall
-                         (mapcat
-                           (fn [{::keys [attr-provides] :as attr}]
-                             (vswap! all-attributes #(merge-with merge-attr % {(::pc/attribute attr) attr}))
-                             (doall
-                               (keep
-                                 (fn [provided]
-                                   (vswap! all-attributes #(merge-with merge-attr % {(::pc/attribute provided) provided})))
-                                 attr-provides)))
-                           attributes))
-        attrs          (vals @all-attributes)]
-    ;(js/console.log "all attr" (sort (map (juxt ::pc/attribute (comp count ::attr-provides)) attrs)))
-    {:nodes (->> attrs
-                 (map attribute->node))
-     :links (mapcat
-              (fn [{::pc/keys [attribute] ::keys [attr-provides]}]
-                (keep
-                  (fn [provided]
-                    (if (not= attribute (::pc/attribute provided))
-                      {:source (pr-str attribute)
-                       :target (pr-str (::pc/attribute provided))}))
-                  attr-provides))
-              attrs)}))
-
-(defn compute-nodes-links-all [{::keys [attributes]}]
-  {:nodes (->> attributes
-               (map attribute->node)
-               (distinct))
-   :links (mapcat
-            (fn [{::pc/keys [attribute] ::keys [attr-provides]}]
-              (keep
-                (fn [provided]
-                  (if (not= attribute (::pc/attribute provided))
-                    {:source (pr-str attribute)
-                     :target (pr-str (::pc/attribute provided))}))
-                attr-provides))
-            attributes)})
-
 (defn render-attribute-graph [this]
   (let [{::keys [on-show-details] :as props} (-> this fp/props)
-        container (gobj/get this "svgContainer")
-        svg       (gobj/get this "svg")]
+        on-show-details (or on-show-details identity)
+        container       (gobj/get this "svgContainer")
+        svg             (gobj/get this "svg")]
     (gobj/set svg "innerHTML" "")
     (js/console.log (into [] (map (fn [[k v]] [k (count v)])) (compute-nodes-links props)))
     (gobj/set this "renderedData"
@@ -97,13 +74,27 @@
         (clj->js {:svgWidth    (gobj/get container "clientWidth")
                   :svgHeight   (gobj/get container "clientHeight")
                   :data        (compute-nodes-links props)
-                  :showDetails (or on-show-details identity)})))))
+                  :showDetails (fn [attr d js]
+                                 (on-show-details (keyword (subs attr 1)) d js))})))))
 
 (fp/defsc AttributeGraph
   [this {::keys []}]
   {:css
    [[:.container {:flex      1
-                  :max-width "100%"}]]
+                  :max-width "100%"}
+     [:$pathom-viz-index-explorer-attr-node
+      {:stroke "#f34545b3"
+       :fill   "#000A"}]
+     [:$pathom-viz-index-explorer-attr-link
+      {:stroke         "#999"
+       :stroke-opacity "0.6"
+       :stroke-width   "1px"}]
+     [:$pathom-viz-index-explorer-attr-link-indirect
+      {:stroke           "#999"
+       :stroke-opacity   "0.6"
+       :stroke-width     "1px"
+       :stroke-dasharray "3px"}]
+     [:text {:font "bold 18px Verdana, Helvetica, Arial, sans-serif"}]]]
 
    :componentDidMount
    (fn []
@@ -181,13 +172,46 @@
       (pr-str attr))
     (pr-str attr)))
 
+(defn simple-attr [index attr]
+  (-> index (get attr)))
+
+(defn attribute-network [attributes source]
+  (let [index (h/index-by ::pc/attribute attributes)
+        base  (select-keys index [source])
+        {::pc/keys [attr-reach-via attr-provides]} (get index source)]
+    (as-> base <>
+      (reduce
+        (fn [out input]
+          (if (single-input? input)
+            (let [attr (first input)]
+              (update out attr merge (simple-attr index attr)))
+            out))
+        <>
+        (keys attr-reach-via))
+      (reduce
+        (fn [out attr]
+          (cond
+            (keyword? attr)
+            (update out attr merge (simple-attr index attr))
+
+            #_ #_
+            (vector? attr)
+                (let [attr (peek attr)]
+                  (update out attr merge (simple-attr index attr)))
+
+            :else
+            out))
+        <>
+        (keys attr-provides))
+      (vals <>))))
+
 (fp/defsc AttributeView
-  [this {::pc/keys [attribute-paths]
+  [this {::pc/keys [attribute-paths attribute]
          ::keys    [attr-provides]
          :>/keys   [header-view]
          :as       props}
-   {::keys    [on-select-resolver]
-    :as       computed}]
+   {::keys [on-select-resolver on-select-attribute attributes]
+    :as    computed}]
   {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
                   (merge
                     {:>/header-view {::pc/attribute (or (::pc/attribute data-tree)
@@ -201,16 +225,16 @@
    :css         [[:.container {:flex     "1"
                                :overflow "auto"}]
                  [:.path {:margin-bottom "6px"}]
-                 [:.graph {:height  "300px"
+                 [:.graph {:height  "500px"
                            :display "flex"
                            :border  "1px solid #000"}
-                  [:text {:font "bold 36px Verdana, Helvetica, Arial, sans-serif"}]]]
+                  [:text {:font "bold 16px Verdana, Helvetica, Arial, sans-serif"}]]]
    :css-include [AttributeGraph]}
   (dom/div :.container
     (attribute-line-view header-view)
-    #_
     (dom/div :.graph
-      (attribute-graph (select-keys props [::pc/attribute ::attr-provides])))
+      (attribute-graph {::attributes      (attribute-network attributes attribute)
+                        ::on-show-details on-select-attribute}))
     (dom/div
       (for [[input resolvers] attribute-paths]
         (dom/div :.path {:key (pr-str input)}
@@ -383,8 +407,10 @@
 
 (defn process-index [{::pc/keys [index-resolvers idents index-attributes]}]
   (let [attrs (->> index-attributes
-                   (map (fn [[attr {::pc/keys [attr-reach-via] :as data}]]
+                   (map (fn [[attr {::pc/keys [attr-reach-via attr-provides] :as data}]]
                           (assoc data
+                            ::weight (count attr-provides)
+                            ::reach (count attr-reach-via)
                             ::pc/attribute attr
                             ::global-attribute? (contains? attr-reach-via #{})
                             ::ident-attribute? (contains? idents attr))))
@@ -405,7 +431,8 @@
 
 (fp/defsc AttributeIndex [_ _]
   {:ident [::pc/attribute ::pc/attribute]
-   :query [::pc/attribute ::pc/attribute-paths ::pc/attr-provides ::pc/attr-reach-via]})
+   :query [::pc/attribute ::pc/attribute-paths ::pc/attr-provides ::pc/attr-reach-via
+           ::pc/attr-combinations ::weight ::reach]})
 
 (fp/defsc ResolverIndex [_ _]
   {:ident [::pc/sym ::pc/sym]
@@ -446,22 +473,20 @@
                     {::resolvers (fp/get-query ResolverIndex)}
                     {:ui/page (fp/get-query MainViewUnion)}]
    :css            [[:.container {:flex "1"}]
-                    [:.graph {:height  "1000px"
+                    [:.graph {:height  "800px"
                               :display "flex"
-                              :border  "1px solid #000"}
-                     [:$pathom-viz-index-explorer-attr-node
-                      {:stroke "#f34545b3"
-                       :fill "#000A"}]
-                     [:text {:font "bold 18px Verdana, Helvetica, Arial, sans-serif"}]]]
+                              :border  "1px solid #000"}]]
    :initLocalState (fn [] {:select-attribute #(fp/transact! this [`(navigate-to-attribute {::pc/attribute ~%})])
                            :select-resolver  #(fp/transact! this [`(navigate-to-resolver {::pc/sym ~%})])})}
   (dom/div :.container
     (search-everything menu {::on-select-attribute (fp/get-state this :select-attribute)})
-    (dom/div :.graph
-      (attribute-graph {::attributes attributes}))
     (if page
       (main-view-union page (assoc index
+                              ::attributes attributes
                               ::on-select-attribute (fp/get-state this :select-attribute)
-                              ::on-select-resolver (fp/get-state this :select-resolver))))))
+                              ::on-select-resolver (fp/get-state this :select-resolver))))
+
+    #_(dom/div :.graph
+        (attribute-graph {::attributes attributes}))))
 
 (def index-explorer (fp/factory IndexExplorer))
