@@ -302,7 +302,8 @@
           (for [[k v] (->> (group-by (comp attr-provides-key-root first) attr-provides)
                            (sort-by (comp attr-provides-key-root first)))]
             (dom/div {:key (pr-str k)}
-              (dom/div {:onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
+              (dom/div {:onClick      #(on-select-attribute k)
+                        :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
                                         ((gobj/get settings "highlightNode") (str k)))
                         :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
                                          ((gobj/get settings "unhighlightNode") (str k)))}
