@@ -174,10 +174,11 @@
   (-> index (get attr)))
 
 (defn attribute-network*
-  [{::keys [attr-depth attributes sub-index attr-index attr-visited]
-    :or    {attr-depth   1
-            sub-index    {}
-            attr-visited #{}}
+  [{::keys [attr-depth attributes sub-index attr-index attr-visited nested-links?]
+    :or    {attr-depth    1
+            nested-links? false
+            sub-index     {}
+            attr-visited  #{}}
     :as    options} source]
   (if (contains? attr-visited source)
     sub-index
@@ -210,8 +211,8 @@
                   attr)
                 (update out attr merge (simple-attr index attr)))
 
-              #_#_(vector? attr)
-                  (let [attr (peek attr)]
+              (and nested-links? (vector? attr))
+              (let [attr (peek attr)]
                     (update out attr merge (simple-attr index attr)))
 
               :else
@@ -224,20 +225,21 @@
 
 (fp/defsc AttributeView
   [this {::pc/keys [attribute-paths attribute]
-         ::keys    [attr-provides attr-depth]
+         ::keys    [attr-provides attr-depth nested-links?]
          :>/keys   [header-view]
          :as       props}
    {::keys [on-select-resolver on-select-attribute attributes]
     :as    computed}]
   {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
                   (merge
-                    {::attr-depth   1
-                     :>/header-view {::pc/attribute (or (::pc/attribute data-tree)
+                    {::attr-depth    1
+                     ::nested-links? false
+                     :>/header-view  {::pc/attribute (or (::pc/attribute data-tree)
                                                         (::pc/attribute current-normalized))}}
                     current-normalized
                     data-tree))
    :ident       [::pc/attribute ::pc/attribute]
-   :query       [::pc/attribute ::pc/attribute-paths ::attr-depth
+   :query       [::pc/attribute ::pc/attribute-paths ::attr-depth ::nested-links?
                  {::attr-provides [::pc/attribute]}
                  {:>/header-view (fp/get-query AttributeLineView)}]
    :css         [[:.container {:flex     "1"
@@ -253,9 +255,12 @@
     (do (def *attributes attributes) nil)
     (dom/input {:type     "number" :min 1 :max 5 :value attr-depth
                 :onChange #(fm/set-integer! this ::attr-depth :event %)})
+    (dom/input {:type     "checkbox" :checked nested-links?
+                :onChange #(fm/set-value! this ::nested-links? (gobj/getValueByKeys % "target" "checked"))})
     (dom/div :.graph
-      (attribute-graph {::attributes      (attribute-network {::attr-depth attr-depth
-                                                              ::attributes attributes} attribute)
+      (attribute-graph {::attributes      (attribute-network {::attr-depth    attr-depth
+                                                              ::attributes    attributes
+                                                              ::nested-links? nested-links?} attribute)
                         ::on-show-details on-select-attribute}))
     (dom/div
       (for [[input resolvers] attribute-paths]
