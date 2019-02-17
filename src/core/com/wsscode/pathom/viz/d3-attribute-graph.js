@@ -113,7 +113,7 @@ export function render(element, data) {
         .style('stroke-width', '')
     })
 
-    return label.html(d.attribute)
+    return label.html('')
   }
 
   settings.highlightNode = function (id) {
