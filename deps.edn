@@ -10,7 +10,7 @@
                 org.clojure/clojurescript    {:mvn/version "1.10.439"}
                 com.wsscode/pathom           {:mvn/version "2.2.7"}
                 fulcrologic/fulcro           {:mvn/version "2.8.0"}
-                fulcrologic/fulcro-incubator {:mvn/version "0.0.27"}}}
+                fulcrologic/fulcro-incubator {:mvn/version "0.0.28"}}}
 
   :dev
   {:extra-deps {nubank/workspaces          {:mvn/version "1.0.4"}
