@@ -175,7 +175,7 @@
 
 (defn attribute-network*
   [{::keys [attr-depth attributes sub-index attr-index attr-visited]
-    :or    {attr-depth   0
+    :or    {attr-depth   1
             sub-index    {}
             attr-visited #{}}
     :as    options} source]
@@ -192,7 +192,7 @@
           (fn [out input]
             (if (single-input? input)
               (let [attr (first input)]
-                (if (pos-int? attr-depth)
+                (if (> attr-depth 1)
                   (attribute-network*
                     (assoc options' ::sub-index out)
                     attr)
@@ -204,7 +204,7 @@
           (fn [out attr]
             (cond
               (keyword? attr)
-              (if (pos-int? attr-depth)
+              (if (> attr-depth 1)
                 (attribute-network*
                   (assoc options' ::sub-index out)
                   attr)
@@ -231,7 +231,7 @@
     :as    computed}]
   {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
                   (merge
-                    {::attr-depth   0
+                    {::attr-depth   1
                      :>/header-view {::pc/attribute (or (::pc/attribute data-tree)
                                                         (::pc/attribute current-normalized))}}
                     current-normalized
@@ -251,7 +251,7 @@
   (dom/div :.container
     (attribute-line-view header-view)
     (do (def *attributes attributes) nil)
-    (dom/input {:type     "number" :min 0 :max 3 :value attr-depth
+    (dom/input {:type     "number" :min 1 :max 5 :value attr-depth
                 :onChange #(fm/set-integer! this ::attr-depth :event %)})
     (dom/div :.graph
       (attribute-graph {::attributes      (attribute-network {::attr-depth attr-depth

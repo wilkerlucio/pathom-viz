@@ -35,13 +35,15 @@ export function render(element, data) {
   // }
 
   const simulation = d3.forceSimulation(nodes)
-    .force("link", d3.forceLink(links).id(d => d.attribute).distance(60).strength(1))
+    .force("link", d3.forceLink(links).id(d => d.attribute).distance(60).strength(0.5))
     .force("charge", d3.forceManyBody().strength(-60))
     .force('collision', d3.forceCollide().radius(function(d) {
       return Math.round(((Math.sqrt(d.weight || 1) + 2) + (Math.sqrt(d.reach || 1) + 1)) * 1.3);
     }))
     // .force("charge", d3.forceManyBody())
     .force("center", d3.forceCenter(svgWidth / 2, svgHeight / 2))
+
+  settings.simulation = simulation
 
   const link = svg.append("g")
     .selectAll("line")
