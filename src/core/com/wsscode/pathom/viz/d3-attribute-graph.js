@@ -136,7 +136,7 @@ export function render(element, data) {
   label = svg.append('text')
     .attr('x', 10)
     .attr('y', 30)
-    .html('Hello')
+    .html('')
 
   simulation.on("tick", () => {
     link
