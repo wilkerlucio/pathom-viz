@@ -250,6 +250,9 @@
                  {:>/header-view (fp/get-query AttributeLineView)}]
    :css         [[:.container {:flex     "1"
                                :overflow "auto"}]
+                 [:.toolbar {:display "grid"
+                             :grid-template-columns "repeat(4, max-content)"
+                             :grid-gap "10px"}]
                  [:.path {:margin-bottom "6px"}]
                  [:.graph {:height  "500px"
                            :display "flex"
@@ -258,15 +261,23 @@
    :css-include [AttributeGraph]}
   (dom/div :.container
     (attribute-line-view header-view)
-    (do (def *attributes attributes) nil)
-    (dom/input {:type     "number" :min 1 :max 5 :value attr-depth
-                :onChange #(fm/set-integer! this ::attr-depth :event %)})
-    (dom/input {:type     "checkbox" :checked direct-reaches?
-                :onChange #(fm/set-value! this ::direct-reaches? (gobj/getValueByKeys % "target" "checked"))})
-    (dom/input {:type     "checkbox" :checked direct-provides?
-                :onChange #(fm/set-value! this ::direct-provides? (gobj/getValueByKeys % "target" "checked"))})
-    (dom/input {:type     "checkbox" :checked nested-provides?
-                :onChange #(fm/set-value! this ::nested-provides? (gobj/getValueByKeys % "target" "checked"))})
+    (dom/div :.toolbar
+      (dom/div
+        (dom/label "Depth")
+        (dom/input {:type     "number" :min 1 :max 5 :value attr-depth
+                    :onChange #(fm/set-integer! this ::attr-depth :event %)}))
+      (dom/label
+        (dom/input {:type     "checkbox" :checked direct-reaches?
+                    :onChange #(fm/set-value! this ::direct-reaches? (gobj/getValueByKeys % "target" "checked"))})
+        "Direct inputs")
+      (dom/label
+        (dom/input {:type     "checkbox" :checked direct-provides?
+                    :onChange #(fm/set-value! this ::direct-provides? (gobj/getValueByKeys % "target" "checked"))})
+        "Direct outputs")
+      (dom/label
+        (dom/input {:type     "checkbox" :checked nested-provides?
+                    :onChange #(fm/set-value! this ::nested-provides? (gobj/getValueByKeys % "target" "checked"))})
+        "Nested outputs"))
     (dom/div :.graph
       (attribute-graph {::attributes      (attribute-network {::attr-depth       attr-depth
                                                               ::attributes       attributes
