@@ -80,6 +80,54 @@ export function render(element, data) {
 
   let label
 
+  const highlight = function (d) {
+    d.nodeElement.style('fill', '#f00')
+
+    d.lineTargets.forEach(line => {
+      line.ownerLine
+        .style('stroke', '#0c0')
+        .style('stroke-width', 3)
+    })
+
+    d.lineSources.forEach(line => {
+      line.ownerLine
+        .style('stroke', '#cc1a9d')
+        .style('stroke-width', 2)
+    })
+
+    return label.html(d.attribute)
+  }
+
+  const unhighlight = function (d) {
+    d.nodeElement.style('fill', '')
+
+    d.lineTargets.forEach(line => {
+      line.ownerLine
+        .style('stroke', '')
+        .style('stroke-width', '')
+    })
+
+    d.lineSources.forEach(line => {
+      line.ownerLine
+        .style('stroke', '')
+        .style('stroke-width', '')
+    })
+
+    return label.html(d.attribute)
+  }
+
+  settings.highlightNode = function (id) {
+    const d = nodes.find(x => x.attribute === id)
+
+    if (d) highlight(d)
+  }
+
+  settings.unhighlightNode = function (id) {
+    const d = nodes.find(x => x.attribute === id)
+
+    if (d) unhighlight(d)
+  }
+
   const node = svg.append("g")
     .selectAll("circle")
     .data(nodes)
@@ -91,6 +139,8 @@ export function render(element, data) {
     // .attr("text-anchor", "middle")
     // .html(d => d.attribute)
     .each(function(d) {
+      d.nodeElement = d3.select(this)
+
       d.lineTargets = links.filter(l => {
         return l.source.attribute === d.attribute;
       });
@@ -102,36 +152,10 @@ export function render(element, data) {
       showDetails(d.attribute, d, this)
     })
     .on('mouseenter', function(d) {
-      d3.select(this).style('fill', '#f00')
-
-      d.lineTargets.forEach(line => {
-        line.ownerLine
-          .style('stroke', '#0c0')
-          .style('stroke-width', 3)
-      })
-
-      d.lineSources.forEach(line => {
-        line.ownerLine
-          .style('stroke', '#cc1a9d')
-          .style('stroke-width', 2)
-      })
-
-      return label.html(d.attribute)
+      return highlight(d)
     })
     .on('mouseleave', function(d) {
-      d3.select(this).style('fill', '')
-
-      d.lineTargets.forEach(line => {
-        line.ownerLine
-          .style('stroke', '')
-          .style('stroke-width', '')
-      })
-
-      d.lineSources.forEach(line => {
-        line.ownerLine
-          .style('stroke', '')
-          .style('stroke-width', '')
-      })
+      return unhighlight(d)
     })
     .call(drag(simulation))
 

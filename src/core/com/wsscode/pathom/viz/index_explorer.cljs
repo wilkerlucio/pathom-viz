@@ -65,19 +65,20 @@
   (merge a b))
 
 (defn render-attribute-graph [this]
-  (let [{::keys [on-show-details] :as props} (-> this fp/props)
+  (let [{::keys [on-show-details graph-comm] :as props} (-> this fp/props)
         on-show-details (or on-show-details identity)
         container       (gobj/get this "svgContainer")
         svg             (gobj/get this "svg")]
     (gobj/set svg "innerHTML" "")
     (js/console.log (into [] (map (fn [[k v]] [k (count v)])) (compute-nodes-links props)))
-    (gobj/set this "renderedData"
-      (d3attr/render svg
-        (clj->js {:svgWidth    (gobj/get container "clientWidth")
-                  :svgHeight   (gobj/get container "clientHeight")
-                  :data        (compute-nodes-links props)
-                  :showDetails (fn [attr d js]
-                                 (on-show-details (keyword (subs attr 1)) d js))})))))
+    (let [render-settings (d3attr/render svg
+                            (clj->js {:svgWidth    (gobj/get container "clientWidth")
+                                      :svgHeight   (gobj/get container "clientHeight")
+                                      :data        (compute-nodes-links props)
+                                      :showDetails (fn [attr d js]
+                                                     (on-show-details (keyword (subs attr 1)) d js))}))]
+      (if graph-comm (reset! graph-comm render-settings))
+      (gobj/set this "renderedData" render-settings))))
 
 (fp/defsc AttributeGraph
   [this {::keys []}]
@@ -242,7 +243,7 @@
          :>/keys   [header-view]}
    {::keys [on-select-resolver on-select-attribute attributes]
     :as    computed}]
-  {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
+  {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
                   (merge
                     {::attr-depth       1
                      ::direct-reaches?  true
@@ -253,12 +254,12 @@
                                                             (::pc/attribute current-normalized))}}
                     current-normalized
                     data-tree))
-   :ident       [::pc/attribute ::pc/attribute]
-   :query       [::pc/attribute ::pc/attribute-paths ::attr-depth ::direct-reaches? ::nested-reaches?
+   :ident          [::pc/attribute ::pc/attribute]
+   :query          [::pc/attribute ::pc/attribute-paths ::attr-depth ::direct-reaches? ::nested-reaches?
                  ::direct-provides? ::nested-provides? ::pc/attr-provides
                  {::attr-provides [::pc/attribute]}
                  {:>/header-view (fp/get-query AttributeLineView)}]
-   :css         [[:.container {:flex "1"}]
+   :css            [[:.container {:flex "1"}]
                  [:.toolbar {:display               "grid"
                              :grid-template-columns "repeat(5, max-content)"
                              :grid-gap              "10px"}]
@@ -270,7 +271,8 @@
                            :display "flex"
                            :border  "1px solid #000"}
                   [:text {:font "bold 16px Verdana, Helvetica, Arial, sans-serif"}]]]
-   :css-include [AttributeGraph]}
+   :css-include    [AttributeGraph]
+   :initLocalState (fn [] {:graph-comm (atom nil)})}
   (dom/div :.container
     (attribute-line-view header-view)
     (dom/div :.toolbar
@@ -300,7 +302,11 @@
           (for [[k v] (->> (group-by (comp attr-provides-key-root first) attr-provides)
                            (sort-by (comp attr-provides-key-root first)))]
             (dom/div {:key (pr-str k)}
-              (dom/div (pr-str k))
+              (dom/div {:onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
+                                        ((gobj/get settings "highlightNode") (str k)))
+                        :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
+                                         ((gobj/get settings "unhighlightNode") (str k)))}
+                (pr-str k))
               #_(dom/div (pr-str (into #{} (mapcat second) v))))))
         (attribute-graph {::attributes      (attribute-network {::attr-depth       attr-depth
                                                                 ::attr-index       index
@@ -309,6 +315,7 @@
                                                                 ::nested-reaches?  nested-reaches?
                                                                 ::direct-provides? direct-provides?
                                                                 ::nested-provides? nested-provides?} attribute)
+                          ::graph-comm      (fp/get-state this :graph-comm)
                           ::on-show-details on-select-attribute})))
     (dom/div
       (for [[input resolvers] attribute-paths]
