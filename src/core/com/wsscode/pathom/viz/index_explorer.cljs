@@ -103,10 +103,8 @@
 
    :componentDidUpdate
    (fn [prev-props _]
-     #_(if (= (-> prev-props ::trace-data)
-              (-> this fp/props ::trace-data))
-         (recompute-trace-size this)
-         (render-trace this)))
+     (when (not= prev-props (-> this fp/props))
+       (render-attribute-graph this)))
 
    :componentDidCatch
    (fn [error info]
@@ -175,51 +173,71 @@
 (defn simple-attr [index attr]
   (-> index (get attr)))
 
-(defn attribute-network [attributes source]
-  (let [index (h/index-by ::pc/attribute attributes)
-        base  (select-keys index [source])
-        {::pc/keys [attr-reach-via attr-provides]} (get index source)]
-    (as-> base <>
-      (reduce
-        (fn [out input]
-          (if (single-input? input)
-            (let [attr (first input)]
-              (update out attr merge (simple-attr index attr)))
-            out))
-        <>
-        (keys attr-reach-via))
-      (reduce
-        (fn [out attr]
-          (cond
-            (keyword? attr)
-            (update out attr merge (simple-attr index attr))
+(defn attribute-network*
+  [{::keys [attr-depth attributes sub-index attr-index attr-visited]
+    :or    {attr-depth   0
+            sub-index    {}
+            attr-visited #{}}
+    :as    options} source]
+  (if (contains? attr-visited source)
+    sub-index
+    (let [index    (h/index-by ::pc/attribute attributes)
+          base     (merge sub-index (select-keys index [source]))
+          {::pc/keys [attr-reach-via attr-provides]} (get index source)
+          options' (assoc options ::attr-index (or attr-index index)
+                                  ::attr-depth (dec attr-depth)
+                                  ::attr-visited (conj attr-visited source))]
+      (as-> base <>
+        (reduce
+          (fn [out input]
+            (if (single-input? input)
+              (let [attr (first input)]
+                (if (pos-int? attr-depth)
+                  (attribute-network*
+                    (assoc options' ::sub-index out)
+                    attr)
+                  (update out attr merge (simple-attr index attr))))
+              out))
+          <>
+          (keys attr-reach-via))
+        (reduce
+          (fn [out attr]
+            (cond
+              (keyword? attr)
+              (if (pos-int? attr-depth)
+                (attribute-network*
+                  (assoc options' ::sub-index out)
+                  attr)
+                (update out attr merge (simple-attr index attr)))
 
-            #_ #_
-            (vector? attr)
-                (let [attr (peek attr)]
-                  (update out attr merge (simple-attr index attr)))
+              #_#_(vector? attr)
+                  (let [attr (peek attr)]
+                    (update out attr merge (simple-attr index attr)))
 
-            :else
-            out))
-        <>
-        (keys attr-provides))
-      (vals <>))))
+              :else
+              out))
+          <>
+          (keys attr-provides))))))
+
+(defn attribute-network [options source]
+  (vals (attribute-network* options source)))
 
 (fp/defsc AttributeView
   [this {::pc/keys [attribute-paths attribute]
-         ::keys    [attr-provides]
+         ::keys    [attr-provides attr-depth]
          :>/keys   [header-view]
          :as       props}
    {::keys [on-select-resolver on-select-attribute attributes]
     :as    computed}]
   {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
                   (merge
-                    {:>/header-view {::pc/attribute (or (::pc/attribute data-tree)
+                    {::attr-depth   0
+                     :>/header-view {::pc/attribute (or (::pc/attribute data-tree)
                                                         (::pc/attribute current-normalized))}}
                     current-normalized
                     data-tree))
    :ident       [::pc/attribute ::pc/attribute]
-   :query       [::pc/attribute ::pc/attribute-paths
+   :query       [::pc/attribute ::pc/attribute-paths ::attr-depth
                  {::attr-provides [::pc/attribute]}
                  {:>/header-view (fp/get-query AttributeLineView)}]
    :css         [[:.container {:flex     "1"
@@ -232,8 +250,12 @@
    :css-include [AttributeGraph]}
   (dom/div :.container
     (attribute-line-view header-view)
+    (do (def *attributes attributes) nil)
+    (dom/input {:type     "number" :min 0 :max 3 :value attr-depth
+                :onChange #(fm/set-integer! this ::attr-depth :event %)})
     (dom/div :.graph
-      (attribute-graph {::attributes      (attribute-network attributes attribute)
+      (attribute-graph {::attributes      (attribute-network {::attr-depth attr-depth
+                                                              ::attributes attributes} attribute)
                         ::on-show-details on-select-attribute}))
     (dom/div
       (for [[input resolvers] attribute-paths]
