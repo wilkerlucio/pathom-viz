@@ -176,5 +176,9 @@ export function render(element, data) {
       .attr("cy", d => d.y);
   });
 
+  settings.dispose = function () {
+    simulation.stop()
+  }
+
   return settings
 }

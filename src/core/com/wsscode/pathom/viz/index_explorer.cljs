@@ -67,8 +67,10 @@
 (defn render-attribute-graph [this]
   (let [{::keys [on-show-details graph-comm] :as props} (-> this fp/props)
         on-show-details (or on-show-details identity)
+        current         (gobj/get this "renderedData")
         container       (gobj/get this "svgContainer")
         svg             (gobj/get this "svg")]
+    (if current ((gobj/get current "dispose")))
     (gobj/set svg "innerHTML" "")
     (js/console.log (into [] (map (fn [[k v]] [k (count v)])) (compute-nodes-links props)))
     (let [render-settings (d3attr/render svg
@@ -108,6 +110,11 @@
    (fn [prev-props _]
      (when (not= prev-props (-> this fp/props))
        (render-attribute-graph this)))
+
+   :componentWillUnmount
+   (fn []
+     (if-let [settings (gobj/get this "renderedData")]
+       ((gobj/get settings "dispose"))))
 
    :componentDidCatch
    (fn [error info]
