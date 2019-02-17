@@ -174,11 +174,14 @@
   (-> index (get attr)))
 
 (defn attribute-network*
-  [{::keys [attr-depth attributes sub-index attr-index attr-visited nested-links?]
-    :or    {attr-depth    1
-            nested-links? false
-            sub-index     {}
-            attr-visited  #{}}
+  [{::keys [attr-depth attributes sub-index attr-index attr-visited
+            direct-reaches? direct-provides? nested-provides?]
+    :or    {attr-depth       1
+            direct-reaches? true
+            direct-provides? true
+            nested-provides? false
+            sub-index        {}
+            attr-visited     #{}}
     :as    options} source]
   (if (contains? attr-visited source)
     sub-index
@@ -191,7 +194,7 @@
       (as-> base <>
         (reduce
           (fn [out input]
-            (if (single-input? input)
+            (if (and direct-reaches? (single-input? input))
               (let [attr (first input)]
                 (if (> attr-depth 1)
                   (attribute-network*
@@ -204,14 +207,14 @@
         (reduce
           (fn [out attr]
             (cond
-              (keyword? attr)
+              (and direct-provides? (keyword? attr))
               (if (> attr-depth 1)
                 (attribute-network*
                   (assoc options' ::sub-index out)
                   attr)
                 (update out attr merge (simple-attr index attr)))
 
-              (and nested-links? (vector? attr))
+              (and nested-provides? (vector? attr))
               (let [attr (peek attr)]
                     (update out attr merge (simple-attr index attr)))
 
@@ -225,21 +228,24 @@
 
 (fp/defsc AttributeView
   [this {::pc/keys [attribute-paths attribute]
-         ::keys    [attr-provides attr-depth nested-links?]
+         ::keys    [attr-provides attr-depth direct-reaches? direct-provides? nested-provides?]
          :>/keys   [header-view]
          :as       props}
    {::keys [on-select-resolver on-select-attribute attributes]
     :as    computed}]
   {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
                   (merge
-                    {::attr-depth    1
-                     ::nested-links? false
-                     :>/header-view  {::pc/attribute (or (::pc/attribute data-tree)
+                    {::attr-depth       1
+                     ::direct-reaches?  true
+                     ::direct-provides? true
+                     ::nested-provides? false
+                     :>/header-view     {::pc/attribute (or (::pc/attribute data-tree)
                                                         (::pc/attribute current-normalized))}}
                     current-normalized
                     data-tree))
    :ident       [::pc/attribute ::pc/attribute]
-   :query       [::pc/attribute ::pc/attribute-paths ::attr-depth ::nested-links?
+   :query       [::pc/attribute ::pc/attribute-paths ::attr-depth ::direct-reaches?
+                 ::direct-provides? ::nested-provides?
                  {::attr-provides [::pc/attribute]}
                  {:>/header-view (fp/get-query AttributeLineView)}]
    :css         [[:.container {:flex     "1"
@@ -255,12 +261,18 @@
     (do (def *attributes attributes) nil)
     (dom/input {:type     "number" :min 1 :max 5 :value attr-depth
                 :onChange #(fm/set-integer! this ::attr-depth :event %)})
-    (dom/input {:type     "checkbox" :checked nested-links?
-                :onChange #(fm/set-value! this ::nested-links? (gobj/getValueByKeys % "target" "checked"))})
+    (dom/input {:type     "checkbox" :checked direct-reaches?
+                :onChange #(fm/set-value! this ::direct-reaches? (gobj/getValueByKeys % "target" "checked"))})
+    (dom/input {:type     "checkbox" :checked direct-provides?
+                :onChange #(fm/set-value! this ::direct-provides? (gobj/getValueByKeys % "target" "checked"))})
+    (dom/input {:type     "checkbox" :checked nested-provides?
+                :onChange #(fm/set-value! this ::nested-provides? (gobj/getValueByKeys % "target" "checked"))})
     (dom/div :.graph
-      (attribute-graph {::attributes      (attribute-network {::attr-depth    attr-depth
-                                                              ::attributes    attributes
-                                                              ::nested-links? nested-links?} attribute)
+      (attribute-graph {::attributes      (attribute-network {::attr-depth       attr-depth
+                                                              ::attributes       attributes
+                                                              ::direct-reaches?  direct-reaches?
+                                                              ::direct-provides? direct-provides?
+                                                              ::nested-provides? nested-provides?} attribute)
                         ::on-show-details on-select-attribute}))
     (dom/div
       (for [[input resolvers] attribute-paths]
