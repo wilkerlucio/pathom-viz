@@ -399,6 +399,8 @@
 
 (declare SearchEverything)
 
+(def max-search-results 15)
+
 (fm/defmutation search [{::keys [text]}]
   (action [{:keys [ref state reconciler]}]
     (let [attributes (->> (get-in @state (conj ref ::attributes))
@@ -408,7 +410,7 @@
                        (fuzzy/fuzzy-match {::fuzzy/options      attributes
                                            ::fuzzy/search-input text})
                        [])]
-      (swap! state fp/merge-component SearchEverything (into {::search-results (vec fuzzy-res)} [ref]))
+      (swap! state fp/merge-component SearchEverything (into {::search-results (vec (take max-search-results fuzzy-res))} [ref]))
       (swap! state update-in ref assoc ::text text))))
 
 (defn remove-not-found [x]
