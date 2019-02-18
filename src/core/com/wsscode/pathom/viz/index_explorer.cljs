@@ -92,7 +92,7 @@
    [[:.container {:flex      1
                   :max-width "100%"}
      [:$pathom-viz-index-explorer-attr-node
-      {:stroke "#f34545b3"
+      { ;:stroke "#f34545b3"
        :fill   "#000A"}
       [:&$pathom-viz-index-explorer-attr-node-main
        {:fill "#f9e943e3"}]]
@@ -316,7 +316,6 @@
       (dom/div :.graph
         (dom/div :.data-list
           (dom/div :.data-header "Reach via")
-          (js/console.log attr-reach-via)
           (for [[k v] (->> attr-reach-via
                            (filter (comp set? first))
                            (sort-by (comp pr-str first)))]

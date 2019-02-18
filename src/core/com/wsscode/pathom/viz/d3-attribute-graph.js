@@ -1,5 +1,7 @@
 import * as d3 from "d3";
 
+window.d3 = d3;
+
 const DEFAULTS = {
   showDetails: function () {}
 }
@@ -13,6 +15,7 @@ function init(element, settings) {
 export function render(element, data) {
   const settings = init(element, data)
   const {svg, svgWidth, svgHeight, showDetails} = settings
+  const colorScale = d3.scaleOrdinal(d3.schemeCategory10)
 
   svg
     .attr('width', svgWidth)
@@ -128,6 +131,16 @@ export function render(element, data) {
     if (d) unhighlight(d)
   }
 
+  const extractNs = function(str) {
+    const parts = str.split("/");
+
+    if (parts.length > 1) {
+      return parts[0].substr(1);
+    }
+
+    return null;
+  }
+
   const node = svg.append("g")
     .selectAll("circle")
     .data(nodes)
@@ -135,6 +148,7 @@ export function render(element, data) {
     .attr('class', 'pathom-viz-index-explorer-attr-node')
     .attr("stroke-width", d => Math.sqrt(d.reach || 1) + 1)
     .attr("r", d => Math.sqrt(d.weight || 1) + 2)
+    .attr("stroke", d => colorScale(extractNs(d.attribute)))
     // .enter().append("text")
     // .attr("text-anchor", "middle")
     // .html(d => d.attribute)
