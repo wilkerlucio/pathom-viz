@@ -214,7 +214,7 @@ export function render(element, data) {
       .attr("d", function (d) {
         const dx = d.target.x - d.source.x,
           dy = d.target.y - d.source.y,
-          dr = Math.sqrt(dx * dx + dy * dy),
+          // dr = Math.sqrt(dx * dx + dy * dy),
           gamma = Math.atan2(dy,dx),
           tx = d.target.x - (Math.cos(gamma) * d.target.radius),
           ty = d.target.y - (Math.sin(gamma) * d.target.radius),
@@ -226,8 +226,7 @@ export function render(element, data) {
           sy = d.source.y - (Math.sin(sgamma) * d.source.radius);
         return "M" +
           sx + "," +
-          sy + "A" +
-          dr + "," + dr + " 0 0,1 " +
+          sy + "L" +
           tx + "," +
           ty;
       });

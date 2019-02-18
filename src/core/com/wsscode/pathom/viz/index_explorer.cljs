@@ -111,12 +111,10 @@
 
      [:$pathom-viz-index-explorer-arrow-provides
       [:path
-       {:fill "#0c0"
-        :opacity "0.7"}]]
+       {:fill "#666"}]]
      [:$pathom-viz-index-explorer-arrow-reaches
       [:path
-       {:fill "#cc1a9d"
-        :opacity "0.7"}]]
+       {:fill "#666"}]]
 
      [:$pathom-viz-index-explorer-attr-link
       {:stroke         "#999"
