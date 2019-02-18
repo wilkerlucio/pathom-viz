@@ -94,7 +94,7 @@ export function render(element, data) {
   let label
 
   const highlight = function (d) {
-    d.nodeElement.style('fill', '#f00')
+    d.nodeElement.style('fill', '#de2b34')
 
     d.lineTargets.forEach(line => {
       line.ownerLine
