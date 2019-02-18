@@ -249,7 +249,7 @@
       (update source assoc ::center? true)
       (vals)))
 
-(defn attr-provides-key-root [x]
+(defn attr-path-key-root [x]
   (if (vector? x) (first x) x))
 
 (fp/defsc AttributeView
@@ -259,22 +259,25 @@
    {::keys [on-select-resolver on-select-attribute attributes]
     :as    computed}]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
-                     (merge
-                       {::attr-depth       1
-                        ::direct-reaches?  true
-                        ::nested-reaches?  false
-                        ::direct-provides? true
-                        ::nested-provides? false
-                        :>/header-view     {::pc/attribute (or (::pc/attribute data-tree)
-                                                               (::pc/attribute current-normalized))}}
-                       current-normalized
-                       data-tree))
+                     (let [attr (or (::pc/attribute data-tree)
+                                    (::pc/attribute current-normalized))]
+                       (merge
+                         {::attr-depth       1
+                          ::direct-reaches?  true
+                          ::nested-reaches?  false
+                          ::direct-provides? true
+                          ::nested-provides? false
+                          :>/header-view     {::pc/attribute attr}}
+                         current-normalized
+                         data-tree)))
    :ident          [::pc/attribute ::pc/attribute]
    :query          [::pc/attribute ::pc/attribute-paths ::attr-depth ::direct-reaches? ::nested-reaches?
                     ::direct-provides? ::nested-provides? ::pc/attr-reach-via ::pc/attr-provides
                     {::attr-provides [::pc/attribute]}
                     {:>/header-view (fp/get-query AttributeLineView)}]
-   :css            [[:.container {:flex "1"}]
+   :css            [[:.container {:flex           "1"
+                                  :flex-direction "column"
+                                  :display        "flex"}]
                     [:.toolbar {:display               "grid"
                                 :grid-template-columns "repeat(5, max-content)"
                                 :grid-gap              "10px"}]
@@ -282,9 +285,10 @@
                                   :border-right "1px solid #000"
                                   :overflow     "auto"}]
                     [:.data-header {:background "#f00"}]
+                    [:.out-attr {:padding "2px"}]
                     [:.path {:margin-bottom "6px"}]
-                    [:.graph {:height  "500px"
-                              :display "flex"
+                    [:.graph {:display "flex"
+                              :flex    "1"
                               :border  "1px solid #000"}
                      [:text {:font "bold 16px Verdana, Helvetica, Arial, sans-serif"}]]]
    :css-include    [AttributeGraph]
@@ -317,9 +321,9 @@
         (dom/div :.data-list
           (dom/div :.data-header "Reach via")
           (for [[k v] (->> attr-reach-via
-                           (filter (comp set? first))
-                           (sort-by (comp pr-str first)))]
-            (dom/div {:key (pr-str k)}
+                           (group-by (comp attr-path-key-root first))
+                           (sort-by (comp pr-str attr-path-key-root first)))]
+            (dom/div :.out-attr {:key (pr-str k)}
               #_ (js/console.log "RENDER" v)
               (dom/div {:onClick      #(on-select-attribute (first k))
                         :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
@@ -329,9 +333,9 @@
                 (pr-str k))
               #_(dom/div (pr-str (into #{} (mapcat second) v)))))
           (dom/div :.data-header "Provides")
-          (for [[k v] (->> (group-by (comp attr-provides-key-root first) attr-provides)
-                           (sort-by (comp attr-provides-key-root first)))]
-            (dom/div {:key (pr-str k)}
+          (for [[k v] (->> (group-by (comp attr-path-key-root first) attr-provides)
+                           (sort-by (comp attr-path-key-root first)))]
+            (dom/div :.out-attr {:key (pr-str k)}
               #_ (js/console.log "RENDER" v)
               (dom/div {:onClick      #(on-select-attribute k)
                         :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
@@ -589,7 +593,9 @@
                     {::idents (fp/get-query AttributeIndex)}
                     {::resolvers (fp/get-query ResolverIndex)}
                     {:ui/page (fp/get-query MainViewUnion)}]
-   :css            [[:.container {:flex "1"}]
+   :css            [[:.container {:flex           "1"
+                                  :display        "flex"
+                                  :flex-direction "column"}]
                     [:.graph {:height  "800px"
                               :display "flex"
                               :border  "1px solid #000"}]]
