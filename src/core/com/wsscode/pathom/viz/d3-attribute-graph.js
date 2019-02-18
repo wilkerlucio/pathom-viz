@@ -23,6 +23,16 @@ export function render(element, data) {
 
   const {nodes, links} = settings.data
 
+  const container = svg.append("g")
+
+  const zoom = d3.zoom().on("zoom",
+    function () {
+      container.attr("transform", d3.event.transform)
+    }
+  )
+
+  svg.call(zoom);
+
   // const {nodes, links} = {
   //   nodes: [
   //     {attribute: "foo"},
@@ -48,7 +58,7 @@ export function render(element, data) {
 
   settings.simulation = simulation
 
-  const link = svg.append("g")
+  const link = container.append("g")
     .selectAll("line")
     .data(links)
     .enter().append("line")
@@ -141,7 +151,7 @@ export function render(element, data) {
     return null;
   }
 
-  const node = svg.append("g")
+  const node = container.append("g")
     .selectAll("circle")
     .data(nodes)
     .enter().append("circle")
