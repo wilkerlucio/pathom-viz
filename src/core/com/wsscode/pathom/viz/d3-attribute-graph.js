@@ -12,6 +12,16 @@ function init(element, settings) {
   return Object.assign({}, DEFAULTS, settings, {svg, element})
 }
 
+function lineMarker(d) {
+  if (d.lineProvide) {
+    return "url(#arrow-provides)"
+  } else if (d.lineReach) {
+    return "url(#arrow-reaches)"
+  }
+
+  return "";
+}
+
 export function render(element, data) {
   const settings = init(element, data)
   const {svg, svgWidth, svgHeight, showDetails} = settings
@@ -33,6 +43,22 @@ export function render(element, data) {
 
   svg.call(zoom);
 
+  // build the arrows.
+  svg.append("svg:defs").selectAll("marker")
+    .data(["arrow-provides", "arrow-reaches"])      // Different link/path types can be defined here
+    .enter().append("svg:marker")    // This section adds in the arrows
+    .attr("id", d => d)
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 15)
+    .attr("refY", 0)
+    .attr("markerWidth", 6)
+    .attr("markerHeight", 6)
+    .attr("markerUnits", 'userSpaceOnUse')
+    .attr("orient", "auto")
+    .attr('class', d => 'pathom-viz-index-explorer-' + d)
+    .append("svg:path")
+    .attr("d", "M0,-5L10,0L0,5");
+
   // const {nodes, links} = {
   //   nodes: [
   //     {attribute: "foo"},
@@ -48,11 +74,9 @@ export function render(element, data) {
   // }
 
   const simulation = d3.forceSimulation(nodes)
-    .force("link", d3.forceLink(links).id(d => d.attribute).distance(60).strength(0.5))
+    .force("link", d3.forceLink(links).id(d => d.attribute).distance(90).strength(0.1))
     .force("charge", d3.forceManyBody().strength(-60))
-    .force('collision', d3.forceCollide().radius(function(d) {
-      return Math.round(((Math.sqrt(d.weight || 1) + 2) + (Math.sqrt(d.reach || 1) + 1)) * 1.3);
-    }))
+    .force('collision', d3.forceCollide().radius(d => d.radius * 1.6))
     // .force("charge", d3.forceManyBody())
     .force("center", d3.forceCenter(svgWidth / 2, svgHeight / 2))
 
@@ -61,10 +85,13 @@ export function render(element, data) {
   const link = container.append("g")
     .selectAll("line")
     .data(links)
-    .enter().append("line")
-    .attr('class', d => d.deep ?
-      'pathom-viz-index-explorer-attr-link-indirect' :
-      'pathom-viz-index-explorer-attr-link')
+    .enter().append("svg:path")
+    .attr('class', 'pathom-viz-index-explorer-attr-link')
+    .attr("marker-end", lineMarker)
+    .classed('pathom-viz-index-explorer-attr-link-deep', d => d.deep)
+    .classed('pathom-viz-index-explorer-attr-link-provide', d => d.lineProvide)
+    .classed('pathom-viz-index-explorer-attr-link-reach', d => d.lineReach)
+    //.classed('pathom-viz-index-explorer-attr-link')
     .each(function (d) { d.ownerLine = d3.select(this)});
 
   const drag = simulation => {
@@ -94,36 +121,28 @@ export function render(element, data) {
   let label
 
   const highlight = function (d) {
-    d.nodeElement.style('fill', '#de2b34')
+    d.nodeElement.classed('pathom-viz-index-explorer-attr-node-highlight', true)
 
     d.lineTargets.forEach(line => {
-      line.ownerLine
-        .style('stroke', '#0c0')
-        .style('stroke-width', 3)
+      line.ownerLine.classed("pathom-viz-index-explorer-attr-link-target-highlight", true)
     })
 
     d.lineSources.forEach(line => {
-      line.ownerLine
-        .style('stroke', '#cc1a9d')
-        .style('stroke-width', 2)
+      line.ownerLine.classed("pathom-viz-index-explorer-attr-link-source-highlight", true)
     })
 
     return label.html(d.attribute)
   }
 
   const unhighlight = function (d) {
-    d.nodeElement.style('fill', '')
+    d.nodeElement.classed('pathom-viz-index-explorer-attr-node-highlight', false)
 
     d.lineTargets.forEach(line => {
-      line.ownerLine
-        .style('stroke', '')
-        .style('stroke-width', '')
+      line.ownerLine.classed("pathom-viz-index-explorer-attr-link-target-highlight", false)
     })
 
     d.lineSources.forEach(line => {
-      line.ownerLine
-        .style('stroke', '')
-        .style('stroke-width', '')
+      line.ownerLine.classed("pathom-viz-index-explorer-attr-link-source-highlight", false)
     })
 
     return label.html('')
@@ -192,10 +211,31 @@ export function render(element, data) {
 
   simulation.on("tick", () => {
     link
-      .attr("x1", d => d.source.x)
-      .attr("y1", d => d.source.y)
-      .attr("x2", d => d.target.x)
-      .attr("y2", d => d.target.y);
+      .attr("d", function (d) {
+        const dx = d.target.x - d.source.x,
+          dy = d.target.y - d.source.y,
+          dr = Math.sqrt(dx * dx + dy * dy),
+          gamma = Math.atan2(dy,dx),
+          tx = d.target.x - (Math.cos(gamma) * d.target.radius),
+          ty = d.target.y - (Math.sin(gamma) * d.target.radius),
+
+          sdx = d.source.x - d.target.x,
+          sdy = d.source.y - d.target.y,
+          sgamma = Math.atan2(sdy,sdx),
+          sx = d.source.x - (Math.cos(sgamma) * d.source.radius),
+          sy = d.source.y - (Math.sin(sgamma) * d.source.radius);
+        return "M" +
+          sx + "," +
+          sy + "A" +
+          dr + "," + dr + " 0 0,1 " +
+          tx + "," +
+          ty;
+      });
+    // link
+    //   .attr("x1", d => d.source.x)
+    //   .attr("y1", d => d.source.y)
+    //   .attr("x2", d => d.target.x)
+    //   .attr("y2", d => d.target.y);
 
     node
       .attr("cx", d => d.x)

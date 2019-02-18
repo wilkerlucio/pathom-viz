@@ -13,12 +13,19 @@
 
 ;; Views
 
+(defn node-radius [weight reach]
+  (js/Math.round
+    (+
+      (js/Math.sqrt (+ (or weight 1) 2))
+      (js/Math.sqrt (+ (or reach 1) 1)))))
+
 (defn attribute->node [{::pc/keys [attribute]
                         ::keys    [weight reach center?]}]
   {:attribute (pr-str attribute)
    :mainNode  center?
    :weight    weight
-   :reach     reach})
+   :reach     reach
+   :radius    (node-radius weight reach)})
 
 (defn direct-input? [input] (set? input))
 (defn nested? [input] (vector? input))
@@ -42,12 +49,14 @@
                                   (keep (fn [[provided]]
                                           (if (nested? provided)
                                             (when (contains? index (peek provided))
-                                              {:source attr-str
-                                               :deep   true
-                                               :target (pr-str (peek provided))})
+                                              {:source      attr-str
+                                               :deep        true
+                                               :lineProvide true
+                                               :target      (pr-str (peek provided))})
                                             (when (contains? index provided)
-                                              {:source attr-str
-                                               :target (pr-str provided)}))))
+                                              {:source      attr-str
+                                               :lineProvide true
+                                               :target      (pr-str provided)}))))
                                   attr-provides)
                                 (into
                                   (keep (fn [[input]]
@@ -58,9 +67,10 @@
 
                                             (and (single-input input)
                                                  (contains? index (single-input input)))
-                                            {:source (pr-str (single-input input))
-                                             :deep   (nested? input)
-                                             :target attr-str})))
+                                            {:source    (pr-str (single-input input))
+                                             :deep      (nested? input)
+                                             :lineReach true
+                                             :target    attr-str})))
                                   attr-reach-via))]
                     res)))
               attributes')}))
@@ -92,19 +102,43 @@
    [[:.container {:flex      1
                   :max-width "100%"}
      [:$pathom-viz-index-explorer-attr-node
-      { ;:stroke "#f34545b3"
-       :fill   "#000A"}
+      {;:stroke "#f34545b3"
+       :fill "#000A"}
       [:&$pathom-viz-index-explorer-attr-node-main
-       {:fill "#f9e943e3"}]]
+       {:fill "#f9e943e3"}]
+      [:&$pathom-viz-index-explorer-attr-node-highlight
+       {:fill "#de2b34"}]]
+
+     [:$pathom-viz-index-explorer-arrow-provides
+      [:path
+       {:fill "#0c0"
+        :opacity "0.7"}]]
+     [:$pathom-viz-index-explorer-arrow-reaches
+      [:path
+       {:fill "#cc1a9d"
+        :opacity "0.7"}]]
+
      [:$pathom-viz-index-explorer-attr-link
       {:stroke         "#999"
        :stroke-opacity "0.6"
-       :stroke-width   "1px"}]
-     [:$pathom-viz-index-explorer-attr-link-indirect
-      {:stroke           "#999"
-       :stroke-opacity   "0.6"
-       :stroke-width     "1px"
-       :stroke-dasharray "3px"}]
+       :stroke-width   "1px"
+       :fill           "none"}
+
+      [:&$pathom-viz-index-explorer-attr-link-target-highlight
+       {:stroke       "#0c0"
+        :stroke-width "3px"
+        :z-index      "10"}]
+
+      [:&$pathom-viz-index-explorer-attr-link-source-highlight
+       {:stroke       "#cc1a9d"
+        :stroke-width "2px"
+        :z-index      "10"}]
+
+      [:&$pathom-viz-index-explorer-attr-link-reach
+       {}]
+      [:&$pathom-viz-index-explorer-attr-link-deep
+       {:stroke-dasharray "3px"}]]
+
      [:text {:font "bold 18px Verdana, Helvetica, Arial, sans-serif"}]]]
 
    :componentDidMount
