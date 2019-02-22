@@ -37,7 +37,7 @@
 (defn global-input? [input]
   (and (direct-input? input) (empty? input)))
 
-(defn compute-nodes-links [{::keys [attributes]}]
+(defn compute-nodes-links [{::keys [attributes nested-provides? nested-reaches?]}]
   (let [index       (h/index-by ::pc/attribute attributes)
         attributes' (filter (comp #(or (keyword? %) (= % #{})) ::pc/attribute) attributes)]
     {:nodes (mapv attribute->node attributes')
@@ -48,12 +48,15 @@
                                 (into
                                   (keep (fn [[provided]]
                                           (if (nested? provided)
-                                            (when (contains? index (peek provided))
+                                            (when (and nested-provides?
+                                                       (contains? index (peek provided))
+                                                       (not= attribute (peek provided)))
                                               {:source      attr-str
                                                :deep        true
                                                :lineProvide true
                                                :target      (pr-str (peek provided))})
-                                            (when (contains? index provided)
+                                            (when (and (contains? index provided)
+                                                       (not= attribute provided))
                                               {:source      attr-str
                                                :lineProvide true
                                                :target      (pr-str provided)}))))
@@ -66,7 +69,10 @@
                                                  :target attr-str}
 
                                             (and (single-input input)
-                                                 (contains? index (single-input input)))
+                                                 (contains? index (single-input input))
+                                                 (not= attribute (single-input input))
+                                                 (or (and (nested? input) nested-reaches?)
+                                                     (not (nested? input))))
                                             {:source    (pr-str (single-input input))
                                              :deep      (nested? input)
                                              :lineReach true
@@ -376,15 +382,19 @@
                                          ((gobj/get settings "unhighlightNode") (str k)))}
                 (pr-str k))
               #_(dom/div (pr-str (into #{} (mapcat second) v))))))
-        (attribute-graph {::attributes      (attribute-network {::attr-depth       attr-depth
-                                                                ::attr-index       index
-                                                                ::attributes       attributes
-                                                                ::direct-reaches?  direct-reaches?
-                                                                ::nested-reaches?  nested-reaches?
-                                                                ::direct-provides? direct-provides?
-                                                                ::nested-provides? nested-provides?} attribute)
-                          ::graph-comm      (fp/get-state this :graph-comm)
-                          ::on-show-details on-select-attribute})))
+        (attribute-graph {::attributes       (attribute-network {::attr-depth       attr-depth
+                                                                 ::attr-index       index
+                                                                 ::attributes       attributes
+                                                                 ::direct-reaches?  direct-reaches?
+                                                                 ::nested-reaches?  nested-reaches?
+                                                                 ::direct-provides? direct-provides?
+                                                                 ::nested-provides? nested-provides?} attribute)
+                          ::graph-comm       (fp/get-state this :graph-comm)
+                          ::direct-reaches?  direct-reaches?
+                          ::nested-reaches?  nested-reaches?
+                          ::direct-provides? direct-provides?
+                          ::nested-provides? nested-provides?
+                          ::on-show-details  on-select-attribute})))
     (dom/div
       (for [[input resolvers] attribute-paths]
         (dom/div :.path {:key (pr-str input)}
@@ -642,6 +652,10 @@
                               ::on-select-resolver (fp/get-state this :select-resolver))))
 
     #_(dom/div :.graph
-        (attribute-graph {::attributes attributes}))))
+        (attribute-graph {::attributes       attributes
+                          ::direct-reaches?  true
+                          ::nested-reaches?  true
+                          ::direct-provides? true
+                          ::nested-provides? true}))))
 
 (def index-explorer (fp/factory IndexExplorer))
