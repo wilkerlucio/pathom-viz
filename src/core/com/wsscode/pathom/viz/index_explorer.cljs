@@ -322,8 +322,14 @@
                     [:.data-list {:white-space  "nowrap"
                                   :border-right "1px solid #000"
                                   :overflow     "auto"}]
-                    [:.data-header {:background "#f00"}]
-                    [:.out-attr {:padding "2px"}]
+                    [:.data-header {:padding     "9px 4px"
+                                    :font-weight "bold"
+                                    :font-family "Verdana"}]
+                    [:.out-attr {:padding     "0 2px"
+                                 :color       "#9a45b1"
+                                 :font-family "sans-serif"
+                                 :font-size   "14px"
+                                 :line-height "1.4em"}]
                     [:.path {:margin-bottom "6px"}]
                     [:.graph {:display "flex"
                               :flex    "1"
