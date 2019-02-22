@@ -364,30 +364,55 @@
       (dom/div :.graph
         (dom/div :.data-list
           (dom/div :.data-header "Reach via")
-          (for [[k v] (->> attr-reach-via
-                           (group-by (comp attr-path-key-root first))
-                           (sort-by (comp pr-str attr-path-key-root first)))]
-            (dom/div :.out-attr {:key (pr-str k)}
-              #_ (js/console.log "RENDER" v)
-              (dom/div {:onClick      #(on-select-attribute (first k))
-                        :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
-                                         ((gobj/get settings "highlightNode") (str (first k))))
-                        :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
-                                         ((gobj/get settings "unhighlightNode") (str (first k))))}
-                (pr-str k))
-              #_(dom/div (pr-str (into #{} (mapcat second) v)))))
+          (for [[input v] (->> attr-reach-via
+                               (group-by (comp attr-path-key-root first))
+                               (sort-by (comp pr-str attr-path-key-root first)))
+                :let [direct? (some #(nil? (next (first %))) v)]
+                :when (or direct? nested-reaches?)]
+            (dom/div
+              (dom/div :.out-attr {:key   (pr-str input)
+                                   :style (cond-> {}
+                                            direct? (assoc :fontWeight "bold"))}
+                (dom/div {:onClick      #(on-select-attribute (first input))
+                          :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
+                                           ((gobj/get settings "highlightNode") (str (first input))))
+                          :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
+                                           ((gobj/get settings "unhighlightNode") (str (first input))))}
+                  (pr-str input)))
+              (if nested-reaches?
+                (for [[path resolvers] (->> v
+                                            (map #(update % 0 (fn [x] (if (set? x) [x] x))))
+                                            (sort-by (comp #(update % 0 (comp vec sort)) first)))
+                      :let [path (next path)]
+                      :when path]
+                  (dom/div {:key   (pr-str path)
+                            :style {:marginLeft (str 10 "px")}}
+                    (for [[k i] (map vector path (range))]
+                      (dom/div :.out-attr {:key   (pr-str path)
+                                           :style {:marginLeft (str (* i 10) "px")}}
+                        (dom/div {:onClick      #(on-select-attribute k)
+                                  :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
+                                                   ((gobj/get settings "highlightNode") (str k)))
+                                  :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
+                                                   ((gobj/get settings "unhighlightNode") (str k)))}
+                          (pr-str k)))))))))
           (dom/div :.data-header "Provides")
           (for [[k v] (->> (group-by (comp attr-path-key-root first) attr-provides)
                            (sort-by (comp attr-path-key-root first)))]
-            (dom/div :.out-attr {:key (pr-str k)}
-              #_ (js/console.log "RENDER" v)
-              (dom/div {:onClick      #(on-select-attribute k)
-                        :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
-                                        ((gobj/get settings "highlightNode") (str k)))
-                        :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
-                                         ((gobj/get settings "unhighlightNode") (str k)))}
-                (pr-str k))
-              #_(dom/div (pr-str (into #{} (mapcat second) v))))))
+            (for [[path resolvers] (->> v
+                                        (map #(update % 0 (fn [x] (if (keyword? x) [x] x))))
+                                        (remove #(and (not nested-provides?) (> (count (first %)) 1)))
+                                        (sort-by first))
+                  :let [k (peek path)]]
+              (dom/div :.out-attr {:key   (pr-str path)
+                                   :style {:marginLeft (str (* 10 (dec (count path))) "px")}}
+                ;(js/console.log path)
+                (dom/div {:onClick      #(on-select-attribute k)
+                          :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
+                                           ((gobj/get settings "highlightNode") (str k)))
+                          :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
+                                           ((gobj/get settings "unhighlightNode") (str k)))}
+                  (pr-str k))))))
         (attribute-graph {::attributes       (attribute-network {::attr-depth       attr-depth
                                                                  ::attr-index       index
                                                                  ::attributes       attributes
