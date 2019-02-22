@@ -45,7 +45,8 @@ export function render(element, data) {
 
   // build the arrows.
   svg.append("svg:defs").selectAll("marker")
-    .data(["arrow-provides", "arrow-reaches"])      // Different link/path types can be defined here
+    .data(["arrow-provides", "arrow-reaches"])
+    // Different link/path types can be defined here
     .enter().append("svg:marker")    // This section adds in the arrows
     .attr("id", d => d)
     .attr("viewBox", "0 -5 10 10")
@@ -58,20 +59,6 @@ export function render(element, data) {
     .attr('class', d => 'pathom-viz-index-explorer-' + d)
     .append("svg:path")
     .attr("d", "M0,-5L10,0L0,5");
-
-  // const {nodes, links} = {
-  //   nodes: [
-  //     {attribute: "foo"},
-  //     {attribute: "bar"},
-  //     {attribute: "foo2"},
-  //     {attribute: "bar2"}
-  //   ],
-  //   links: [
-  //     {source: "foo", target: "bar"},
-  //     {source: "foo2", target: "bar2"},
-  //     {source: "bar2", target: "foo2"}
-  //   ]
-  // }
 
   const simulation = d3.forceSimulation(nodes)
     .force("link", d3.forceLink(links).id(d => d.attribute).distance(90).strength(0.1))
