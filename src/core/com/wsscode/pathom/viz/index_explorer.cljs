@@ -327,6 +327,7 @@
                                     :font-family "Verdana"}]
                     [:.out-attr {:padding     "0 2px"
                                  :color       "#9a45b1"
+                                 :cursor      "pointer"
                                  :font-family "sans-serif"
                                  :font-size   "14px"
                                  :line-height "1.4em"}]
