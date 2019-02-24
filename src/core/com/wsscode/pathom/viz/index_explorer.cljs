@@ -290,6 +290,20 @@
 (defn attr-path-key-root [x]
   (if (vector? x) (first x) x))
 
+(fp/defsc SimpleAttribute
+  [this props]
+  {:pre-merge (fn [{:keys [current-normalized data-tree]}]
+                (merge {} current-normalized data-tree))
+   :css       [[:.container {:color       "#9a45b1"
+                             :cursor      "pointer"
+                             :font-family "sans-serif"
+                             :font-size   "14px"
+                             :line-height "1.4em"
+                             :padding     "0 2px"}]]}
+  (apply dom/div :.container props (fp/children this)))
+
+(def simple-attribute (fp/factory SimpleAttribute))
+
 (fp/defsc AttributeView
   [this {::pc/keys [attribute-paths attribute attr-reach-via attr-provides]
          ::keys    [attr-depth direct-reaches? nested-reaches? direct-provides? nested-provides?]
@@ -368,13 +382,15 @@
           (for [[input v] (->> attr-reach-via
                                (group-by (comp attr-path-key-root first))
                                (sort-by (comp pr-str attr-path-key-root first)))
-                :let [direct? (some #(nil? (next (first %))) v)]
+                :let [direct? (some #(set? (first %)) v)]
                 :when (or direct? nested-reaches?)]
             (dom/div
               (dom/div :.out-attr {:key   (pr-str input)
                                    :style (cond-> {}
                                             direct? (assoc :fontWeight "bold"))}
-                (dom/div {:onClick      #(on-select-attribute (first input))
+                (dom/div {:onClick      #(on-select-attribute (if (= 1 (count input))
+                                                                (first input)
+                                                                input))
                           :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
                                            ((gobj/get settings "highlightNode") (str (first input))))
                           :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
@@ -384,12 +400,12 @@
                 (for [[path resolvers] (->> v
                                             (map #(update % 0 (fn [x] (if (set? x) [x] x))))
                                             (sort-by (comp #(update % 0 (comp vec sort)) first)))
-                      :let [path (next path)]
-                      :when path]
+                      :let [path' (next path)]
+                      :when path']
                   (dom/div {:key   (pr-str path)
                             :style {:marginLeft (str 10 "px")}}
-                    (for [[k i] (map vector path (range))]
-                      (dom/div :.out-attr {:key   (pr-str path)
+                    (for [[k i] (map vector path' (range))]
+                      (dom/div :.out-attr {:key   (pr-str k)
                                            :style {:marginLeft (str (* i 10) "px")}}
                         (dom/div {:onClick      #(on-select-attribute k)
                                   :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
@@ -398,7 +414,7 @@
                                                    ((gobj/get settings "unhighlightNode") (str k)))}
                           (pr-str k)))))))))
           (dom/div :.data-header "Provides")
-          (for [[k v] (->> (group-by (comp attr-path-key-root first) attr-provides)
+          (for [[_ v] (->> (group-by (comp attr-path-key-root first) attr-provides)
                            (sort-by (comp attr-path-key-root first)))]
             (for [[path resolvers] (->> v
                                         (map #(update % 0 (fn [x] (if (keyword? x) [x] x))))
@@ -407,7 +423,6 @@
                   :let [k (peek path)]]
               (dom/div :.out-attr {:key   (pr-str path)
                                    :style {:marginLeft (str (* 10 (dec (count path))) "px")}}
-                ;(js/console.log path)
                 (dom/div {:onClick      #(on-select-attribute k)
                           :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
                                            ((gobj/get settings "highlightNode") (str k)))
@@ -443,13 +458,7 @@
                 (dom/a {:href "#" :onClick (h/pd #(on-select-resolver sym))}
                   (pr-str sym))
                 ", "))
-            "}"))))
-    #_
-    (dom/div
-      (dom/div "Provides:")
-      (for [{::pc/keys [attribute]} attr-provides]
-        (dom/div {:key (pr-str attribute)}
-          (attribute-link computed attribute))))))
+            "}"))))))
 
 (def attribute-view (fp/computed-factory AttributeView {:keyfn ::pc/attribute}))
 
@@ -581,24 +590,66 @@
 
 (def attribute-menu (fp/computed-factory AttributeMenu))
 
-(defn main-view-ident [{::pc/keys [sym attribute]}]
-  (cond
-    sym [::pc/sym sym]
-    attribute [::pc/attribute attribute]
-    :else [:invalid "ident"]))
+(fp/defsc StatsView
+  [this {::keys [attribute-count resolver-count globals-count idents-count
+                 top-connection-hubs]}
+   {::keys [on-select-attribute]}]
+  {:pre-merge (fn [{:keys [current-normalized data-tree]}]
+                (merge {} current-normalized data-tree))
+   :ident     [::id ::id]
+   :query     [::id ::attribute-count ::resolver-count ::globals-count ::idents-count
+               {::top-connection-hubs [::pc/attribute ::attr-edges-count]}]}
+  (fp/fragment
+    "Show some data here"
+    (dom/div "Attribute count: " attribute-count)
+    (dom/div "Resolver count: " resolver-count)
+    (dom/div "Globals count: " globals-count)
+    (dom/div "Idents count: " idents-count)
+    (dom/h3 "Top Attributes")
+    (for [{::pc/keys [attribute]
+           ::keys    [attr-edges-count]} top-connection-hubs]
+      (simple-attribute {:react-key (pr-str attribute)
+                         :onClick   #(on-select-attribute attribute)}
+        (str "[" attr-edges-count "] " (pr-str attribute))))))
+
+(def stats-view (fp/factory StatsView {:keyfn ::id}))
+
+(defn prop-presence-ident [props]
+  (fn [data]
+    (or (some #(if-some [val (get data %)]
+                 [% val]) props)
+        [:invalid "ident"])))
+
+(def main-view-ident (prop-presence-ident [::id ::pc/sym ::pc/attribute]))
 
 (fp/defsc MainViewUnion
   [this props]
   {:ident (fn [] (main-view-ident props))
    :query (fn []
             {::pc/attribute (fp/get-query AttributeView)
-             ::pc/sym       (fp/get-query ResolverView)})}
+             ::pc/sym       (fp/get-query ResolverView)
+             ::id           (fp/get-query StatsView)})}
   (case (first (fp/get-ident this))
     ::pc/attribute (attribute-view props)
     ::pc/sym (resolver-view props)
+    ::id (stats-view props)
     (dom/div "Blank page")))
 
 (def main-view-union (fp/computed-factory MainViewUnion {:keyfn #(or (::pc/attribute %) (::pc/sym %))}))
+
+(defn augment [data f]
+  (merge data (f data)))
+
+(defn compute-stats [{::keys [attributes resolvers globals idents] :as data}]
+  {::attribute-count     (count attributes)
+   ::resolver-count      (count resolvers)
+   ::globals-count       (count globals)
+   ::idents-count        (count idents)
+   ::attr-edges-count    (transduce (map ::attr-edges-count) + attributes)
+   ::top-connection-hubs (->> attributes
+                              (sort-by ::attr-edges-count #(compare %2 %))
+                              (take 10)
+                              vec)})
 
 (defn process-index [{::pc/keys [index-resolvers idents index-attributes]}]
   (let [attrs (->> index-attributes
@@ -607,20 +658,23 @@
                             ::weight (count attr-provides)
                             ::reach (count attr-reach-via)
                             ::pc/attribute attr
+                            ::attr-edges-count (+ (transduce (map count) + (vals attr-reach-via))
+                                                 (transduce (map count) + (vals attr-provides)))
                             ::global-attribute? (contains? attr-reach-via #{})
                             ::ident-attribute? (contains? idents attr))))
                    (sort-by (comp pr-str ::pc/attribute))
                    (vec))]
-    {::attributes attrs
-     ::globals    (filterv ::global-attribute? attrs)
-     ::idents     (filterv ::ident-attribute? attrs)
+    (-> {::attributes attrs
+         ::globals    (filterv ::global-attribute? attrs)
+         ::idents     (filterv ::ident-attribute? attrs)
 
-     ::resolvers  (->> index-resolvers
-                       vals
-                       (sort-by ::pc/sym)
-                       vec)
-     ; TODO remove me
-     :ui/page     {::pc/attribute :customer/cpf}}))
+         ::resolvers  (->> index-resolvers
+                           vals
+                           (sort-by ::pc/sym)
+                           vec)
+         ;:ui/page     {::pc/attribute :customer/cpf}
+         }
+        (augment compute-stats))))
 
 ;; Query
 
@@ -653,7 +707,7 @@
                                     (random-uuid))]
                          {::id     id
                           :ui/menu {::id id}
-                          :ui/page {}})
+                          :ui/page {::id id}})
                        current-normalized
                        data-tree
                        (if-let [index (get data-tree ::index)]
@@ -665,6 +719,7 @@
                     {::attributes (fp/get-query AttributeIndex)}
                     {::globals (fp/get-query AttributeIndex)}
                     {::idents (fp/get-query AttributeIndex)}
+                    {::top-connection-hubs (fp/get-query AttributeIndex)}
                     {::resolvers (fp/get-query ResolverIndex)}
                     {:ui/page (fp/get-query MainViewUnion)}]
    :css            [[:.container {:flex           "1"
@@ -673,6 +728,7 @@
                     [:.graph {:height  "800px"
                               :display "flex"
                               :border  "1px solid #000"}]]
+   :css-include    [SimpleAttribute]
    :initLocalState (fn [] {:select-attribute #(fp/transact! this [`(navigate-to-attribute {::pc/attribute ~%})])
                            :select-resolver  #(fp/transact! this [`(navigate-to-resolver {::pc/sym ~%})])})}
   (dom/div :.container

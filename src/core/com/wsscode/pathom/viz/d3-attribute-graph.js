@@ -46,8 +46,7 @@ export function render(element, data) {
   // build the arrows.
   svg.append("svg:defs").selectAll("marker")
     .data(["arrow-provides", "arrow-reaches"])
-    // Different link/path types can be defined here
-    .enter().append("svg:marker")    // This section adds in the arrows
+    .enter().append("svg:marker")
     .attr("id", d => d)
     .attr("viewBox", "0 -5 10 10")
     .attr("refX", 15)
@@ -64,7 +63,6 @@ export function render(element, data) {
     .force("link", d3.forceLink(links).id(d => d.attribute).distance(90).strength(0.1))
     .force("charge", d3.forceManyBody().strength(-60))
     .force('collision', d3.forceCollide().radius(d => d.radius * 1.6))
-    // .force("charge", d3.forceManyBody())
     .force("center", d3.forceCenter(svgWidth / 2, svgHeight / 2))
 
   settings.simulation = simulation
@@ -78,7 +76,6 @@ export function render(element, data) {
     .classed('pathom-viz-index-explorer-attr-link-deep', d => d.deep)
     .classed('pathom-viz-index-explorer-attr-link-provide', d => d.lineProvide)
     .classed('pathom-viz-index-explorer-attr-link-reach', d => d.lineReach)
-    //.classed('pathom-viz-index-explorer-attr-link')
     .each(function (d) { d.ownerLine = d3.select(this)});
 
   const drag = simulation => {
@@ -165,9 +162,6 @@ export function render(element, data) {
     .attr("stroke-width", d => Math.sqrt(d.reach || 1) + 1)
     .attr("r", d => Math.sqrt(d.weight || 1) + 2)
     .attr("stroke", d => colorScale(extractNs(d.attribute)))
-    // .enter().append("text")
-    // .attr("text-anchor", "middle")
-    // .html(d => d.attribute)
     .each(function(d) {
       d.nodeElement = d3.select(this)
 
@@ -217,11 +211,6 @@ export function render(element, data) {
           tx + "," +
           ty;
       });
-    // link
-    //   .attr("x1", d => d.source.x)
-    //   .attr("y1", d => d.source.y)
-    //   .attr("x2", d => d.target.x)
-    //   .attr("y2", d => d.target.y);
 
     node
       .attr("cx", d => d.x)
