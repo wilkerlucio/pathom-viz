@@ -145,6 +145,8 @@ export function render(element, data) {
   }
 
   const extractNs = function(str) {
+    if (str.startsWith("#")) return null;
+
     const parts = str.split("/");
 
     if (parts.length > 1) {
@@ -159,13 +161,13 @@ export function render(element, data) {
     .data(nodes)
     .join("circle")
     .attr('class', 'pathom-viz-index-explorer-attr-node')
+    .classed('pathom-viz-index-explorer-attr-node-multi', d => d.multiNode)
+    .classed('pathom-viz-index-explorer-attr-node-main', d => d.mainNode)
     .attr("stroke-width", d => Math.sqrt(d.reach || 1) + 1)
     .attr("r", d => Math.sqrt(d.weight || 1) + 2)
-    .attr("stroke", d => colorScale(extractNs(d.attribute)))
+    .attr("stroke", d => d.multiNode ? null : colorScale(extractNs(d.attribute)))
     .each(function(d) {
       d.nodeElement = d3.select(this)
-
-      if (d.mainNode) d.nodeElement.attr('class', 'pathom-viz-index-explorer-attr-node pathom-viz-index-explorer-attr-node-main')
 
       d.lineTargets = links.filter(l => {
         return l.source.attribute === d.attribute;

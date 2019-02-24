@@ -6,6 +6,7 @@
             [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.viz.helpers :as h]
             [goog.object :as gobj]
+            [cljs.reader :refer [read-string]]
             [edn-query-language.core :as eql]
             [fulcro.client.localized-dom :as dom]
             [fulcro.client.mutations :as fm]
@@ -23,6 +24,7 @@
                         ::keys    [weight reach center?]
                         :as       attr}]
   {:attribute (pr-str attribute)
+   :multiNode (set? attribute)
    :mainNode  center?
    :weight    weight
    :reach     reach
@@ -41,7 +43,7 @@
 (defn compute-nodes-links [{::keys [attributes nested-provides? nested-reaches?]}]
   (let [index       (h/index-by ::pc/attribute attributes)
         attributes' (filter (comp #(or (keyword? %) (= % #{})) ::pc/attribute) attributes)]
-    {:nodes (mapv attribute->node attributes')
+    {:nodes (into [] (map attribute->node) attributes)
      :links (mapcat
               (fn [{::pc/keys [attribute attr-provides attr-reach-via]}]
                 (let [attr-str (pr-str attribute)]
@@ -49,38 +51,38 @@
                                 (into
                                   (keep (fn [[provided]]
                                           (if (nested? provided)
-                                            (when (and nested-provides?
+                                            (when (and (or nested-provides? nested-reaches?)
                                                        (contains? index (peek provided))
                                                        (not= attribute (peek provided)))
                                               {:source      attr-str
+                                               :target      (pr-str (peek provided))
                                                :deep        true
-                                               :lineProvide true
-                                               :target      (pr-str (peek provided))})
+                                               :lineProvide true})
                                             (when (and (contains? index provided)
                                                        (not= attribute provided))
                                               {:source      attr-str
-                                               :lineProvide true
-                                               :target      (pr-str provided)}))))
+                                               :target      (pr-str provided)
+                                               :lineProvide true}))))
                                   attr-provides)
-                                (into
-                                  (keep (fn [[input]]
-                                          (cond
-                                            #_#_(global-input? input)
-                                                {:source (pr-str input)
-                                                 :target attr-str}
+                                #_(into
+                                    (keep (fn [[input]]
+                                            (cond
+                                              #_#_(global-input? input)
+                                                  {:source (pr-str input)
+                                                   :target attr-str}
 
-                                            (and (single-input input)
-                                                 (contains? index (single-input input))
-                                                 (not= attribute (single-input input))
-                                                 (or (and (nested? input) nested-reaches?)
-                                                     (not (nested? input))))
-                                            {:source    (pr-str (single-input input))
-                                             :deep      (nested? input)
-                                             :lineReach true
-                                             :target    attr-str})))
-                                  attr-reach-via))]
+                                              (and (single-input input)
+                                                   (contains? index (single-input input))
+                                                   (not= attribute (single-input input))
+                                                   (or (and (nested? input) nested-reaches?)
+                                                       (not (nested? input))))
+                                              {:source    (pr-str (single-input input))
+                                               :target    attr-str
+                                               :deep      (nested? input)
+                                               :lineReach true})))
+                                    attr-reach-via))]
                     res)))
-              attributes')}))
+              attributes)}))
 
 (defn merge-attr [a b]
   (merge a b))
@@ -99,7 +101,7 @@
                                       :svgHeight   (gobj/get container "clientHeight")
                                       :data        (compute-nodes-links props)
                                       :showDetails (fn [attr d js]
-                                                     (on-show-details (keyword (subs attr 1)) d js))}))]
+                                                     (on-show-details (read-string attr) d js))}))]
       (if graph-comm (reset! graph-comm render-settings))
       (gobj/set this "renderedData" render-settings))))
 
@@ -111,8 +113,15 @@
      [:$pathom-viz-index-explorer-attr-node
       {;:stroke "#f34545b3"
        :fill "#000A"}
+
       [:&$pathom-viz-index-explorer-attr-node-main
        {:fill "#f9e943e3"}]
+
+      [:&$pathom-viz-index-explorer-attr-node-multi
+       {:fill         "#00000021"
+        :stroke       "#3a3a3a"
+        :stroke-width "5px"}]
+
       [:&$pathom-viz-index-explorer-attr-node-highlight
        {:fill "#de2b34"}]]
 
@@ -252,14 +261,17 @@
         ; reach
         (reduce
           (fn [out input]
-            (if (or (and direct-reaches? (direct-input? input) (single-input input))
-                    (and nested-reaches? (nested? input) (single-input input)))
-              (let [attr (single-input input)]
+            (if (or (and direct-reaches? (direct-input? input))
+                    (and nested-reaches? (nested? input)))
+              (if-let [attr (single-input input)]
                 (if (> attr-depth 1)
                   (attribute-network*
                     (assoc options' ::sub-index out)
                     attr)
-                  (update out attr merge (simple-attr index attr))))
+                  (update out attr merge (simple-attr index attr)))
+                (let [input (if (vector? input) (first input) input)]
+                  (js/console.log "ALT" input)
+                  (update out input merge (get index input))))
               out))
           <>
           (keys attr-reach-via))
@@ -392,9 +404,15 @@
                                                                 (first input)
                                                                 input))
                           :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
-                                           ((gobj/get settings "highlightNode") (str (first input))))
+                                           ((gobj/get settings "highlightNode")
+                                             (if (= 1 (count input))
+                                               (str (first input))
+                                               (pr-str input))))
                           :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
-                                           ((gobj/get settings "unhighlightNode") (str (first input))))}
+                                           ((gobj/get settings "unhighlightNode")
+                                             (if (= 1 (count input))
+                                               (str (first input))
+                                               (pr-str input))))}
                   (pr-str input)))
               (if nested-reaches?
                 (for [[path resolvers] (->> v
@@ -441,24 +459,7 @@
                           ::nested-reaches?  nested-reaches?
                           ::direct-provides? direct-provides?
                           ::nested-provides? nested-provides?
-                          ::on-show-details  on-select-attribute})))
-    (dom/div
-      (for [[input resolvers] attribute-paths]
-        (dom/div :.path {:key (pr-str input)}
-          "#{"
-          (for [attr input]
-            (dom/span {:key (pr-str attr)}
-              (attribute-link computed attr)
-              ", "))
-          "}"
-          (dom/div
-            "#{"
-            (for [sym resolvers]
-              (dom/span {:key (pr-str sym)}
-                (dom/a {:href "#" :onClick (h/pd #(on-select-resolver sym))}
-                  (pr-str sym))
-                ", "))
-            "}"))))))
+                          ::on-show-details  on-select-attribute})))))
 
 (def attribute-view (fp/computed-factory AttributeView {:keyfn ::pc/attribute}))
 
