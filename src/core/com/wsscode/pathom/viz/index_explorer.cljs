@@ -40,19 +40,17 @@
 (defn global-input? [input]
   (and (direct-input? input) (empty? input)))
 
-(defn compute-nodes-links [{::keys [attributes nested-provides? nested-reaches?]}]
-  (let [index       (h/index-by ::pc/attribute attributes)
-        attributes' (filter (comp #(or (keyword? %) (= % #{})) ::pc/attribute) attributes)]
+(defn compute-nodes-links [{::keys [attributes]}]
+  (let [index (h/index-by ::pc/attribute attributes)]
     {:nodes (into [] (map attribute->node) attributes)
      :links (mapcat
-              (fn [{::pc/keys [attribute attr-provides attr-reach-via]}]
+              (fn [{::pc/keys [attribute attr-provides]}]
                 (let [attr-str (pr-str attribute)]
                   (let [res (-> []
                                 (into
                                   (keep (fn [[provided]]
                                           (if (nested? provided)
-                                            (when (and (or nested-provides? nested-reaches?)
-                                                       (contains? index (peek provided))
+                                            (when (and (contains? index (peek provided))
                                                        (not= attribute (peek provided)))
                                               {:source      attr-str
                                                :target      (pr-str (peek provided))
@@ -63,24 +61,7 @@
                                               {:source      attr-str
                                                :target      (pr-str provided)
                                                :lineProvide true}))))
-                                  attr-provides)
-                                #_(into
-                                    (keep (fn [[input]]
-                                            (cond
-                                              #_#_(global-input? input)
-                                                  {:source (pr-str input)
-                                                   :target attr-str}
-
-                                              (and (single-input input)
-                                                   (contains? index (single-input input))
-                                                   (not= attribute (single-input input))
-                                                   (or (and (nested? input) nested-reaches?)
-                                                       (not (nested? input))))
-                                              {:source    (pr-str (single-input input))
-                                               :target    attr-str
-                                               :deep      (nested? input)
-                                               :lineReach true})))
-                                    attr-reach-via))]
+                                  attr-provides))]
                     res)))
               attributes)}))
 
