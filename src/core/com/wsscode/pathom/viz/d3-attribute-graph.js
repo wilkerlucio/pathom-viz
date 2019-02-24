@@ -12,16 +12,6 @@ function init(element, settings) {
   return Object.assign({}, DEFAULTS, settings, {svg, element})
 }
 
-function lineMarker(d) {
-  if (d.lineProvide) {
-    return "url(#arrow-provides)"
-  } else if (d.lineReach) {
-    return "url(#arrow-reaches)"
-  }
-
-  return "";
-}
-
 export function render(element, data) {
   const settings = init(element, data)
   const {svg, svgWidth, svgHeight, showDetails} = settings
@@ -72,10 +62,8 @@ export function render(element, data) {
     .data(links)
     .join("svg:path")
     .attr('class', 'pathom-viz-index-explorer-attr-link')
-    .attr("marker-end", lineMarker)
+    .attr("marker-end", "url(#arrow-provides)")
     .classed('pathom-viz-index-explorer-attr-link-deep', d => d.deep)
-    .classed('pathom-viz-index-explorer-attr-link-provide', d => d.lineProvide)
-    .classed('pathom-viz-index-explorer-attr-link-reach', d => d.lineReach)
     .each(function (d) { d.ownerLine = d3.select(this)});
 
   const drag = simulation => {
