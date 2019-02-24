@@ -13,19 +13,20 @@
 
 ;; Views
 
-(defn node-radius [weight reach]
+(defn node-radius [{::keys [weight reach]}]
   (js/Math.round
     (+
       (js/Math.sqrt (+ (or weight 1) 2))
       (js/Math.sqrt (+ (or reach 1) 1)))))
 
 (defn attribute->node [{::pc/keys [attribute]
-                        ::keys    [weight reach center?]}]
+                        ::keys    [weight reach center?]
+                        :as       attr}]
   {:attribute (pr-str attribute)
    :mainNode  center?
    :weight    weight
    :reach     reach
-   :radius    (node-radius weight reach)})
+   :radius    (node-radius attr)})
 
 (defn direct-input? [input] (set? input))
 (defn nested? [input] (vector? input))
@@ -382,12 +383,11 @@
           (for [[input v] (->> attr-reach-via
                                (group-by (comp attr-path-key-root first))
                                (sort-by (comp pr-str attr-path-key-root first)))
-                :let [direct? (some #(set? (first %)) v)]
+                :let [direct? (some (comp direct-input? first) v)]
                 :when (or direct? nested-reaches?)]
             (dom/div
               (dom/div :.out-attr {:key   (pr-str input)
-                                   :style (cond-> {}
-                                            direct? (assoc :fontWeight "bold"))}
+                                   :style (cond-> {} direct? (assoc :fontWeight "bold"))}
                 (dom/div {:onClick      #(on-select-attribute (if (= 1 (count input))
                                                                 (first input)
                                                                 input))
