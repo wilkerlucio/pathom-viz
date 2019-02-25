@@ -1,5 +1,6 @@
 :source-highlighter: coderay
 :source-language: clojure
+:imagesdir: docs/images
 :toc:
 :toc-placement: preamble
 :sectlinks:
@@ -30,7 +31,7 @@ Here is an example of using the card with a Pathom local parser:
 
 This will provide you a codemirror editor with query tracing support, like this:
 
-[GIF HERE]
+image:pathom-viz-card-demo.gif[Query Card]
 
 === D3 Trace Timeline
 
@@ -57,3 +58,5 @@ the Chrome extension and it will automatically hook into a Fulcro app and run qu
 against a Pathom remote.
 
 == Support
+
+Get support at #pathom channel in Clojurians Slack.
