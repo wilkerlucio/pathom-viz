@@ -118,7 +118,7 @@
      [:$pathom-viz-index-explorer-attr-link
       {:stroke         "#999"
        :stroke-opacity "0.6"
-       :stroke-width   "1px"
+       :stroke-width   "2px"
        :fill           "none"}
 
       [:&$pathom-viz-index-explorer-attr-link-focus-highlight
