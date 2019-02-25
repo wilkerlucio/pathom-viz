@@ -48,19 +48,18 @@
                 (let [attr-str (pr-str attribute)]
                   (let [res (-> []
                                 (into
-                                  (keep (fn [[provided]]
-                                          (if (nested? provided)
-                                            (when (and (contains? index (peek provided))
-                                                       (not= attribute (peek provided)))
-                                              {:source      attr-str
-                                               :target      (pr-str (peek provided))
-                                               :deep        true
-                                               :lineProvide true})
-                                            (when (and (contains? index provided)
-                                                       (not= attribute provided))
-                                              {:source      attr-str
-                                               :target      (pr-str provided)
-                                               :lineProvide true}))))
+                                  (keep (fn [[provided resolvers]]
+                                          (let [nested?   (nested? provided)
+                                                provided' (if nested?
+                                                            (peek provided)
+                                                            provided)]
+                                            (when (and (contains? index provided')
+                                                       (not= attribute provided'))
+                                              {:source    attr-str
+                                               :weight    (count resolvers)
+                                               :resolvers (pr-str resolvers)
+                                               :target    (pr-str provided')
+                                               :deep      nested?}))))
                                   attr-provides))]
                     res)))
               attributes)}))
@@ -69,8 +68,9 @@
   (merge a b))
 
 (defn render-attribute-graph [this]
-  (let [{::keys [on-show-details graph-comm] :as props} (-> this fp/props)
+  (let [{::keys [on-show-details on-click-edge graph-comm] :as props} (-> this fp/props)
         on-show-details (or on-show-details identity)
+        on-click-edge   (or on-click-edge identity)
         current         (gobj/get this "renderedData")
         container       (gobj/get this "svgContainer")
         svg             (gobj/get this "svg")]
@@ -82,7 +82,10 @@
                                       :svgHeight   (gobj/get container "clientHeight")
                                       :data        (compute-nodes-links props)
                                       :showDetails (fn [attr d js]
-                                                     (on-show-details (read-string attr) d js))}))]
+                                                     (on-show-details (read-string attr) d js))
+                                      :onClickEdge (fn [edge]
+                                                     (let [resolvers (read-string (gobj/get edge "resolvers"))]
+                                                       (on-click-edge {::resolvers resolvers})))}))]
       (if graph-comm (reset! graph-comm render-settings))
       (gobj/set this "renderedData" render-settings))))
 
@@ -117,6 +120,11 @@
        :stroke-opacity "0.6"
        :stroke-width   "1px"
        :fill           "none"}
+
+      [:&$pathom-viz-index-explorer-attr-link-focus-highlight
+       {:stroke       "#4242e0db"
+        :stroke-width "3px"
+        :z-index      "10"}]
 
       [:&$pathom-viz-index-explorer-attr-link-target-highlight
        {:stroke       "#0c0"
@@ -303,7 +311,7 @@
          ::keys    [attr-depth direct-reaches? nested-reaches? direct-provides?
                     nested-provides? interconnections?]
          :>/keys   [header-view]}
-   {::keys [on-select-resolver on-select-attribute attributes]
+   {::keys [on-select-attribute attributes]
     :as    computed}]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
                      (let [attr (or (::pc/attribute data-tree)
@@ -347,7 +355,10 @@
                               :border  "1px solid #000"}
                      [:text {:font "bold 16px Verdana, Helvetica, Arial, sans-serif"}]]]
    :css-include    [AttributeGraph]
-   :initLocalState (fn [] {:graph-comm (atom nil)})}
+   :initLocalState (fn [] {:graph-comm      (atom nil)
+                           :select-resolver (fn [{::keys [resolvers]}]
+                                              (let [{::keys [on-select-resolver]} (fp/get-computed (fp/props this))]
+                                                (on-select-resolver (first resolvers))))})}
   (dom/div :.container
     (attribute-line-view header-view)
     (dom/div :.toolbar
@@ -448,7 +459,8 @@
                           ::direct-provides?  direct-provides?
                           ::nested-provides?  nested-provides?
                           ::interconnections? interconnections?
-                          ::on-show-details   on-select-attribute})))))
+                          ::on-show-details   on-select-attribute
+                          ::on-click-edge     (fp/get-state this :select-resolver)})))))
 
 (def attribute-view (fp/computed-factory AttributeView {:keyfn ::pc/attribute}))
 
@@ -477,16 +489,34 @@
                     data-tree))
    :ident       [::pc/sym ::pc/sym]
    :query       [::pc/sym ::pc/input ::pc/output]
-   :css         [[:.container {:flex "1"}]]
+   :css         [[:.container {:flex "1"}]
+                 [:.data-header {:padding     "9px 4px"
+                                 :font-weight "bold"
+                                 :font-family "Verdana"}]
+                 [:.header {:background  "#40879e"
+                            :display     "flex"
+                            :cursor      "pointer"
+                            :color       "#fff"
+                            :align-items "center"
+                            :font-family "'Open Sans'"
+                            :padding     "6px 8px"
+                            :font-size   "14px"
+                            :margin      "1px 0"}
+                  [:b {:background "#F57F17"}]]]
    :css-include [OutputAttributeView]}
   (dom/div :.container
-    "Resolver: " (pr-str sym)
-    (dom/div "Input: "
+    (dom/div :.header (str sym))
+    (dom/div
+      (dom/div :.data-header "Input")
       (dom/pre (h/pprint-str input)))
     (if output
-      (dom/div "Output: "
-        (for [ast (-> output eql/query->ast :children)]
-          (output-attribute-view ast))))))
+      (dom/div
+        (dom/div :.data-header "Output")
+        (for [{:keys [key]} (->> output eql/query->ast :children
+                                 (sort-by :key))]
+          (simple-attribute {:react-key (pr-str key)
+                             :onClick   #(on-select-attribute key)}
+            (pr-str key)))))))
 
 (def resolver-view (fp/factory ResolverView {:keyfn ::pc/sym}))
 

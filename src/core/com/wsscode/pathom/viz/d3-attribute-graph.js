@@ -14,7 +14,7 @@ function init(element, settings) {
 
 export function render(element, data) {
   const settings = init(element, data)
-  const {svg, svgWidth, svgHeight, showDetails} = settings
+  const {svg, svgWidth, svgHeight, showDetails, onClickEdge} = settings
   const colorScale = d3.scaleOrdinal(d3.schemeCategory10)
 
   svg
@@ -57,6 +57,8 @@ export function render(element, data) {
 
   settings.simulation = simulation
 
+  const linksIndex = {};
+
   const link = container.append("g")
     .selectAll("line")
     .data(links)
@@ -64,7 +66,29 @@ export function render(element, data) {
     .attr('class', 'pathom-viz-index-explorer-attr-link')
     .attr("marker-end", "url(#arrow-provides)")
     .classed('pathom-viz-index-explorer-attr-link-deep', d => d.deep)
-    .each(function (d) { d.ownerLine = d3.select(this)});
+    .each(function (d) {
+      d.ownerLine = d3.select(this)
+      const lines = linksIndex[d.resolvers] || [];
+      lines.push(d.ownerLine);
+      linksIndex[d.resolvers] = lines;
+    })
+    .on('click', function({resolvers}) {
+      onClickEdge({resolvers});
+    })
+    .on('mouseenter', function(d) {
+      linksIndex[d.resolvers].forEach(line => {
+        line.classed("pathom-viz-index-explorer-attr-link-focus-highlight", true)
+      });
+
+      return label.html(d.resolvers)
+    })
+    .on('mouseleave', function(d) {
+      linksIndex[d.resolvers].forEach(line => {
+        line.classed("pathom-viz-index-explorer-attr-link-focus-highlight", false)
+      });
+
+      return label.html('')
+    });
 
   const drag = simulation => {
     function dragstarted(d) {
