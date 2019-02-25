@@ -92,16 +92,15 @@
    [[:.container {:flex      1
                   :max-width "100%"}
      [:$pathom-viz-index-explorer-attr-node
-      {;:stroke "#f34545b3"
-       :fill "#000A"}
-
-      [:&$pathom-viz-index-explorer-attr-node-main
-       {:fill "#f9e943e3"}]
+      {:fill "#000A"}
 
       [:&$pathom-viz-index-explorer-attr-node-multi
        {:fill         "#00000021"
-        :stroke       "#3a3a3a"
+        :stroke       "#101010"
         :stroke-width "5px"}]
+
+      [:&$pathom-viz-index-explorer-attr-node-main
+       {:fill "#f9e943e3"}]
 
       [:&$pathom-viz-index-explorer-attr-node-highlight
        {:fill "#de2b34"}]]
@@ -216,19 +215,21 @@
       (pr-str attr))
     (pr-str attr)))
 
-(defn simple-attr [index attr]
-  (-> index (get attr)))
+(defn pull-attr [{::keys [attr-index interconnections?]} attr]
+  (cond-> (get attr-index attr)
+    (false? interconnections?)
+    (dissoc ::pc/attr-provides)))
 
 (defn attribute-network*
   [{::keys [attr-depth attributes sub-index attr-index attr-visited
             direct-reaches? nested-reaches? direct-provides? nested-provides?]
-    :or    {attr-depth       1
-            direct-reaches?  true
-            nested-reaches?  false
-            direct-provides? true
-            nested-provides? false
-            sub-index        {}
-            attr-visited     #{}}
+    :or    {attr-depth        1
+            direct-reaches?   true
+            nested-reaches?   false
+            direct-provides?  true
+            nested-provides?  false
+            sub-index         {}
+            attr-visited      #{}}
     :as    options} source]
   (if (contains? attr-visited source)
     sub-index
@@ -249,10 +250,9 @@
                   (attribute-network*
                     (assoc options' ::sub-index out)
                     attr)
-                  (update out attr merge (simple-attr index attr)))
+                  (update out attr merge (pull-attr options' attr)))
                 (let [input (if (vector? input) (first input) input)]
-                  (js/console.log "ALT" input)
-                  (update out input merge (get index input))))
+                  (update out input merge (pull-attr options' input))))
               out))
           <>
           (keys attr-reach-via))
@@ -265,11 +265,11 @@
                 (attribute-network*
                   (assoc options' ::sub-index out)
                   attr)
-                (update out attr merge (simple-attr index attr)))
+                (update out attr merge (pull-attr options' attr)))
 
               (and nested-provides? (nested? attr))
               (let [attr (peek attr)]
-                (update out attr merge (simple-attr index attr)))
+                (update out attr merge (pull-attr options' attr)))
 
               :else
               out))
@@ -300,7 +300,8 @@
 
 (fp/defsc AttributeView
   [this {::pc/keys [attribute-paths attribute attr-reach-via attr-provides]
-         ::keys    [attr-depth direct-reaches? nested-reaches? direct-provides? nested-provides?]
+         ::keys    [attr-depth direct-reaches? nested-reaches? direct-provides?
+                    nested-provides? interconnections?]
          :>/keys   [header-view]}
    {::keys [on-select-resolver on-select-attribute attributes]
     :as    computed}]
@@ -308,24 +309,25 @@
                      (let [attr (or (::pc/attribute data-tree)
                                     (::pc/attribute current-normalized))]
                        (merge
-                         {::attr-depth       1
-                          ::direct-reaches?  true
-                          ::nested-reaches?  false
-                          ::direct-provides? true
-                          ::nested-provides? false
-                          :>/header-view     {::pc/attribute attr}}
+                         {::attr-depth        1
+                          ::direct-reaches?   true
+                          ::nested-reaches?   false
+                          ::direct-provides?  true
+                          ::nested-provides?  false
+                          ::interconnections? true
+                          :>/header-view      {::pc/attribute attr}}
                          current-normalized
                          data-tree)))
    :ident          [::pc/attribute ::pc/attribute]
    :query          [::pc/attribute ::pc/attribute-paths ::attr-depth ::direct-reaches? ::nested-reaches?
-                    ::direct-provides? ::nested-provides? ::pc/attr-reach-via ::pc/attr-provides
+                    ::direct-provides? ::nested-provides? ::interconnections? ::pc/attr-reach-via ::pc/attr-provides
                     {::attr-provides [::pc/attribute]}
                     {:>/header-view (fp/get-query AttributeLineView)}]
    :css            [[:.container {:flex           "1"
                                   :flex-direction "column"
                                   :display        "flex"}]
                     [:.toolbar {:display               "grid"
-                                :grid-template-columns "repeat(5, max-content)"
+                                :grid-template-columns "repeat(10, max-content)"
                                 :grid-gap              "10px"}]
                     [:.data-list {:white-space  "nowrap"
                                   :border-right "1px solid #000"
@@ -368,7 +370,11 @@
       (dom/label
         (dom/input {:type     "checkbox" :checked nested-provides?
                     :onChange #(fm/set-value! this ::nested-provides? (gobj/getValueByKeys % "target" "checked"))})
-        "Nested outputs"))
+        "Nested outputs")
+      (dom/label
+        (dom/input {:type     "checkbox" :checked interconnections?
+                    :onChange #(fm/set-value! this ::interconnections? (gobj/getValueByKeys % "target" "checked"))})
+        "Interconnections"))
     (let [index (h/index-by ::pc/attribute attributes)]
       (dom/div :.graph
         (dom/div :.data-list
@@ -428,19 +434,21 @@
                           :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
                                            ((gobj/get settings "unhighlightNode") (str k)))}
                   (pr-str k))))))
-        (attribute-graph {::attributes       (attribute-network {::attr-depth       attr-depth
-                                                                 ::attr-index       index
-                                                                 ::attributes       attributes
-                                                                 ::direct-reaches?  direct-reaches?
-                                                                 ::nested-reaches?  nested-reaches?
-                                                                 ::direct-provides? direct-provides?
-                                                                 ::nested-provides? nested-provides?} attribute)
-                          ::graph-comm       (fp/get-state this :graph-comm)
-                          ::direct-reaches?  direct-reaches?
-                          ::nested-reaches?  nested-reaches?
-                          ::direct-provides? direct-provides?
-                          ::nested-provides? nested-provides?
-                          ::on-show-details  on-select-attribute})))))
+        (attribute-graph {::attributes        (attribute-network {::attr-depth        attr-depth
+                                                                  ::attr-index        index
+                                                                  ::attributes        attributes
+                                                                  ::direct-reaches?   direct-reaches?
+                                                                  ::nested-reaches?   nested-reaches?
+                                                                  ::direct-provides?  direct-provides?
+                                                                  ::nested-provides?  nested-provides?
+                                                                  ::interconnections? interconnections?} attribute)
+                          ::graph-comm        (fp/get-state this :graph-comm)
+                          ::direct-reaches?   direct-reaches?
+                          ::nested-reaches?   nested-reaches?
+                          ::direct-provides?  direct-provides?
+                          ::nested-provides?  nested-provides?
+                          ::interconnections? interconnections?
+                          ::on-show-details   on-select-attribute})))))
 
 (def attribute-view (fp/computed-factory AttributeView {:keyfn ::pc/attribute}))
 

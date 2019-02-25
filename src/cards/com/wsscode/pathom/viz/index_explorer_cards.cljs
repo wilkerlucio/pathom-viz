@@ -44,7 +44,6 @@
   (let [id (random-uuid)]
     (ct.fulcro/fulcro-card
       {::f.portal/root iex/IndexExplorer
-       ::f.portal/persistence-key ::index-explorer
        ::f.portal/app  {:networking       (-> (p.network/pathom-remote parser)
                                               (p.network/trace-remote))
                         :initial-state    {::id id}
@@ -71,6 +70,9 @@
 (defn simple-compute-nodes-out [out]
   (-> out
       (update :nodes #(mapv (fn [x] (select-keys x [:attribute])) %))))
+
+(ws/deftest test-attribute-network
+  (is (= (-> (iex/attribute-network {::iex/attributes [{}]} :movie/name)))))
 
 (ws/deftest test-compute-nodes-links
   (is (= (iex/compute-nodes-links {})
