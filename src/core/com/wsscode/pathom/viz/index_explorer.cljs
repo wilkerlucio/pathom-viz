@@ -118,7 +118,7 @@
      [:$pathom-viz-index-explorer-attr-link
       {:stroke         "#999"
        :stroke-opacity "0.6"
-       :stroke-width   "2px"
+       :stroke-width   "1.5px"
        :fill           "none"}
 
       [:&$pathom-viz-index-explorer-attr-link-focus-highlight
@@ -340,6 +340,9 @@
                     [:.data-list {:white-space  "nowrap"
                                   :border-right "1px solid #000"
                                   :overflow     "auto"}]
+                    [:.data-list-right {:white-space "nowrap"
+                                        :border-left "1px solid #000"
+                                        :overflow    "auto"}]
                     [:.data-header {:padding     "9px 4px"
                                     :font-weight "bold"
                                     :font-family "Verdana"}]
@@ -428,23 +431,7 @@
                                                    ((gobj/get settings "highlightNode") (str k)))
                                   :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
                                                    ((gobj/get settings "unhighlightNode") (str k)))}
-                          (pr-str k)))))))))
-          (dom/div :.data-header "Provides")
-          (for [[_ v] (->> (group-by (comp attr-path-key-root first) attr-provides)
-                           (sort-by (comp attr-path-key-root first)))]
-            (for [[path resolvers] (->> v
-                                        (map #(update % 0 (fn [x] (if (keyword? x) [x] x))))
-                                        (remove #(and (not nested-provides?) (> (count (first %)) 1)))
-                                        (sort-by first))
-                  :let [k (peek path)]]
-              (dom/div :.out-attr {:key   (pr-str path)
-                                   :style {:marginLeft (str (* 10 (dec (count path))) "px")}}
-                (dom/div {:onClick      #(on-select-attribute k)
-                          :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
-                                           ((gobj/get settings "highlightNode") (str k)))
-                          :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
-                                           ((gobj/get settings "unhighlightNode") (str k)))}
-                  (pr-str k))))))
+                          (pr-str k))))))))))
         (attribute-graph {::attributes        (attribute-network {::attr-depth        attr-depth
                                                                   ::attr-index        index
                                                                   ::attributes        attributes
@@ -460,7 +447,24 @@
                           ::nested-provides?  nested-provides?
                           ::interconnections? interconnections?
                           ::on-show-details   on-select-attribute
-                          ::on-click-edge     (fp/get-state this :select-resolver)})))))
+                          ::on-click-edge     (fp/get-state this :select-resolver)})
+        (dom/div :.data-list-right
+          (dom/div :.data-header "Provides")
+          (for [[_ v] (->> (group-by (comp attr-path-key-root first) attr-provides)
+                           (sort-by (comp attr-path-key-root first)))]
+            (for [[path resolvers] (->> v
+                                        (map #(update % 0 (fn [x] (if (keyword? x) [x] x))))
+                                        (remove #(and (not nested-provides?) (> (count (first %)) 1)))
+                                        (sort-by first))
+                  :let [k (peek path)]]
+              (dom/div :.out-attr {:key   (pr-str path)
+                                   :style {:marginLeft (str (* 10 (dec (count path))) "px")}}
+                (dom/div {:onClick      #(on-select-attribute k)
+                          :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
+                                           ((gobj/get settings "highlightNode") (str k)))
+                          :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
+                                           ((gobj/get settings "unhighlightNode") (str k)))}
+                  (pr-str k))))))))))
 
 (def attribute-view (fp/computed-factory AttributeView {:keyfn ::pc/attribute}))
 
@@ -528,7 +532,7 @@
 (def max-search-results 15)
 
 (fm/defmutation search [{::keys [text]}]
-  (action [{:keys [ref state reconciler]}]
+  (action [{:keys [ref state]}]
     (let [attributes (->> (get-in @state (conj ref ::attributes))
                           (realize-references @state)
                           (mapv #(assoc % ::fuzzy/string (pr-str (::pc/attribute %)))))
