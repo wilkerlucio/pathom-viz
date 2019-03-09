@@ -13,7 +13,8 @@
             [nubank.workspaces.lib.fulcro-portal :as f.portal]
             [nubank.workspaces.model :as wsm]
             [fulcro.client.primitives :as fp]
-            [cljs.test :refer [is]]))
+            [cljs.test :refer [is]]
+            [edn-query-language.core :as eql]))
 
 (pc/defresolver index-resolver [env _]
   {::pc/output [::sample-index]}
@@ -73,18 +74,17 @@
     {::f.portal/root
      iex/AttributeSelectionTree
 
-     ::f.portal/initial-state
-     {::iex/selection
+     ::f.portal/computed
+     {::iex/attribute-props
+      (fn [x] {:onClick #(js/console.log x)})
+
+      ::iex/selection
       [:foo
        {:bar
         [:baz]}
        {:more
         [{:deep [{:inside [:more]}]}
-         :with]}]}
-
-     ::f.portal/computed
-     {::iex/attribute-props
-      (fn [x] {:onClick #(js/console.log x)})}}))
+         :with]}]}}))
 
 (defn simple-compute-nodes-out [out]
   (-> out
@@ -142,3 +142,8 @@
                    :resolvers "latest-movie"
                    :target    ":movie/name"
                    :deep      true}]})))
+
+(ws/deftest test-out-all-attributes
+  (is (= (iex/out-all-attributes (eql/query->ast [])) #{}))
+  (is (= (iex/out-all-attributes (eql/query->ast [:foo])) #{:foo}))
+  (is (= (iex/out-all-attributes (eql/query->ast [:foo {:bar [:baz]}])) #{:foo :bar :baz})))

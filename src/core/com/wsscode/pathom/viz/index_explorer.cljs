@@ -267,7 +267,7 @@
     (conj set item)))
 
 (fp/defsc AttributeSelectionTree
-  [this {::keys [selection expanded]} {::keys [attribute-props]}]
+  [this {::keys [expanded] :as props} {::keys [selection attribute-props] :as comp}]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
                      (merge
                        {:ui/id     (random-uuid)
@@ -275,7 +275,7 @@
                        current-normalized
                        data-tree))
    :ident          [:ui/id :ui/id]
-   :query          [:ui/id ::selection ::expanded]
+   :query          [:ui/id ::expanded]
    :css            [[:.attribute {:display     "flex"
                                   :align-items "center"
                                   :padding     "0 2px"
@@ -368,13 +368,13 @@
 (defn attribute-network*
   [{::keys [attr-depth attributes sub-index attr-index attr-visited
             direct-reaches? nested-reaches? direct-provides? nested-provides?]
-    :or    {attr-depth        1
-            direct-reaches?   true
-            nested-reaches?   false
-            direct-provides?  true
-            nested-provides?  false
-            sub-index         {}
-            attr-visited      #{}}
+    :or    {attr-depth       1
+            direct-reaches?  true
+            nested-reaches?  false
+            direct-provides? true
+            nested-provides? false
+            sub-index        {}
+            attr-visited     #{}}
     :as    options} source]
   (if (contains? attr-visited source)
     sub-index
@@ -634,43 +634,52 @@
 
 (def output-attribute-view (fp/computed-factory OutputAttributeView {:keyfn (comp pr-str :key)}))
 
+(defn out-all-attributes [{:keys [children]}]
+  (reduce
+    (fn [attrs {:keys [key children] :as node}]
+      (cond-> (conj attrs key)
+        children
+        (into (out-all-attributes node))))
+    #{}
+    children))
+
 (fp/defsc ResolverView
-  [this {::pc/keys [sym input output]}
-   {::pc/keys [index-oir]
-    ::keys    [on-select-attribute attributes]
-    :as       computed}]
-  {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
-                  (merge
-                    {}
-                    current-normalized
-                    data-tree))
-   :ident       [::pc/sym ::pc/sym]
-   :query       [::pc/sym ::pc/input ::pc/output]
-   :css         [[:.container {:flex "1"
-                               :display "flex"
-                               :flex-direction "column"}]
-                 [:.data-header {:padding     "9px 4px"
-                                 :font-weight "bold"
-                                 :font-family "Verdana"}]
-                 [:.header {:background  "#40879e"
-                            :display     "flex"
-                            :cursor      "pointer"
-                            :color       "#fff"
-                            :align-items "center"
-                            :font-family "'Open Sans'"
-                            :padding     "6px 8px"
-                            :font-size   "14px"
-                            :margin      "1px 0"}
-                  [:b {:background "#F57F17"}]]
-                 [:.columns {:display "flex"
-                             :flex 1}]
-                 [:.menu {:white-space "nowrap"}]]
-   :css-include [OutputAttributeView]
+  [this {::pc/keys [sym input output]
+         :ui/keys  [output-tree]}
+   {::keys [on-select-attribute attributes]}]
+  {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
+                     (merge
+                       {:ui/output-tree {}}
+                       current-normalized
+                       data-tree))
+   :ident          [::pc/sym ::pc/sym]
+   :query          [::pc/sym ::pc/input ::pc/output
+                    {:ui/output-tree (fp/get-query AttributeSelectionTree)}]
+   :css            [[:.container {:flex           "1"
+                                  :display        "flex"
+                                  :flex-direction "column"}]
+                    [:.data-header {:padding     "9px 4px"
+                                    :font-weight "bold"
+                                    :font-family "Verdana"}]
+                    [:.header {:background  "#40879e"
+                               :display     "flex"
+                               :cursor      "pointer"
+                               :color       "#fff"
+                               :align-items "center"
+                               :font-family "'Open Sans'"
+                               :padding     "6px 8px"
+                               :font-size   "14px"
+                               :margin      "1px 0"}
+                     [:b {:background "#F57F17"}]]
+                    [:.columns {:display "flex"
+                                :flex    1}]
+                    [:.menu {:white-space "nowrap"}]]
+   :css-include    [OutputAttributeView]
    :initLocalState (fn [] {:graph-comm      (atom nil)
                            :select-resolver (fn [{::keys [resolvers]}]
                                               (let [{::keys [on-select-resolver]} (fp/get-computed (fp/props this))]
                                                 (on-select-resolver (first resolvers))))})}
-  (let [resolver-attrs (into input (map :key) (->> output eql/query->ast :children))
+  (let [resolver-attrs (out-all-attributes (->> output eql/query->ast))
         attrs          (-> (h/index-by ::pc/attribute attributes)
                            (select-keys resolver-attrs)
                            vals)]
@@ -684,10 +693,8 @@
           (if output
             (dom/div
               (dom/div :.data-header "Output")
-              (for [{:keys [key]} (->> output eql/query->ast :children
-                                       (sort-by :key))]
-                (simple-attribute (assoc (out-attribute-events this key) :react-key (pr-str key))
-                  (pr-str key))))))
+              (attribute-selection-tree output-tree {::selection       output
+                                                     ::attribute-props (fn [{:keys [key]}] (out-attribute-events this key))}))))
 
         (attribute-graph {::attributes      attrs
                           ::graph-comm      (fp/get-state this :graph-comm)
