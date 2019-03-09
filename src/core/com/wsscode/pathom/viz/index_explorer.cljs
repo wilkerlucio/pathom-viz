@@ -223,6 +223,88 @@
 
 (def attribute-graph (fp/factory AttributeGraph))
 
+(s/def ::path (s/coll-of ::p/attribute :kind vector?))
+(s/def ::selection ::pc/output)
+(s/def ::expanded (s/coll-of ::path :kind set?))
+(s/def ::expanded? boolean?)
+
+(declare render-attributes)
+
+(>defn render-attribute
+  [{:keys  [key children]
+    ::keys [expanded? path toggle-expanded attribute-props] :as node}]
+  [(s/merge :edn-query-language.ast/node (s/keys :req [::expanded? ::path ::toggle-expanded] :opt [::attribute-props]))
+   => any?]
+  (dom/div :.attribute-container {:key (pr-str key)}
+    (dom/div :.attribute
+      (dom/div :.expander {:onClick #(toggle-expanded path)}
+        (if children (if expanded? "▼" "▶")))
+      (dom/div (cond-> {} attribute-props (merge (attribute-props node))) (pr-str key)))
+    (if expanded?
+      (dom/div :.children-container
+        (render-attributes node children)))))
+
+(defn render-attributes [{::keys [expanded path toggle-expanded attribute-props]} children]
+  (for [{:keys [key] :as node} children
+        :let [path (conj path key)]]
+    (render-attribute
+      (assoc node ::path path
+                  ::expanded expanded
+                  ::toggle-expanded toggle-expanded
+                  ::attribute-props attribute-props
+                  ::expanded? (contains? expanded path)))))
+
+(fm/defmutation update-value [{:keys [key fn args]}]
+  (action [{:keys [state ref]}]
+    (swap! state update-in ref update key #(apply fn % args))))
+
+(defn update-value! [component key fn & args]
+  (fp/transact! component [`(update-value {:key ~key :fn ~fn :args ~args})]))
+
+(defn toggle-set-item [set item]
+  (if (contains? set item)
+    (disj set item)
+    (conj set item)))
+
+(fp/defsc AttributeSelectionTree
+  [this {::keys [selection expanded]} {::keys [attribute-props]}]
+  {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
+                     (merge
+                       {:ui/id     (random-uuid)
+                        ::expanded #{}}
+                       current-normalized
+                       data-tree))
+   :ident          [:ui/id :ui/id]
+   :query          [:ui/id ::selection ::expanded]
+   :css            [[:.attribute {:display     "flex"
+                                  :align-items "center"
+                                  :padding     "0 2px"
+                                  :color       "#9a45b1"
+                                  :cursor      "pointer"
+                                  :font-family "sans-serif"
+                                  :font-size   "14px"
+                                  :line-height "1.4em"}]
+                    [:.expander {:display      "flex"
+                                 :align-items  "center"
+                                 :color        "#656565"
+                                 :cursor       "pointer"
+                                 :font-size    "10px"
+                                 :margin-top   "1px"
+                                 :margin-right "3px"
+                                 :width        "10px"}]
+                    [:.children-container {:margin-left "13px"}]]
+   :initLocalState (fn [] {:toggle-expanded (fn [path]
+                                              (update-value! this ::expanded toggle-set-item path))})}
+  (let [ast (eql/query->ast selection)]
+    (dom/div
+      (render-attributes {::path            []
+                          ::expanded        expanded
+                          ::attribute-props attribute-props
+                          ::toggle-expanded (fp/get-state this :toggle-expanded)}
+        (:children ast)))))
+
+(def attribute-selection-tree (fp/computed-factory AttributeSelectionTree {:keyfn :ui/id}))
+
 (fp/defsc AttributeLineView
   [this {::pc/keys    [attribute]
          ::fuzzy/keys [match-hl]
