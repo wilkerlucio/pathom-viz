@@ -2,7 +2,9 @@
  ["src/core" "src/cards"]
 
  :deps
- {com.wsscode/fuzzy {:mvn/version "1.0.0"}}
+ {com.wsscode/fuzzy     {:mvn/version "1.0.0"}
+  gnl/ghostwheel        {:mvn/version "0.3.5"}
+  gnl/ghostwheel.tracer {:mvn/version "0.3.5"}}
 
  :aliases
  {:provided

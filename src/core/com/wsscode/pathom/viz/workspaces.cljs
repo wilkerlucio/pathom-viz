@@ -1,6 +1,7 @@
 (ns com.wsscode.pathom.viz.workspaces
   (:require [cljs.core.async :refer [go <!]]
             [cljs.reader :refer [read-string]]
+            [ghostwheel.tracer]
             [com.wsscode.pathom.fulcro.network :as pfn]
             [com.wsscode.pathom.viz.query-editor :as pv.query-editor]
             [nubank.workspaces.card-types.fulcro :as ct.fulcro]

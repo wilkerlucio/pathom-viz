@@ -1,46 +1,103 @@
 (ns com.wsscode.pathom.viz.index-explorer
   (:require ["./d3-attribute-graph" :as d3attr]
             ["./detect-element-size" :refer [addResizeListener]]
+            [cljs.reader :refer [read-string]]
+            [cljs.spec.alpha :as s]
             [com.wsscode.fuzzy :as fuzzy]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.viz.helpers :as h]
-            [goog.object :as gobj]
-            [cljs.reader :refer [read-string]]
             [edn-query-language.core :as eql]
             [fulcro.client.localized-dom :as dom]
             [fulcro.client.mutations :as fm]
-            [fulcro.client.primitives :as fp]))
+            [fulcro.client.primitives :as fp]
+            [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ?]]
+            [goog.object :as gobj]
+            [clojure.string :as str]))
+
+; region specs
+
+(s/def ::weight nat-int?)
+(s/def ::reach nat-int?)
+(s/def ::resolvers ::pc/attributes-set)
+
+(s/def :com.wsscode.pathom.viz.index-explorer.attribute-node/attribute string?)
+(s/def :com.wsscode.pathom.viz.index-explorer.attribute-node/multiNode boolean?)
+(s/def :com.wsscode.pathom.viz.index-explorer.attribute-node/mainNode boolean?)
+(s/def :com.wsscode.pathom.viz.index-explorer.attribute-node/weight ::weight)
+(s/def :com.wsscode.pathom.viz.index-explorer.attribute-node/reach ::reach)
+(s/def :com.wsscode.pathom.viz.index-explorer.attribute-node/radius (s/and double? pos?))
+
+(s/def ::attribute-node
+  (s/keys :req-un [:com.wsscode.pathom.viz.index-explorer.attribute-node/attribute
+                   :com.wsscode.pathom.viz.index-explorer.attribute-node/multiNode
+                   :com.wsscode.pathom.viz.index-explorer.attribute-node/mainNode
+                   :com.wsscode.pathom.viz.index-explorer.attribute-node/weight
+                   :com.wsscode.pathom.viz.index-explorer.attribute-node/reach
+                   :com.wsscode.pathom.viz.index-explorer.attribute-node/radius]))
+
+(s/def :com.wsscode.pathom.viz.index-explorer.attribute-link/source string?)
+(s/def :com.wsscode.pathom.viz.index-explorer.attribute-link/weight ::weight)
+(s/def :com.wsscode.pathom.viz.index-explorer.attribute-link/resolvers string?)
+(s/def :com.wsscode.pathom.viz.index-explorer.attribute-link/target string?)
+(s/def :com.wsscode.pathom.viz.index-explorer.attribute-link/deep boolean?)
+
+(s/def ::attribute-link
+  (s/keys :req-un [:com.wsscode.pathom.viz.index-explorer.attribute-link/source
+                   :com.wsscode.pathom.viz.index-explorer.attribute-link/weight
+                   :com.wsscode.pathom.viz.index-explorer.attribute-link/resolvers
+                   :com.wsscode.pathom.viz.index-explorer.attribute-link/target
+                   :com.wsscode.pathom.viz.index-explorer.attribute-link/deep]))
+
+(s/def :com.wsscode.pathom.viz.index-explorer.attribute-graph/nodes (s/coll-of ::attribute-node))
+(s/def :com.wsscode.pathom.viz.index-explorer.attribute-graph/links (s/coll-of ::attribute-link))
+
+(s/def ::attribute-graph
+  (s/keys :req-un [:com.wsscode.pathom.viz.index-explorer.attribute-graph/nodes
+                   :com.wsscode.pathom.viz.index-explorer.attribute-graph/links]))
+
+(s/def ::maybe-nested-input (s/or :direct set? :nested vector?))
+
+; endregion
 
 ;; Views
 
-(defn node-radius [{::keys [weight reach]}]
+(>defn node-radius
+  [{::keys [weight reach]}]
+  [(s/keys :req [::weight ::reach]) => double?]
   (js/Math.round
     (+
       (js/Math.sqrt (+ (or weight 1) 2))
       (js/Math.sqrt (+ (or reach 1) 1)))))
 
-(defn attribute->node [{::pc/keys [attribute]
-                        ::keys    [weight reach center?]
-                        :as       attr}]
+(>defn attribute->node
+  [{::pc/keys [attribute]
+    ::keys    [weight reach center?]
+    :as       attr}]
+  [(s/keys :req [::pc/attribute ::weight ::reach] :opt [::center?])
+   => ::attribute-node]
   {:attribute (pr-str attribute)
    :multiNode (set? attribute)
-   :mainNode  center?
+   :mainNode  (boolean center?)
    :weight    weight
    :reach     reach
    :radius    (node-radius attr)})
 
-(defn direct-input? [input] (set? input))
-(defn nested? [input] (vector? input))
+(>defn direct-input? [input] [::maybe-nested-input => boolean?]
+  (set? input))
 
-(defn single-input [input]
+(>defn nested? [input] [any? => boolean?] (vector? input))
+
+(>defn single-input [input] [::maybe-nested-input => (? ::p/attribute)]
   (let [input (if (nested? input) (first input) input)]
-    (and (= 1 (count input)) (first input))))
+    (or (and (= 1 (count input)) (first input))
+        nil)))
 
-(defn global-input? [input]
+(>defn global-input? [input] [::maybe-nested-input => boolean?]
   (and (direct-input? input) (empty? input)))
 
-(defn compute-nodes-links [{::keys [attributes]}]
+(>defn compute-nodes-links [{::keys [attributes]}]
+  [(s/keys :req [::attributes]) => ::attribute-graph]
   (let [index (h/index-by ::pc/attribute attributes)]
     {:nodes (into [] (map attribute->node) attributes)
      :links (mapcat
@@ -57,15 +114,12 @@
                                                        (not= attribute provided'))
                                               {:source    attr-str
                                                :weight    (count resolvers)
-                                               :resolvers (pr-str resolvers)
+                                               :resolvers (str/join "\n" resolvers)
                                                :target    (pr-str provided')
                                                :deep      nested?}))))
                                   attr-provides))]
                     res)))
               attributes)}))
-
-(defn merge-attr [a b]
-  (merge a b))
 
 (defn render-attribute-graph [this]
   (let [{::keys [on-show-details on-click-edge graph-comm] :as props} (-> this fp/props)
@@ -84,7 +138,8 @@
                                       :showDetails (fn [attr d js]
                                                      (on-show-details (read-string attr) d js))
                                       :onClickEdge (fn [edge]
-                                                     (let [resolvers (read-string (gobj/get edge "resolvers"))]
+                                                     (let [resolvers (-> (str "#{" (gobj/get edge "resolvers") "}")
+                                                                         (read-string))]
                                                        (on-click-edge {::resolvers resolvers})))}))]
       (if graph-comm (reset! graph-comm render-settings))
       (gobj/set this "renderedData" render-settings))))
@@ -309,7 +364,7 @@
 (fp/defsc AttributeView
   [this {::pc/keys [attribute-paths attribute attr-reach-via attr-provides]
          ::keys    [attr-depth direct-reaches? nested-reaches? direct-provides?
-                    nested-provides? interconnections?]
+                    nested-provides? interconnections? show-graph?]
          :>/keys   [header-view]}
    {::keys [on-select-attribute attributes]
     :as    computed}]
@@ -323,12 +378,13 @@
                           ::direct-provides?  true
                           ::nested-provides?  false
                           ::interconnections? true
+                          ::show-graph?       true
                           :>/header-view      {::pc/attribute attr}}
                          current-normalized
                          data-tree)))
    :ident          [::pc/attribute ::pc/attribute]
    :query          [::pc/attribute ::pc/attribute-paths ::attr-depth ::direct-reaches? ::nested-reaches?
-                    ::direct-provides? ::nested-provides? ::interconnections? ::pc/attr-reach-via ::pc/attr-provides
+                    ::direct-provides? ::nested-provides? ::interconnections? ::show-graph? ::pc/attr-reach-via ::pc/attr-provides
                     {::attr-provides [::pc/attribute]}
                     {:>/header-view (fp/get-query AttributeLineView)}]
    :css            [[:.container {:flex           "1"
@@ -339,10 +395,12 @@
                                 :grid-gap              "10px"}]
                     [:.data-list {:white-space  "nowrap"
                                   :border-right "1px solid #000"
-                                  :overflow     "auto"}]
+                                  :overflow     "auto"
+                                  :max-width    "260px"}]
                     [:.data-list-right {:white-space "nowrap"
                                         :border-left "1px solid #000"
-                                        :overflow    "auto"}]
+                                        :overflow    "auto"
+                                        :max-width   "260px"}]
                     [:.data-header {:padding     "9px 4px"
                                     :font-weight "bold"
                                     :font-family "Verdana"}]
@@ -388,7 +446,11 @@
       (dom/label
         (dom/input {:type     "checkbox" :checked interconnections?
                     :onChange #(fm/set-value! this ::interconnections? (gobj/getValueByKeys % "target" "checked"))})
-        "Interconnections"))
+        "Interconnections")
+      (dom/label
+        (dom/input {:type     "checkbox" :checked show-graph?
+                    :onChange #(fm/set-value! this ::show-graph? (gobj/getValueByKeys % "target" "checked"))})
+        "Graph"))
     (let [index (h/index-by ::pc/attribute attributes)]
       (dom/div :.graph
         (dom/div :.data-list
@@ -432,22 +494,23 @@
                                   :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
                                                    ((gobj/get settings "unhighlightNode") (str k)))}
                           (pr-str k))))))))))
-        (attribute-graph {::attributes        (attribute-network {::attr-depth        attr-depth
-                                                                  ::attr-index        index
-                                                                  ::attributes        attributes
-                                                                  ::direct-reaches?   direct-reaches?
-                                                                  ::nested-reaches?   nested-reaches?
-                                                                  ::direct-provides?  direct-provides?
-                                                                  ::nested-provides?  nested-provides?
-                                                                  ::interconnections? interconnections?} attribute)
-                          ::graph-comm        (fp/get-state this :graph-comm)
-                          ::direct-reaches?   direct-reaches?
-                          ::nested-reaches?   nested-reaches?
-                          ::direct-provides?  direct-provides?
-                          ::nested-provides?  nested-provides?
-                          ::interconnections? interconnections?
-                          ::on-show-details   on-select-attribute
-                          ::on-click-edge     (fp/get-state this :select-resolver)})
+        (if show-graph?
+          (attribute-graph {::attributes        (attribute-network {::attr-depth        attr-depth
+                                                                    ::attr-index        index
+                                                                    ::attributes        attributes
+                                                                    ::direct-reaches?   direct-reaches?
+                                                                    ::nested-reaches?   nested-reaches?
+                                                                    ::direct-provides?  direct-provides?
+                                                                    ::nested-provides?  nested-provides?
+                                                                    ::interconnections? interconnections?} attribute)
+                            ::graph-comm        (fp/get-state this :graph-comm)
+                            ::direct-reaches?   direct-reaches?
+                            ::nested-reaches?   nested-reaches?
+                            ::direct-provides?  direct-provides?
+                            ::nested-provides?  nested-provides?
+                            ::interconnections? interconnections?
+                            ::on-show-details   on-select-attribute
+                            ::on-click-edge     (fp/get-state this :select-resolver)}))
         (dom/div :.data-list-right
           (dom/div :.data-header "Provides")
           (for [[_ v] (->> (group-by (comp attr-path-key-root first) attr-provides)
@@ -506,21 +569,31 @@
                             :padding     "6px 8px"
                             :font-size   "14px"
                             :margin      "1px 0"}
-                  [:b {:background "#F57F17"}]]]
+                  [:b {:background "#F57F17"}]]
+                 [:.columns {:display "flex"}]]
    :css-include [OutputAttributeView]}
   (dom/div :.container
     (dom/div :.header (str sym))
-    (dom/div
-      (dom/div :.data-header "Input")
-      (dom/pre (h/pprint-str input)))
-    (if output
+    (dom/div :.columns
       (dom/div
-        (dom/div :.data-header "Output")
-        (for [{:keys [key]} (->> output eql/query->ast :children
-                                 (sort-by :key))]
-          (simple-attribute {:react-key (pr-str key)
-                             :onClick   #(on-select-attribute key)}
-            (pr-str key)))))))
+        (dom/div
+          (dom/div :.data-header "Input")
+          (dom/pre (h/pprint-str input)))
+        (if output
+          (dom/div
+            (dom/div :.data-header "Output")
+            (for [{:keys [key]} (->> output eql/query->ast :children
+                                     (sort-by :key))]
+              (simple-attribute {:react-key (pr-str key)
+                                 :onClick   #(on-select-attribute key)}
+                (pr-str key))))))
+
+      #_(attribute-graph {::attributes      (attribute-network {::attr-depth attr-depth
+                                                                ::attr-index index
+                                                                ::attributes attributes} attribute)
+                          ::graph-comm      (fp/get-state this :graph-comm)
+                          ::on-show-details on-select-attribute
+                          ::on-click-edge   (fp/get-state this :select-resolver)}))))
 
 (def resolver-view (fp/factory ResolverView {:keyfn ::pc/sym}))
 
