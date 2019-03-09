@@ -361,6 +361,14 @@
 
 (def simple-attribute (fp/factory SimpleAttribute))
 
+(defn out-attribute-events [this k]
+  (let [on-select-attribute (-> this fp/props fp/get-computed ::on-select-attribute)]
+    {:onClick      #(on-select-attribute k)
+     :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
+                      ((gobj/get settings "highlightNode") (str k)))
+     :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
+                      ((gobj/get settings "unhighlightNode") (str k)))}))
+
 (fp/defsc AttributeView
   [this {::pc/keys [attribute-paths attribute attr-reach-via attr-provides]
          ::keys    [attr-depth direct-reaches? nested-reaches? direct-provides?
@@ -547,7 +555,7 @@
 (fp/defsc ResolverView
   [this {::pc/keys [sym input output]}
    {::pc/keys [index-oir]
-    ::keys    [on-select-attribute on-select-resolver]
+    ::keys    [on-select-attribute attributes]
     :as       computed}]
   {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
                   (merge
@@ -556,7 +564,9 @@
                     data-tree))
    :ident       [::pc/sym ::pc/sym]
    :query       [::pc/sym ::pc/input ::pc/output]
-   :css         [[:.container {:flex "1"}]
+   :css         [[:.container {:flex "1"
+                               :display "flex"
+                               :flex-direction "column"}]
                  [:.data-header {:padding     "9px 4px"
                                  :font-weight "bold"
                                  :font-family "Verdana"}]
@@ -570,30 +580,37 @@
                             :font-size   "14px"
                             :margin      "1px 0"}
                   [:b {:background "#F57F17"}]]
-                 [:.columns {:display "flex"}]]
-   :css-include [OutputAttributeView]}
-  (dom/div :.container
-    (dom/div :.header (str sym))
-    (dom/div :.columns
-      (dom/div
-        (dom/div
-          (dom/div :.data-header "Input")
-          (dom/pre (h/pprint-str input)))
-        (if output
+                 [:.columns {:display "flex"
+                             :flex 1}]
+                 [:.menu {:white-space "nowrap"}]]
+   :css-include [OutputAttributeView]
+   :initLocalState (fn [] {:graph-comm      (atom nil)
+                           :select-resolver (fn [{::keys [resolvers]}]
+                                              (let [{::keys [on-select-resolver]} (fp/get-computed (fp/props this))]
+                                                (on-select-resolver (first resolvers))))})}
+  (let [resolver-attrs (into input (map :key) (->> output eql/query->ast :children))
+        attrs          (-> (h/index-by ::pc/attribute attributes)
+                           (select-keys resolver-attrs)
+                           vals)]
+    (dom/div :.container
+      (dom/div :.header (str sym))
+      (dom/div :.columns
+        (dom/div :.menu
           (dom/div
-            (dom/div :.data-header "Output")
-            (for [{:keys [key]} (->> output eql/query->ast :children
-                                     (sort-by :key))]
-              (simple-attribute {:react-key (pr-str key)
-                                 :onClick   #(on-select-attribute key)}
-                (pr-str key))))))
+            (dom/div :.data-header "Input")
+            (dom/pre (h/pprint-str input)))
+          (if output
+            (dom/div
+              (dom/div :.data-header "Output")
+              (for [{:keys [key]} (->> output eql/query->ast :children
+                                       (sort-by :key))]
+                (simple-attribute (assoc (out-attribute-events this key) :react-key (pr-str key))
+                  (pr-str key))))))
 
-      #_(attribute-graph {::attributes      (attribute-network {::attr-depth attr-depth
-                                                                ::attr-index index
-                                                                ::attributes attributes} attribute)
+        (attribute-graph {::attributes      attrs
                           ::graph-comm      (fp/get-state this :graph-comm)
                           ::on-show-details on-select-attribute
-                          ::on-click-edge   (fp/get-state this :select-resolver)}))))
+                          ::on-click-edge   (fp/get-state this :select-resolver)})))))
 
 (def resolver-view (fp/factory ResolverView {:keyfn ::pc/sym}))
 
