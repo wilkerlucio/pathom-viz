@@ -75,38 +75,51 @@
   (is (= (-> (iex/attribute-network {::iex/attributes [{}]} :movie/name)))))
 
 (ws/deftest test-compute-nodes-links
-  (is (= (iex/compute-nodes-links {})
+  (is (= (iex/compute-nodes-links {::iex/attributes []})
          {:nodes [] :links []}))
   (is (= (iex/compute-nodes-links
-           {::iex/attributes [{::pc/attribute :movie/name}]})
+           {::iex/attributes [{::pc/attribute :movie/name
+                               ::iex/weight   1
+                               ::iex/reach    1}]})
          {:nodes [{:attribute ":movie/name"
                    :multiNode false
-                   :mainNode  nil
-                   :weight    nil
-                   :reach     nil
+                   :mainNode  false
+                   :weight    1
+                   :reach     1
                    :radius    3}]
           :links []}))
   (is (= (-> (iex/compute-nodes-links
                {::iex/attributes [{::pc/attribute      :movie/name
-                                   ::pc/attr-reach-via {#{:movie/id} #{'movie-by-id}}}
+                                   ::pc/attr-reach-via {#{:movie/id} #{'movie-by-id}}
+                                   ::iex/weight        1
+                                   ::iex/reach         1}
                                   {::pc/attribute     :movie/id
-                                   ::pc/attr-provides {:movie/name #{'movie-by-id}}}]})
+                                   ::pc/attr-provides {:movie/name #{'movie-by-id}}
+                                   ::iex/weight       1
+                                   ::iex/reach        1}]})
              simple-compute-nodes-out)
          {:nodes [{:attribute ":movie/name"}
                   {:attribute ":movie/id"}]
-          :links [{:source      ":movie/id"
-                   :target      ":movie/name"
-                   :lineProvide true}]}))
+          :links [{:source    ":movie/id"
+                   :target    ":movie/name"
+                   :weight    1
+                   :resolvers "movie-by-id"
+                   :deep      false}]}))
   (is (= (-> (iex/compute-nodes-links
                {::iex/nested-provides? true
-                ::iex/attributes [{::pc/attribute      :movie/name
-                                   ::pc/attr-reach-via {[#{:movie/id :movie/latest}] #{'latest-movie}}}
-                                  {::pc/attribute     :movie/id
-                                   ::pc/attr-provides {[:movie/latest :movie/name] #{'latest-movie}}}]})
+                ::iex/attributes       [{::pc/attribute      :movie/name
+                                         ::pc/attr-reach-via {[#{:movie/id} :movie/latest] #{'latest-movie}}
+                                         ::iex/weight        1
+                                         ::iex/reach         1}
+                                        {::pc/attribute     :movie/id
+                                         ::pc/attr-provides {[:movie/latest :movie/name] #{'latest-movie}}
+                                         ::iex/weight       1
+                                         ::iex/reach        1}]})
              simple-compute-nodes-out)
          {:nodes [{:attribute ":movie/name"}
                   {:attribute ":movie/id"}]
-          :links [{:source      ":movie/id"
-                   :target      ":movie/name"
-                   :deep        true
-                   :lineProvide true}]})))
+          :links [{:source    ":movie/id"
+                   :weight    1
+                   :resolvers "latest-movie"
+                   :target    ":movie/name"
+                   :deep      true}]})))
