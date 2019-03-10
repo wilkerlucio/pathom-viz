@@ -11,6 +11,7 @@
             [fulcro.client.localized-dom :as dom]
             [fulcro.client.mutations :as fm]
             [fulcro.client.primitives :as fp]
+            [com.wsscode.pathom.viz.ui.expandable-tree :as ex-tree]
             [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ?]]
             [goog.object :as gobj]
             [clojure.string :as str]
@@ -233,89 +234,7 @@
 
 (def attribute-graph (fp/factory AttributeGraph))
 
-(s/def ::path (s/coll-of ::p/attribute :kind vector?))
-(s/def ::selection ::pc/output)
-(s/def ::expanded (s/coll-of ::path :kind set?))
-(s/def ::expanded? boolean?)
 
-(fm/defmutation update-value [{:keys [key fn args]}]
-  (action [{:keys [state ref]}]
-    (swap! state update-in ref update key #(apply fn % args))))
-
-(defn update-value!
-  "Helper to call transaction to update some key from current component."
-  [component key fn & args]
-  (fp/transact! component [`(update-value {:key ~key :fn ~fn :args ~args})]))
-
-(defn toggle-set-item [set item]
-  (if (contains? set item)
-    (disj set item)
-    (conj set item)))
-
-(declare render-attributes)
-
-(s/def ::render (s/fspec :args (s/cat :props map?) :ret ::fp/component))
-
-(defn render-attribute
-  [{:keys  [key children]
-    ::keys [expanded? path toggle-expanded render] :as node}]
-  [(s/merge :edn-query-language.ast/node (s/keys :req [::expanded? ::path ::toggle-expanded ::render]))
-   => any?]
-  (dom/div {:key (pr-str key)}
-    (dom/div :.item
-      (dom/div :.expander {:onClick #(toggle-expanded path)}
-        (if children (if expanded? "▼" "▶")))
-      (render node))
-    (if expanded?
-      (dom/div :.children-container
-        (render-attributes node children)))))
-
-(defn render-attributes
-  [{::keys [expanded path toggle-expanded render]} children]
-  (for [{:keys [key] :as node} children
-        :let [path (conj path key)]]
-    (render-attribute
-      (assoc node ::path path
-                  ::expanded expanded
-                  ::toggle-expanded toggle-expanded
-                  ::render render
-                  ::expanded? (contains? expanded path)))))
-
-(fp/defsc ExpandableTree
-  [this
-   {::keys [expanded]}
-   {::keys                       [render]
-    :edn-query-language.ast/keys [root]}]
-  {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
-                     (merge
-                       {:ui/id     (random-uuid)
-                        ::expanded #{}}
-                       current-normalized
-                       data-tree))
-   :ident          [:ui/id :ui/id]
-   :query          [:ui/id ::expanded]
-   :css            [[:.item {:display     "flex"
-                             :align-items "center"
-                             :padding     "0 2px"}]
-                    [:.expander {:display      "flex"
-                                 :align-items  "center"
-                                 :color        "#656565"
-                                 :cursor       "pointer"
-                                 :font-size    "10px"
-                                 :margin-top   "1px"
-                                 :margin-right "3px"
-                                 :width        "10px"}]
-                    [:.children-container {:margin-left "13px"}]]
-   :initLocalState (fn [] {:toggle-expanded (fn [path]
-                                              (update-value! this ::expanded toggle-set-item path))})}
-  (dom/div
-    (render-attributes {::path            []
-                        ::expanded        expanded
-                        ::render          render
-                        ::toggle-expanded (fp/get-state this :toggle-expanded)}
-      (:children root))))
-
-(def expandable-tree (fp/computed-factory ExpandableTree))
 
 (fp/defsc AttributeLineView
   [this {::pc/keys    [attribute]
@@ -665,7 +584,7 @@
                        data-tree))
    :ident          [::pc/sym ::pc/sym]
    :query          [::pc/sym ::pc/input ::pc/output
-                    {:ui/output-tree (fp/get-query ExpandableTree)}]
+                    {:ui/output-tree (fp/get-query ex-tree/ExpandableTree)}]
    :css            [[:.container {:flex           "1"
                                   :display        "flex"
                                   :flex-direction "column"}]
@@ -711,8 +630,9 @@
           (if output
             (dom/div
               (dom/div :.data-header "Output")
-              (expandable-tree output-tree {:edn-query-language.ast/root (eql/query->ast output)
-                                            ::render                      (fp/get-state this :render)}))))
+              (ex-tree/expandable-tree output-tree
+                {::ex-tree/root   (eql/query->ast output)
+                 ::ex-tree/render (fp/get-state this :render)}))))
 
         (attribute-graph {::attributes      attrs
                           ::graph-comm      (fp/get-state this :graph-comm)

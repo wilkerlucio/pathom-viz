@@ -69,27 +69,6 @@
   (ct.fulcro/fulcro-card
     {::f.portal/root AttributeGraphDemo}))
 
-(ws/defcard expandable-tree-card
-  {::wsm/card-width 4 ::wsm/card-height 12}
-  (ct.fulcro/fulcro-card
-    {::f.portal/root
-     iex/ExpandableTree
-
-     ::f.portal/computed
-     {::iex/render
-      (fn [{:keys [key] :as x}]
-        (js/console.log "RENDER" x)
-        (dom/div {:onClick #(js/console.log x)} (pr-str key)))
-
-      :edn-query-language.ast/root
-      (eql/query->ast
-        [:foo
-         {:bar
-          [:baz]}
-         {:more
-          [{:deep [{:inside [:more]}]}
-           :with]}])}}))
-
 (defn simple-compute-nodes-out [out]
   (-> out
       (update :nodes #(mapv (fn [x] (select-keys x [:attribute])) %))))

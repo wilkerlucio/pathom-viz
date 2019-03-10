@@ -3,6 +3,7 @@
             [clojure.pprint]
             [fulcro.client.dom :as dom]
             [fulcro.client.primitives :as fp]
+            [fulcro.client.mutations :as fm]
             [goog.object :as gobj]
             [clojure.walk :as walk]))
 
@@ -61,3 +62,17 @@
         (let [k (f x)]
           (assoc! ret k x)))
       (transient {}) coll)))
+
+(fm/defmutation update-value [{:keys [key fn args]}]
+  (action [{:keys [state ref]}]
+    (swap! state update-in ref update key #(apply fn % args))))
+
+(defn update-value!
+  "Helper to call transaction to update some key from current component."
+  [component key fn & args]
+  (fp/transact! component [`(update-value {:key ~key :fn ~fn :args ~args})]))
+
+(defn toggle-set-item [set item]
+  (if (contains? set item)
+    (disj set item)
+    (conj set item)))
