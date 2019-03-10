@@ -652,7 +652,7 @@
                                :font-size   "14px"
                                :margin      "1px 0"}
                      [:b {:background "#F57F17"}]]
-                    [:.attribute css-attribute-font]
+                    [:.attribute {:cursor "pointer"} css-attribute-font]
                     [:.columns {:display "flex"
                                 :flex    1}]
                     [:.menu {:white-space "nowrap"}]]
