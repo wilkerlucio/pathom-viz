@@ -11,6 +11,7 @@
             [nubank.workspaces.card-types.fulcro :as ct.fulcro]
             [nubank.workspaces.core :as ws]
             [nubank.workspaces.lib.fulcro-portal :as f.portal]
+            [com.wsscode.pathom.viz.ui.expandable-tree :as ex-tree]
             [nubank.workspaces.model :as wsm]
             [fulcro.client.primitives :as fp]
             [cljs.test :refer [is]]
@@ -75,6 +76,21 @@
 
 (ws/deftest test-attribute-network
   (is (= (-> (iex/attribute-network {::iex/attributes [{}]} :movie/name)))))
+
+(ws/deftest test-attr-provides->tree
+  (is (= (iex/attr-provides->tree {})
+         {:children []}))
+  (is (= (iex/attr-provides->tree {:simple #{'path}})
+         {:children [{:key :simple ::pc/sym-set #{'path}}]}))
+  (is (= (iex/attr-provides->tree {:simple #{'path}
+                                   :multi  #{'path}})
+         {:children [{:key :simple ::pc/sym-set #{'path}}
+                              {:key :multi ::pc/sym-set #{'path}}]}))
+  (is (= (iex/attr-provides->tree {[:simple :multi] #{'path}
+                                   :simple          #{'path}})
+         {:children
+          [{:key      :simple ::pc/sym-set #{'path}
+            :children [{:key :multi ::pc/sym-set #{'path}}]}]})))
 
 (ws/deftest test-compute-nodes-links
   (is (= (iex/compute-nodes-links {::iex/attributes []})

@@ -76,3 +76,10 @@
   (if (contains? set item)
     (disj set item)
     (conj set item)))
+
+(defn vector-compare [[value1 & rest1] [value2 & rest2]]
+  (let [result (compare value1 value2)]
+    (cond
+      (not (zero? result)) result
+      (nil? value1) 0
+      :else (recur rest1 rest2))))

@@ -379,16 +379,44 @@
      :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
                       ((gobj/get settings "unhighlightNode") (str k)))}))
 
+(>defn attr-provides->tree [attr-provides]
+  [::pc/attr-provides => ::ex-tree/root]
+  (let [index    (->> attr-provides
+                      (map #(update % 0 (fn [x] (if (keyword? x) [x] x))))
+                      (map (fn [[path resolvers]]
+                             (let [k (peek path)]
+                               [path {:key k ::pc/sym-set resolvers}])))
+                      (into {}))
+
+        provides (reduce
+                   (fn [{:keys [items index]} [path node]]
+                     (if (> (count path) 1)
+                       (let [prev (subvec path 0 (dec (count path)))]
+                         {:items items
+                          :index (update-in index [prev :children] (fnil conj [])
+                                   node)})
+                       {:items (conj items (get index path))
+                        :index index}))
+                   {:items []
+                    :index index}
+                   (->> index
+                        (sort-by first h/vector-compare)
+                        (reverse)))]
+    {:children (:items provides)}))
+
 (fp/defsc AttributeView
   [this {::pc/keys [attribute-paths attribute attr-reach-via attr-provides]
          ::keys    [attr-depth direct-reaches? nested-reaches? direct-provides?
                     nested-provides? interconnections? show-graph?]
+         :ui/keys  [provides-tree provides-tree-source]
          :>/keys   [header-view]}
    {::keys [on-select-attribute attributes]
     :as    computed}]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
-                     (let [attr (or (::pc/attribute data-tree)
-                                    (::pc/attribute current-normalized))]
+                     (let [attr          (or (::pc/attribute data-tree)
+                                             (::pc/attribute current-normalized))
+                           attr-provides (or (::pc/attr-provides data-tree)
+                                             (::pc/attr-provides current-normalized))]
                        (merge
                          {::attr-depth        1
                           ::direct-reaches?   true
@@ -397,13 +425,18 @@
                           ::nested-provides?  false
                           ::interconnections? true
                           ::show-graph?       true
-                          :>/header-view      {::pc/attribute attr}}
+                          :>/header-view      {::pc/attribute attr}
+                          :ui/provides-tree   {}}
                          current-normalized
-                         data-tree)))
+                         data-tree
+                         (if attr-provides
+                           {:ui/provides-tree-source (attr-provides->tree attr-provides)}))))
    :ident          [::pc/attribute ::pc/attribute]
    :query          [::pc/attribute ::pc/attribute-paths ::attr-depth ::direct-reaches? ::nested-reaches?
                     ::direct-provides? ::nested-provides? ::interconnections? ::show-graph? ::pc/attr-reach-via ::pc/attr-provides
                     {::attr-provides [::pc/attribute]}
+                    {:ui/provides-tree (fp/get-query ex-tree/ExpandableTree)}
+                    :ui/provides-tree-source
                     {:>/header-view (fp/get-query AttributeLineView)}]
    :css            [[:.container {:flex           "1"
                                   :flex-direction "column"
@@ -504,11 +537,7 @@
                       (for [[k i] (map vector path' (range))]
                         (dom/div :.out-attr {:key   (pr-str k)
                                              :style {:marginLeft (str (* i 10) "px")}}
-                          (dom/div {:onClick      #(on-select-attribute k)
-                                    :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
-                                                     ((gobj/get settings "highlightNode") (str k)))
-                                    :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
-                                                     ((gobj/get settings "unhighlightNode") (str k)))}
+                          (dom/div (out-attribute-events this k)
                             (pr-str k)))))))))))
         (if show-graph?
           (let [shared-options {::direct-reaches?   direct-reaches?
@@ -531,6 +560,15 @@
         (if (seq attr-provides)
           (dom/div :.data-list-right
             (dom/div :.data-header "Provides")
+
+            (ex-tree/expandable-tree provides-tree
+              {::ex-tree/root    provides-tree-source
+               ::ex-tree/render  (fn [{:keys [key]}]
+                                   (dom/div (assoc (out-attribute-events this key)
+                                              :classes [(-> (css/get-classnames AttributeView) :out-attr)])
+                                     (pr-str key)))
+               ::ex-tree/sort-by :key})
+            #_
             (for [[_ v] (->> (group-by (comp attr-path-key-root first) attr-provides)
                              (sort-by (comp attr-path-key-root first)))]
               (for [[path resolvers] (->> v
@@ -540,11 +578,7 @@
                     :let [k (peek path)]]
                 (dom/div :.out-attr {:key   (pr-str path)
                                      :style {:marginLeft (str (* 10 (dec (count path))) "px")}}
-                  (dom/div {:onClick      #(on-select-attribute k)
-                            :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
-                                             ((gobj/get settings "highlightNode") (str k)))
-                            :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
-                                             ((gobj/get settings "unhighlightNode") (str k)))}
+                  (dom/div (out-attribute-events this k)
                     (pr-str k)))))))))))
 
 (def attribute-view (fp/computed-factory AttributeView {:keyfn ::pc/attribute}))
