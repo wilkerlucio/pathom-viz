@@ -449,11 +449,11 @@
                     [:.data-list {:white-space  "nowrap"
                                   :border-right "1px solid #000"
                                   :overflow     "auto"
-                                  :max-width    "260px"}]
+                                  :width        "260px"}]
                     [:.data-list-right {:white-space "nowrap"
                                         :border-left "1px solid #000"
                                         :overflow    "auto"
-                                        :max-width   "300px"}]
+                                        :width       "300px"}]
                     [:.data-header {:padding     "9px 4px"
                                     :font-weight "bold"
                                     :font-family "Verdana"}]
@@ -655,7 +655,8 @@
                     [:.attribute {:cursor "pointer"} css-attribute-font]
                     [:.columns {:display "flex"
                                 :flex    1}]
-                    [:.menu {:white-space "nowrap"}]]
+                    [:.menu {:white-space  "nowrap"
+                             :border-right "1px solid #000"}]]
    :css-include    [OutputAttributeView]
    :initLocalState (fn [] {:graph-comm      (atom nil)
                            :select-resolver (fn [{::keys [resolvers]}]
@@ -682,8 +683,9 @@
             (dom/div
               (dom/div :.data-header "Output")
               (ex-tree/expandable-tree output-tree
-                {::ex-tree/root   (eql/query->ast output)
-                 ::ex-tree/render (fp/get-state this :render)}))))
+                {::ex-tree/root    (eql/query->ast output)
+                 ::ex-tree/render  (fp/get-state this :render)
+                 ::ex-tree/sort-by :key}))))
 
         (attribute-graph {::attributes      attrs
                           ::graph-comm      (fp/get-state this :graph-comm)

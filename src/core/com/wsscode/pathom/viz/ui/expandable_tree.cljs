@@ -48,6 +48,7 @@
                         ::expanded expanded
                         ::toggle-expanded toggle-expanded
                         ::render render
+                        ::sort-by sort-by
                         ::expanded? (contains? expanded path))))))))
 
 (def tree-item (fp/factory TreeItem {:keyfn #(pr-str (:key %))}))
