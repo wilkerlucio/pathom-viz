@@ -543,47 +543,48 @@
         "Graph"))
     (let [index (h/index-by ::pc/attribute attributes)]
       (dom/div :.graph
-        (dom/div :.data-list
-          (dom/div :.data-header "Reach via")
-          (for [[input v] (->> attr-reach-via
-                               (group-by (comp attr-path-key-root first))
-                               (sort-by (comp pr-str attr-path-key-root first)))
-                :let [direct? (some (comp direct-input? first) v)]
-                :when (or direct? nested-reaches?)]
-            (dom/div
-              (dom/div :.out-attr {:key   (pr-str input)
-                                   :style (cond-> {} direct? (assoc :fontWeight "bold"))}
-                (dom/div {:onClick      #(on-select-attribute (if (= 1 (count input))
-                                                                (first input)
-                                                                input))
-                          :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
-                                           ((gobj/get settings "highlightNode")
-                                             (if (= 1 (count input))
-                                               (str (first input))
-                                               (pr-str input))))
-                          :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
-                                           ((gobj/get settings "unhighlightNode")
-                                             (if (= 1 (count input))
-                                               (str (first input))
-                                               (pr-str input))))}
-                  (pr-str input)))
-              (if nested-reaches?
-                (for [[path resolvers] (->> v
-                                            (map #(update % 0 (fn [x] (if (set? x) [x] x))))
-                                            (sort-by (comp #(update % 0 (comp vec sort)) first)))
-                      :let [path' (next path)]
-                      :when path']
-                  (dom/div {:key   (pr-str path)
-                            :style {:marginLeft (str 10 "px")}}
-                    (for [[k i] (map vector path' (range))]
-                      (dom/div :.out-attr {:key   (pr-str k)
-                                           :style {:marginLeft (str (* i 10) "px")}}
-                        (dom/div {:onClick      #(on-select-attribute k)
-                                  :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
-                                                   ((gobj/get settings "highlightNode") (str k)))
-                                  :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
-                                                   ((gobj/get settings "unhighlightNode") (str k)))}
-                          (pr-str k))))))))))
+        (if (seq attr-reach-via)
+          (dom/div :.data-list
+            (dom/div :.data-header "Reach via")
+            (for [[input v] (->> attr-reach-via
+                                 (group-by (comp attr-path-key-root first))
+                                 (sort-by (comp pr-str attr-path-key-root first)))
+                  :let [direct? (some (comp direct-input? first) v)]
+                  :when (or direct? nested-reaches?)]
+              (dom/div
+                (dom/div :.out-attr {:key   (pr-str input)
+                                     :style (cond-> {} direct? (assoc :fontWeight "bold"))}
+                  (dom/div {:onClick      #(on-select-attribute (if (= 1 (count input))
+                                                                  (first input)
+                                                                  input))
+                            :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
+                                             ((gobj/get settings "highlightNode")
+                                               (if (= 1 (count input))
+                                                 (str (first input))
+                                                 (pr-str input))))
+                            :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
+                                             ((gobj/get settings "unhighlightNode")
+                                               (if (= 1 (count input))
+                                                 (str (first input))
+                                                 (pr-str input))))}
+                    (pr-str input)))
+                (if nested-reaches?
+                  (for [[path resolvers] (->> v
+                                              (map #(update % 0 (fn [x] (if (set? x) [x] x))))
+                                              (sort-by (comp #(update % 0 (comp vec sort)) first)))
+                        :let [path' (next path)]
+                        :when path']
+                    (dom/div {:key   (pr-str path)
+                              :style {:marginLeft (str 10 "px")}}
+                      (for [[k i] (map vector path' (range))]
+                        (dom/div :.out-attr {:key   (pr-str k)
+                                             :style {:marginLeft (str (* i 10) "px")}}
+                          (dom/div {:onClick      #(on-select-attribute k)
+                                    :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
+                                                     ((gobj/get settings "highlightNode") (str k)))
+                                    :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
+                                                     ((gobj/get settings "unhighlightNode") (str k)))}
+                            (pr-str k)))))))))))
         (if show-graph?
           (attribute-graph {::attributes        (attribute-network {::attr-depth        attr-depth
                                                                     ::attr-index        index
@@ -601,23 +602,25 @@
                             ::interconnections? interconnections?
                             ::on-show-details   on-select-attribute
                             ::on-click-edge     (fp/get-state this :select-resolver)}))
-        (dom/div :.data-list-right
-          (dom/div :.data-header "Provides")
-          (for [[_ v] (->> (group-by (comp attr-path-key-root first) attr-provides)
-                           (sort-by (comp attr-path-key-root first)))]
-            (for [[path resolvers] (->> v
-                                        (map #(update % 0 (fn [x] (if (keyword? x) [x] x))))
-                                        (remove #(and (not nested-provides?) (> (count (first %)) 1)))
-                                        (sort-by first))
-                  :let [k (peek path)]]
-              (dom/div :.out-attr {:key   (pr-str path)
-                                   :style {:marginLeft (str (* 10 (dec (count path))) "px")}}
-                (dom/div {:onClick      #(on-select-attribute k)
-                          :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
-                                           ((gobj/get settings "highlightNode") (str k)))
-                          :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
-                                           ((gobj/get settings "unhighlightNode") (str k)))}
-                  (pr-str k))))))))))
+
+        (if (seq attr-provides)
+          (dom/div :.data-list-right
+            (dom/div :.data-header "Provides")
+            (for [[_ v] (->> (group-by (comp attr-path-key-root first) attr-provides)
+                             (sort-by (comp attr-path-key-root first)))]
+              (for [[path resolvers] (->> v
+                                          (map #(update % 0 (fn [x] (if (keyword? x) [x] x))))
+                                          (remove #(and (not nested-provides?) (> (count (first %)) 1)))
+                                          (sort-by first))
+                    :let [k (peek path)]]
+                (dom/div :.out-attr {:key   (pr-str path)
+                                     :style {:marginLeft (str (* 10 (dec (count path))) "px")}}
+                  (dom/div {:onClick      #(on-select-attribute k)
+                            :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
+                                             ((gobj/get settings "highlightNode") (str k)))
+                            :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
+                                             ((gobj/get settings "unhighlightNode") (str k)))}
+                    (pr-str k)))))))))))
 
 (def attribute-view (fp/computed-factory AttributeView {:keyfn ::pc/attribute}))
 
@@ -634,7 +637,8 @@
 
 (def output-attribute-view (fp/computed-factory OutputAttributeView {:keyfn (comp pr-str :key)}))
 
-(defn out-all-attributes [{:keys [children]}]
+(>defn out-all-attributes [{:keys [children]}]
+  [:edn-query-language.ast/node => (s/coll-of ::p/attribute :kind set?)]
   (reduce
     (fn [attrs {:keys [key children] :as node}]
       (cond-> (conj attrs key)
@@ -679,9 +683,11 @@
                            :select-resolver (fn [{::keys [resolvers]}]
                                               (let [{::keys [on-select-resolver]} (fp/get-computed (fp/props this))]
                                                 (on-select-resolver (first resolvers))))})}
-  (let [resolver-attrs (out-all-attributes (->> output eql/query->ast))
+  (let [input'         (if (= 1 (count input)) (first input) input)
+        resolver-attrs (conj (out-all-attributes (->> output eql/query->ast)) input')
         attrs          (-> (h/index-by ::pc/attribute attributes)
                            (select-keys resolver-attrs)
+                           (update input' assoc ::center? true)
                            vals)]
     (dom/div :.container
       (dom/div :.header (str sym))
