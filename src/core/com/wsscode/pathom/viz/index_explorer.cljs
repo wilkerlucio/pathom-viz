@@ -451,7 +451,7 @@
                     [:.data-list-right {:white-space "nowrap"
                                         :border-left "1px solid #000"
                                         :overflow    "auto"
-                                        :max-width   "260px"}]
+                                        :max-width   "300px"}]
                     [:.data-header {:padding     "9px 4px"
                                     :font-weight "bold"
                                     :font-family "Verdana"}]
@@ -459,6 +459,7 @@
                                  :cursor  "pointer"}
                      css-attribute-font]
                     [:.path {:margin-bottom "6px"}]
+                    [:.provides-container {:margin-left "8px"}]
                     [:.graph {:display "flex"
                               :flex    "1"
                               :border  "1px solid #000"}
@@ -561,13 +562,14 @@
           (dom/div :.data-list-right
             (dom/div :.data-header "Provides")
 
-            (ex-tree/expandable-tree provides-tree
-              {::ex-tree/root    provides-tree-source
-               ::ex-tree/render  (fn [{:keys [key]}]
-                                   (dom/div (assoc (out-attribute-events this key)
-                                              :classes [(-> (css/get-classnames AttributeView) :out-attr)])
-                                     (pr-str key)))
-               ::ex-tree/sort-by :key})
+            (dom/div :.provides-container
+              (ex-tree/expandable-tree provides-tree
+                {::ex-tree/root    provides-tree-source
+                 ::ex-tree/render  (fn [{:keys [key]}]
+                                     (dom/div (assoc (out-attribute-events this key)
+                                                :classes [(-> (css/get-classnames AttributeView) :out-attr)])
+                                       (pr-str key)))
+                 ::ex-tree/sort-by :key}))
             #_
             (for [[_ v] (->> (group-by (comp attr-path-key-root first) attr-provides)
                              (sort-by (comp attr-path-key-root first)))]
