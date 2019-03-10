@@ -74,6 +74,8 @@
 
 ; endregion
 
+(def ExtensionContext (js/React.createContext {}))
+
 ;; Views
 
 (>defn node-radius
@@ -477,7 +479,7 @@
     (dom/div :.toolbar
       (dom/div
         (dom/label "Depth")
-        (dom/input {:type     "number" :min 1 :max 5 :value attr-depth
+        (dom/input {:type     "number" :min 1 :value attr-depth
                     :onChange #(fm/set-integer! this ::attr-depth :event %)}))
       (dom/label
         (dom/input {:type     "checkbox" :checked direct-reaches?
@@ -516,19 +518,9 @@
               (dom/div
                 (dom/div :.out-attr {:key   (pr-str input)
                                      :style (cond-> {} direct? (assoc :fontWeight "bold"))}
-                  (dom/div {:onClick      #(on-select-attribute (if (= 1 (count input))
-                                                                  (first input)
-                                                                  input))
-                            :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
-                                             ((gobj/get settings "highlightNode")
-                                               (if (= 1 (count input))
-                                                 (str (first input))
-                                                 (pr-str input))))
-                            :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
-                                             ((gobj/get settings "unhighlightNode")
-                                               (if (= 1 (count input))
-                                                 (str (first input))
-                                                 (pr-str input))))}
+                  (dom/div (out-attribute-events this (if (= 1 (count input))
+                                                        (first input)
+                                                        input))
                     (pr-str input)))
                 (if nested-reaches?
                   (for [[path resolvers] (->> v
@@ -656,7 +648,8 @@
                     [:.columns {:display "flex"
                                 :flex    1}]
                     [:.menu {:white-space  "nowrap"
-                             :border-right "1px solid #000"}]]
+                             :border-right "1px solid #000"
+                             :overflow     "auto"}]]
    :css-include    [OutputAttributeView]
    :initLocalState (fn [] {:graph-comm      (atom nil)
                            :select-resolver (fn [{::keys [resolvers]}]
@@ -667,11 +660,13 @@
                                                          :classes [(:attribute (css/get-classnames ResolverView))])
                                                 (pr-str key)))})}
   (let [input'         (if (= 1 (count input)) (first input) input)
+        data           (-> this fp/get-reconciler fp/app-state deref (get-in (fp/get-ident this)))
         resolver-attrs (conj (out-all-attributes (->> output eql/query->ast)) input')
         attrs          (-> (h/index-by ::pc/attribute attributes)
                            (select-keys resolver-attrs)
                            (update input' assoc ::center? true)
-                           vals)]
+                           vals)
+        plugins        (-> (gobj/get this "context") ::plugins)]
     (dom/div :.container
       (dom/div :.header (str sym))
       (dom/div :.columns
@@ -685,12 +680,19 @@
               (ex-tree/expandable-tree output-tree
                 {::ex-tree/root    (eql/query->ast output)
                  ::ex-tree/render  (fp/get-state this :render)
-                 ::ex-tree/sort-by :key}))))
+                 ::ex-tree/sort-by :key})))
+
+          (for [{::keys [plugin-id plugin-render-to-resolver-menu]} plugins
+                :when plugin-render-to-resolver-menu]
+            (dom/div {:key (pr-str plugin-id)}
+              (plugin-render-to-resolver-menu data))))
 
         (attribute-graph {::attributes      attrs
                           ::graph-comm      (fp/get-state this :graph-comm)
                           ::on-show-details on-select-attribute
                           ::on-click-edge   (fp/get-state this :select-resolver)})))))
+
+(gobj/set ResolverView "contextType" ExtensionContext)
 
 (def resolver-view (fp/factory ResolverView {:keyfn ::pc/sym}))
 
@@ -786,20 +788,21 @@
 
 (fp/defsc StatsView
   [this {::keys [attribute-count resolver-count globals-count idents-count
-                 top-connection-hubs]}
+                 attr-edges-count top-connection-hubs]}
    {::keys [on-select-attribute]}]
   {:pre-merge (fn [{:keys [current-normalized data-tree]}]
                 (merge {} current-normalized data-tree))
    :ident     [::id ::id]
    :query     [::id ::attribute-count ::resolver-count ::globals-count ::idents-count
+               ::attr-edges-count
                {::top-connection-hubs [::pc/attribute ::attr-edges-count]}]}
   (fp/fragment
-    "Show some data here"
     (dom/div "Attribute count: " attribute-count)
     (dom/div "Resolver count: " resolver-count)
     (dom/div "Globals count: " globals-count)
     (dom/div "Idents count: " idents-count)
-    (dom/h3 "Top Attributes")
+    (dom/div "Edges count: " attr-edges-count)
+    (dom/h3 "Most Connected Attributes")
     (for [{::pc/keys [attribute]
            ::keys    [attr-edges-count]} top-connection-hubs]
       (simple-attribute {:react-key (pr-str attribute)
@@ -893,7 +896,8 @@
 
 (fp/defsc IndexExplorer
   [this {::keys   [index attributes]
-         :ui/keys [menu page]}]
+         :ui/keys [menu page]}
+   extensions]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
                      (merge
                        (let [id (or (::id data-tree)
@@ -901,7 +905,9 @@
                                     (random-uuid))]
                          {::id     id
                           :ui/menu {::id id}
-                          :ui/page {::id id}})
+                          ;:ui/page {::id id}
+                          :ui/page {::pc/sym 'abrams.controllers.graph.revolver/revolver-by-account}
+                          })
                        current-normalized
                        data-tree
                        (if-let [index (get data-tree ::index)]
@@ -925,19 +931,20 @@
    :css-include    [SimpleAttribute]
    :initLocalState (fn [] {:select-attribute #(fp/transact! this [`(navigate-to-attribute {::pc/attribute ~%})])
                            :select-resolver  #(fp/transact! this [`(navigate-to-resolver {::pc/sym ~%})])})}
-  (dom/div :.container
-    (search-everything menu {::on-select-attribute (fp/get-state this :select-attribute)})
-    (if page
-      (main-view-union page (assoc index
-                              ::attributes attributes
-                              ::on-select-attribute (fp/get-state this :select-attribute)
-                              ::on-select-resolver (fp/get-state this :select-resolver))))
+  (dom/create-element (gobj/get ExtensionContext "Provider") #js {:value extensions}
+    (dom/div :.container {:key "container"}
+      (search-everything menu {::on-select-attribute (fp/get-state this :select-attribute)})
+      (if page
+        (main-view-union page (assoc index
+                                ::attributes attributes
+                                ::on-select-attribute (fp/get-state this :select-attribute)
+                                ::on-select-resolver (fp/get-state this :select-resolver))))
 
-    #_(dom/div :.graph
-        (attribute-graph {::attributes       attributes
-                          ::direct-reaches?  true
-                          ::nested-reaches?  true
-                          ::direct-provides? true
-                          ::nested-provides? true}))))
+      #_(dom/div :.graph
+          (attribute-graph {::attributes       attributes
+                            ::direct-reaches?  true
+                            ::nested-reaches?  true
+                            ::direct-provides? true
+                            ::nested-provides? true})))))
 
-(def index-explorer (fp/factory IndexExplorer))
+(def index-explorer (fp/computed-factory IndexExplorer))

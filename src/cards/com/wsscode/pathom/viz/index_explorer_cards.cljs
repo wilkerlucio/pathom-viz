@@ -11,14 +11,12 @@
             [nubank.workspaces.card-types.fulcro :as ct.fulcro]
             [nubank.workspaces.core :as ws]
             [nubank.workspaces.lib.fulcro-portal :as f.portal]
-            [com.wsscode.pathom.viz.ui.expandable-tree :as ex-tree]
             [nubank.workspaces.model :as wsm]
             [fulcro.client.primitives :as fp]
             [cljs.test :refer [is]]
             [edn-query-language.core :as eql]
-            [fulcro.client.localized-dom :as dom]
             [cljs.spec.alpha :as s]
-            [com.wsscode.spec-inspec :as si]))
+            [fulcro.client.localized-dom :as dom]))
 
 (s/def :customer/id uuid?)
 
@@ -50,14 +48,34 @@
   {::wsm/align ::wsm/stretch-flex}
   (let [id (random-uuid)]
     (ct.fulcro/fulcro-card
-      {::f.portal/root iex/IndexExplorer
-       ::f.portal/app  {:networking       (-> (p.network/pathom-remote parser)
-                                              (p.network/trace-remote))
-                        :initial-state    {::id id}
-                        :started-callback (fn [app]
-                                            (df/load app ::sample-index iex/IndexExplorer
-                                              {:params {::iex/id id}
-                                               :target [:ui/root]}))}})))
+      {::f.portal/root
+       iex/IndexExplorer
+
+       ::f.portal/app
+       {:networking       (-> (p.network/pathom-remote parser)
+                              (p.network/trace-remote))
+        :initial-state    {::id id}
+        :started-callback (fn [app]
+                            (df/load app ::sample-index iex/IndexExplorer
+                              {:params {::iex/id id}
+                               :target [:ui/root]}))}
+
+       ::f.portal/computed
+       {::iex/plugins [{::iex/plugin-id
+                        ::abrams-service
+
+                        ::iex/plugin-render-to-resolver-menu
+                        (fn [{:abrams.diplomat.api/keys [service endpoint]}]
+                          (dom/div
+                            (if service
+                              (fp/fragment
+                                (dom/div :.data-header "Service")
+                                (dom/div (name service))))
+
+                            (if endpoint
+                              (fp/fragment
+                                (dom/div :.data-header "Endpoint")
+                                (dom/div (str "/api/" endpoint))))))}]}})))
 
 (fp/defsc AttributeGraphDemo
   [this {::keys []}]
