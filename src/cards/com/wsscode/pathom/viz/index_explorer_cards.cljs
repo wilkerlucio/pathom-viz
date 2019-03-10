@@ -14,7 +14,8 @@
             [nubank.workspaces.model :as wsm]
             [fulcro.client.primitives :as fp]
             [cljs.test :refer [is]]
-            [edn-query-language.core :as eql]))
+            [edn-query-language.core :as eql]
+            [fulcro.client.localized-dom :as dom]))
 
 (pc/defresolver index-resolver [env _]
   {::pc/output [::sample-index]}
@@ -68,23 +69,26 @@
   (ct.fulcro/fulcro-card
     {::f.portal/root AttributeGraphDemo}))
 
-(ws/defcard attribute-selection-tree-card
+(ws/defcard expandable-tree-card
   {::wsm/card-width 4 ::wsm/card-height 12}
   (ct.fulcro/fulcro-card
     {::f.portal/root
-     iex/AttributeSelectionTree
+     iex/ExpandableTree
 
      ::f.portal/computed
-     {::iex/attribute-props
-      (fn [x] {:onClick #(js/console.log x)})
+     {::iex/render
+      (fn [{:keys [key] :as x}]
+        (js/console.log "RENDER" x)
+        (dom/div {:onClick #(js/console.log x)} (pr-str key)))
 
-      ::iex/selection
-      [:foo
-       {:bar
-        [:baz]}
-       {:more
-        [{:deep [{:inside [:more]}]}
-         :with]}]}}))
+      :edn-query-language.ast/root
+      (eql/query->ast
+        [:foo
+         {:bar
+          [:baz]}
+         {:more
+          [{:deep [{:inside [:more]}]}
+           :with]}])}}))
 
 (defn simple-compute-nodes-out [out]
   (-> out

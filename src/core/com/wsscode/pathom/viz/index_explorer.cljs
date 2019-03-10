@@ -13,7 +13,8 @@
             [fulcro.client.primitives :as fp]
             [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ?]]
             [goog.object :as gobj]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [fulcro-css.css :as css]))
 
 ; region specs
 
@@ -57,6 +58,16 @@
                    :com.wsscode.pathom.viz.index-explorer.attribute-graph/links]))
 
 (s/def ::maybe-nested-input (s/or :direct set? :nested vector?))
+
+; endregion
+
+; region shared css
+
+(def css-attribute-font
+  {:color       "#9a45b1"
+   :font-family "sans-serif"
+   :font-size   "14px"
+   :line-height "1.4em"})
 
 ; endregion
 
@@ -130,7 +141,6 @@
         svg             (gobj/get this "svg")]
     (if current ((gobj/get current "dispose")))
     (gobj/set svg "innerHTML" "")
-    (js/console.log (into [] (map (fn [[k v]] [k (count v)])) (compute-nodes-links props)))
     (let [render-settings (d3attr/render svg
                             (clj->js {:svgWidth    (gobj/get container "clientWidth")
                                       :svgHeight   (gobj/get container "clientHeight")
@@ -228,37 +238,13 @@
 (s/def ::expanded (s/coll-of ::path :kind set?))
 (s/def ::expanded? boolean?)
 
-(declare render-attributes)
-
-(>defn render-attribute
-  [{:keys  [key children]
-    ::keys [expanded? path toggle-expanded attribute-props] :as node}]
-  [(s/merge :edn-query-language.ast/node (s/keys :req [::expanded? ::path ::toggle-expanded] :opt [::attribute-props]))
-   => any?]
-  (dom/div :.attribute-container {:key (pr-str key)}
-    (dom/div :.attribute
-      (dom/div :.expander {:onClick #(toggle-expanded path)}
-        (if children (if expanded? "▼" "▶")))
-      (dom/div (cond-> {} attribute-props (merge (attribute-props node))) (pr-str key)))
-    (if expanded?
-      (dom/div :.children-container
-        (render-attributes node children)))))
-
-(defn render-attributes [{::keys [expanded path toggle-expanded attribute-props]} children]
-  (for [{:keys [key] :as node} children
-        :let [path (conj path key)]]
-    (render-attribute
-      (assoc node ::path path
-                  ::expanded expanded
-                  ::toggle-expanded toggle-expanded
-                  ::attribute-props attribute-props
-                  ::expanded? (contains? expanded path)))))
-
 (fm/defmutation update-value [{:keys [key fn args]}]
   (action [{:keys [state ref]}]
     (swap! state update-in ref update key #(apply fn % args))))
 
-(defn update-value! [component key fn & args]
+(defn update-value!
+  "Helper to call transaction to update some key from current component."
+  [component key fn & args]
   (fp/transact! component [`(update-value {:key ~key :fn ~fn :args ~args})]))
 
 (defn toggle-set-item [set item]
@@ -266,8 +252,40 @@
     (disj set item)
     (conj set item)))
 
-(fp/defsc AttributeSelectionTree
-  [this {::keys [expanded] :as props} {::keys [selection attribute-props] :as comp}]
+(declare render-attributes)
+
+(s/def ::render (s/fspec :args (s/cat :props map?) :ret ::fp/component))
+
+(defn render-attribute
+  [{:keys  [key children]
+    ::keys [expanded? path toggle-expanded render] :as node}]
+  [(s/merge :edn-query-language.ast/node (s/keys :req [::expanded? ::path ::toggle-expanded ::render]))
+   => any?]
+  (dom/div {:key (pr-str key)}
+    (dom/div :.item
+      (dom/div :.expander {:onClick #(toggle-expanded path)}
+        (if children (if expanded? "▼" "▶")))
+      (render node))
+    (if expanded?
+      (dom/div :.children-container
+        (render-attributes node children)))))
+
+(defn render-attributes
+  [{::keys [expanded path toggle-expanded render]} children]
+  (for [{:keys [key] :as node} children
+        :let [path (conj path key)]]
+    (render-attribute
+      (assoc node ::path path
+                  ::expanded expanded
+                  ::toggle-expanded toggle-expanded
+                  ::render render
+                  ::expanded? (contains? expanded path)))))
+
+(fp/defsc ExpandableTree
+  [this
+   {::keys [expanded]}
+   {::keys                       [render]
+    :edn-query-language.ast/keys [root]}]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
                      (merge
                        {:ui/id     (random-uuid)
@@ -276,14 +294,9 @@
                        data-tree))
    :ident          [:ui/id :ui/id]
    :query          [:ui/id ::expanded]
-   :css            [[:.attribute {:display     "flex"
-                                  :align-items "center"
-                                  :padding     "0 2px"
-                                  :color       "#9a45b1"
-                                  :cursor      "pointer"
-                                  :font-family "sans-serif"
-                                  :font-size   "14px"
-                                  :line-height "1.4em"}]
+   :css            [[:.item {:display     "flex"
+                             :align-items "center"
+                             :padding     "0 2px"}]
                     [:.expander {:display      "flex"
                                  :align-items  "center"
                                  :color        "#656565"
@@ -295,15 +308,14 @@
                     [:.children-container {:margin-left "13px"}]]
    :initLocalState (fn [] {:toggle-expanded (fn [path]
                                               (update-value! this ::expanded toggle-set-item path))})}
-  (let [ast (eql/query->ast selection)]
-    (dom/div
-      (render-attributes {::path            []
-                          ::expanded        expanded
-                          ::attribute-props attribute-props
-                          ::toggle-expanded (fp/get-state this :toggle-expanded)}
-        (:children ast)))))
+  (dom/div
+    (render-attributes {::path            []
+                        ::expanded        expanded
+                        ::render          render
+                        ::toggle-expanded (fp/get-state this :toggle-expanded)}
+      (:children root))))
 
-(def attribute-selection-tree (fp/computed-factory AttributeSelectionTree {:keyfn :ui/id}))
+(def expandable-tree (fp/computed-factory ExpandableTree))
 
 (fp/defsc AttributeLineView
   [this {::pc/keys    [attribute]
@@ -433,12 +445,9 @@
   [this props]
   {:pre-merge (fn [{:keys [current-normalized data-tree]}]
                 (merge {} current-normalized data-tree))
-   :css       [[:.container {:color       "#9a45b1"
-                             :cursor      "pointer"
-                             :font-family "sans-serif"
-                             :font-size   "14px"
-                             :line-height "1.4em"
-                             :padding     "0 2px"}]]}
+   :css       [[:.container {:cursor  "pointer"
+                             :padding "0 2px"}
+                css-attribute-font]]}
   (apply dom/div :.container props (fp/children this)))
 
 (def simple-attribute (fp/factory SimpleAttribute))
@@ -494,12 +503,9 @@
                     [:.data-header {:padding     "9px 4px"
                                     :font-weight "bold"
                                     :font-family "Verdana"}]
-                    [:.out-attr {:padding     "0 2px"
-                                 :color       "#9a45b1"
-                                 :cursor      "pointer"
-                                 :font-family "sans-serif"
-                                 :font-size   "14px"
-                                 :line-height "1.4em"}]
+                    [:.out-attr {:padding "0 2px"
+                                 :cursor  "pointer"}
+                     css-attribute-font]
                     [:.path {:margin-bottom "6px"}]
                     [:.graph {:display "flex"
                               :flex    "1"
@@ -586,22 +592,22 @@
                                                      ((gobj/get settings "unhighlightNode") (str k)))}
                             (pr-str k)))))))))))
         (if show-graph?
-          (attribute-graph {::attributes        (attribute-network {::attr-depth        attr-depth
-                                                                    ::attr-index        index
-                                                                    ::attributes        attributes
-                                                                    ::direct-reaches?   direct-reaches?
-                                                                    ::nested-reaches?   nested-reaches?
-                                                                    ::direct-provides?  direct-provides?
-                                                                    ::nested-provides?  nested-provides?
-                                                                    ::interconnections? interconnections?} attribute)
-                            ::graph-comm        (fp/get-state this :graph-comm)
-                            ::direct-reaches?   direct-reaches?
-                            ::nested-reaches?   nested-reaches?
-                            ::direct-provides?  direct-provides?
-                            ::nested-provides?  nested-provides?
-                            ::interconnections? interconnections?
-                            ::on-show-details   on-select-attribute
-                            ::on-click-edge     (fp/get-state this :select-resolver)}))
+          (let [shared-options {::direct-reaches?   direct-reaches?
+                                ::nested-reaches?   nested-reaches?
+                                ::direct-provides?  direct-provides?
+                                ::nested-provides?  nested-provides?
+                                ::interconnections? interconnections?}]
+            (attribute-graph
+              (merge {::attributes      (attribute-network
+                                          (merge {::attr-depth attr-depth
+                                                  ::attr-index index
+                                                  ::attributes attributes}
+                                            shared-options)
+                                          attribute)
+                      ::on-show-details on-select-attribute
+                      ::on-click-edge   (fp/get-state this :select-resolver)
+                      ::graph-comm      (fp/get-state this :graph-comm)}
+                shared-options))))
 
         (if (seq attr-provides)
           (dom/div :.data-list-right
@@ -650,7 +656,8 @@
 (fp/defsc ResolverView
   [this {::pc/keys [sym input output]
          :ui/keys  [output-tree]}
-   {::keys [on-select-attribute attributes]}]
+   {::keys [on-select-attribute attributes]}
+   css]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
                      (merge
                        {:ui/output-tree {}}
@@ -658,7 +665,7 @@
                        data-tree))
    :ident          [::pc/sym ::pc/sym]
    :query          [::pc/sym ::pc/input ::pc/output
-                    {:ui/output-tree (fp/get-query AttributeSelectionTree)}]
+                    {:ui/output-tree (fp/get-query ExpandableTree)}]
    :css            [[:.container {:flex           "1"
                                   :display        "flex"
                                   :flex-direction "column"}]
@@ -675,6 +682,7 @@
                                :font-size   "14px"
                                :margin      "1px 0"}
                      [:b {:background "#F57F17"}]]
+                    [:.attribute css-attribute-font]
                     [:.columns {:display "flex"
                                 :flex    1}]
                     [:.menu {:white-space "nowrap"}]]
@@ -682,7 +690,11 @@
    :initLocalState (fn [] {:graph-comm      (atom nil)
                            :select-resolver (fn [{::keys [resolvers]}]
                                               (let [{::keys [on-select-resolver]} (fp/get-computed (fp/props this))]
-                                                (on-select-resolver (first resolvers))))})}
+                                                (on-select-resolver (first resolvers))))
+                           :render          (fn [{:keys [key]}]
+                                              (dom/div (assoc (out-attribute-events this key)
+                                                         :classes [(:attribute (css/get-classnames ResolverView))])
+                                                (pr-str key)))})}
   (let [input'         (if (= 1 (count input)) (first input) input)
         resolver-attrs (conj (out-all-attributes (->> output eql/query->ast)) input')
         attrs          (-> (h/index-by ::pc/attribute attributes)
@@ -699,8 +711,8 @@
           (if output
             (dom/div
               (dom/div :.data-header "Output")
-              (attribute-selection-tree output-tree {::selection       output
-                                                     ::attribute-props (fn [{:keys [key]}] (out-attribute-events this key))}))))
+              (expandable-tree output-tree {:edn-query-language.ast/root (eql/query->ast output)
+                                            ::render                      (fp/get-state this :render)}))))
 
         (attribute-graph {::attributes      attrs
                           ::graph-comm      (fp/get-state this :graph-comm)
