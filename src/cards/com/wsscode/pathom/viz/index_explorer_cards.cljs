@@ -16,7 +16,11 @@
             [fulcro.client.primitives :as fp]
             [cljs.test :refer [is]]
             [edn-query-language.core :as eql]
-            [fulcro.client.localized-dom :as dom]))
+            [fulcro.client.localized-dom :as dom]
+            [cljs.spec.alpha :as s]
+            [com.wsscode.spec-inspec :as si]))
+
+(s/def :customer/id uuid?)
 
 (pc/defresolver index-resolver [env _]
   {::pc/output [::sample-index]}

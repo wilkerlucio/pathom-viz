@@ -15,7 +15,9 @@
             [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ?]]
             [goog.object :as gobj]
             [clojure.string :as str]
-            [fulcro-css.css :as css]))
+            [fulcro-css.css :as css]
+            [com.wsscode.spec-inspec :as si]
+            [clojure.test.check.generators :as gen]))
 
 ; region specs
 
@@ -471,6 +473,7 @@
                                                 (on-select-resolver (first resolvers))))})}
   (dom/div :.container
     (attribute-line-view header-view)
+
     (dom/div :.toolbar
       (dom/div
         (dom/label "Depth")
@@ -539,7 +542,19 @@
                         (dom/div :.out-attr {:key   (pr-str k)
                                              :style {:marginLeft (str (* i 10) "px")}}
                           (dom/div (out-attribute-events this k)
-                            (pr-str k)))))))))))
+                            (pr-str k)))))))))
+
+            (if-let [form (si/safe-form attribute)]
+              (dom/div
+                (dom/div :.data-header "Spec")
+                (pr-str form)
+
+                (dom/div :.data-header "Examples")
+                (try
+                  (for [example (gen/sample (s/gen attribute))]
+                    (dom/div (pr-str example)))
+                  (catch :default _
+                    (dom/div "Error generating samples")))))))
         (if show-graph?
           (let [shared-options {::direct-reaches?   direct-reaches?
                                 ::nested-reaches?   nested-reaches?
