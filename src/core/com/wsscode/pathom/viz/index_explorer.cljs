@@ -598,8 +598,7 @@
 
           (if-let [form (si/safe-form attribute)]
             (fp/fragment
-              (panel {::panel-title "Spec"
-                      ::panel-tag   (count attr-reach-via)}
+              (panel {::panel-title "Spec"}
                 (pr-str form))
 
               (panel {::panel-title "Examples"}
