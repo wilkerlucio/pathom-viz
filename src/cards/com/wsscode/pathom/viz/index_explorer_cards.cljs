@@ -75,11 +75,16 @@
                               (if (seq services)
                                 (dom/div :$panel
                                   (dom/p :$panel-heading$row-center
-                                    (str "Services") (dom/span :$tag$is-black {:style {:marginLeft "8px"}} (count services)))
+                                    (dom/span :$flex (str "Services"))
+                                    (dom/span :$tag$is-dark (count services)))
                                   (for [{:keys  [abrams.diplomat.api/service]
                                          ::keys [service-in service-out]} (sort-by :abrams.diplomat.api/service services)]
-                                    (dom/div :$panel-block
-                                      (name service))))))))
+                                    (dom/div :$panel-block$row-center$tag-spaced
+                                      (dom/div :$flex (name service))
+                                      (if service-in
+                                        (dom/span :$tag$is-family-code$is-primary {:title "Input"} "I"))
+                                      (if service-out
+                                        (dom/span :$tag$is-family-code$is-link {:title "Output"} "O")))))))))
 
                         ::iex/plugin-render-to-resolver-menu
                         (fn [{:abrams.diplomat.api/keys [service endpoint]}]
