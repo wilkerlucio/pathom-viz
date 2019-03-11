@@ -72,6 +72,11 @@
    :font-size   "14px"
    :line-height "1.4em"})
 
+(def css-resolver-font
+  {:color       "#467cb7"
+   :font-size   "14px"
+   :line-height "1.4em"})
+
 ; endregion
 
 (def ExtensionContext (js/React.createContext {}))
@@ -428,11 +433,10 @@
 (def panel (fp/factory Panel))
 
 (fp/defsc AttributeView
-  [this {::pc/keys [attr-combinations attribute attr-reach-via attr-provides]
+  [this {::pc/keys [attr-combinations attribute attr-reach-via attr-provides attr-input-in attr-output-in]
          ::keys    [attr-depth direct-reaches? nested-reaches? direct-provides?
                     nested-provides? interconnections? show-graph?]
-         :ui/keys  [provides-tree provides-tree-source]
-         :>/keys   [header-view]}
+         :ui/keys  [provides-tree provides-tree-source]}
    {::keys [on-select-attribute attributes]
     :as    computed}]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
@@ -448,20 +452,18 @@
                           ::nested-provides?  false
                           ::interconnections? true
                           ::show-graph?       false
-                          :>/header-view      {::pc/attribute attr}
                           :ui/provides-tree   {}}
                          current-normalized
                          data-tree
                          (if attr-provides
                            {:ui/provides-tree-source (attr-provides->tree attr-provides)}))))
    :ident          [::pc/attribute ::pc/attribute]
-   :query          [::pc/attribute ::pc/attribute-paths ::attr-depth ::direct-reaches? ::nested-reaches?
-                    ::pc/attr-combinations
+   :query          [::pc/attribute ::attr-depth ::direct-reaches? ::nested-reaches?
+                    ::pc/attr-combinations ::pc/attr-input-in ::pc/attr-output-in
                     ::direct-provides? ::nested-provides? ::interconnections? ::show-graph? ::pc/attr-reach-via ::pc/attr-provides
                     {::attr-provides [::pc/attribute]}
                     {:ui/provides-tree (fp/get-query ex-tree/ExpandableTree)}
-                    :ui/provides-tree-source
-                    {:>/header-view (fp/get-query AttributeLineView)}]
+                    :ui/provides-tree-source]
    :css            [[:.container {:flex           "1"
                                   :flex-direction "column"
                                   :display        "flex"}]
@@ -487,6 +489,8 @@
                     [:.out-attr {:padding "0 2px"
                                  :cursor  "pointer"}
                      css-attribute-font]
+                    [:.resolver {:cursor "pointer"}
+                     css-resolver-font]
                     [:.path {:margin-bottom "6px"}]
                     [:.provides-container {:margin-left "8px"}]
                     [:.graph {:height "400px"
@@ -502,8 +506,6 @@
                                               (let [{::keys [on-select-resolver]} (fp/get-computed (fp/props this))]
                                                 (on-select-resolver (first resolvers))))})}
   (dom/div :.container
-    #_(attribute-line-view header-view)
-
     (dom/div :.toolbar
       (dom/h1 :$title$is-marginless (pr-str attribute))
 
@@ -589,7 +591,14 @@
                             (dom/div (out-attribute-events this k)
                               (pr-str k)))))))))))
 
-          (if attr-combinations
+          (if (seq attr-input-in)
+            (panel {::panel-title "Input In"
+                    ::panel-tag   (count attr-input-in)}
+              (for [resolver (sort attr-input-in)]
+                (dom/div :.resolver (hash-map :key (pr-str resolver))
+                  (pr-str resolver)))))
+
+          (if (seq attr-combinations)
             (panel {::panel-title "Input Combinations"
                     ::panel-tag   (count attr-combinations)}
               (for [input (sort-by (comp vec sort) h/vector-compare (map #(into (sorted-set) %) attr-combinations))]
@@ -610,8 +619,8 @@
 
           (render-plugin-extension this ::plugin-render-to-attr-left-menu)))
 
-      (if (seq attr-provides)
-        (dom/div :.data-list-right
+      (dom/div :.data-list-right
+        (if (seq attr-provides)
           (panel {::panel-title "Provides"
                   ::panel-tag   (count attr-provides)}
             (ex-tree/expandable-tree provides-tree
@@ -620,7 +629,14 @@
                                    (dom/div (assoc (out-attribute-events this key)
                                               :classes [(-> (css/get-classnames AttributeView) :out-attr)])
                                      (pr-str key)))
-               ::ex-tree/sort-by :key})))))))
+               ::ex-tree/sort-by :key})))
+
+        (if (seq attr-output-in)
+          (panel {::panel-title "Output In"
+                  ::panel-tag   (count attr-output-in)}
+            (for [resolver (sort attr-output-in)]
+              (dom/div :.resolver (hash-map :key (pr-str resolver))
+                (pr-str resolver)))))))))
 
 (gobj/set AttributeView "contextType" ExtensionContext)
 
