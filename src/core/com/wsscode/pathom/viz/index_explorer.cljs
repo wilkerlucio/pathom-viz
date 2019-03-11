@@ -447,7 +447,7 @@
                           ::direct-provides?  true
                           ::nested-provides?  false
                           ::interconnections? true
-                          ::show-graph?       true
+                          ::show-graph?       false
                           :>/header-view      {::pc/attribute attr}
                           :ui/provides-tree   {}}
                          current-normalized
