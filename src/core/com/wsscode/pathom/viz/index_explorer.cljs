@@ -953,10 +953,12 @@
                     {::top-connection-hubs (fp/get-query AttributeIndex)}
                     {::resolvers (fp/get-query ResolverIndex)}
                     {:ui/page (fp/get-query MainViewUnion)}]
-   :css            [[:.container {:flex           "1"
+   :css            [[:.out-container {:display "flex"
+                                      :flex    "1"
+                                      :width   "100%"}]
+                    [:.container {:flex           "1"
                                   :display        "flex"
-                                  :flex-direction "column"
-                                  :width          "100%"}]
+                                  :flex-direction "column"}]
                     [:.graph {:height  "800px"
                               :display "flex"
                               :border  "1px solid #000"}]
@@ -969,19 +971,21 @@
    :initLocalState (fn [] {:select-attribute #(fp/transact! this [`(navigate-to-attribute {::pc/attribute ~%})])
                            :select-resolver  #(fp/transact! this [`(navigate-to-resolver {::pc/sym ~%})])})}
   (dom/create-element (gobj/get ExtensionContext "Provider") #js {:value extensions}
-    (dom/div :.container {:key "container"}
-      (search-everything menu {::on-select-attribute (fp/get-state this :select-attribute)})
-      (if page
-        (main-view-union page (assoc index
-                                ::attributes attributes
-                                ::on-select-attribute (fp/get-state this :select-attribute)
-                                ::on-select-resolver (fp/get-state this :select-resolver))))
+    (dom/div :.out-container {:key "container"}
+      (dom/div
+        (search-everything menu {::on-select-attribute (fp/get-state this :select-attribute)}))
+      (dom/div :.container
+        (if page
+          (main-view-union page (assoc index
+                                  ::attributes attributes
+                                  ::on-select-attribute (fp/get-state this :select-attribute)
+                                  ::on-select-resolver (fp/get-state this :select-resolver))))
 
-      #_(dom/div :.graph
-          (attribute-graph {::attributes       attributes
-                            ::direct-reaches?  true
-                            ::nested-reaches?  true
-                            ::direct-provides? true
-                            ::nested-provides? true})))))
+        #_(dom/div :.graph
+            (attribute-graph {::attributes       attributes
+                              ::direct-reaches?  true
+                              ::nested-reaches?  true
+                              ::direct-provides? true
+                              ::nested-provides? true}))))))
 
 (def index-explorer (fp/computed-factory IndexExplorer))
