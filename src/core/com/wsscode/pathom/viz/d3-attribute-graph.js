@@ -59,6 +59,29 @@ export function render(element, data) {
 
   const linksIndex = {};
 
+  const highlightEdge = function (resolvers) {
+    if (linksIndex[resolvers]) {
+      linksIndex[resolvers].forEach(line => {
+        line.classed("pathom-viz-index-explorer-attr-link-focus-highlight", true)
+      });
+
+      label.html(resolvers)
+    }
+  }
+
+  const unhighlightEdge = function (resolvers) {
+    if (linksIndex[resolvers]) {
+      linksIndex[resolvers].forEach(line => {
+        line.classed("pathom-viz-index-explorer-attr-link-focus-highlight", false)
+      });
+
+      label.html('')
+    }
+  }
+
+  settings.highlightEdge = highlightEdge
+  settings.unhighlightEdge = unhighlightEdge
+
   const link = container.append("g")
     .selectAll("line")
     .data(links)
@@ -76,18 +99,10 @@ export function render(element, data) {
       onClickEdge({resolvers});
     })
     .on('mouseenter', function(d) {
-      linksIndex[d.resolvers].forEach(line => {
-        line.classed("pathom-viz-index-explorer-attr-link-focus-highlight", true)
-      });
-
-      return label.html(d.resolvers)
+      highlightEdge(d.resolvers)
     })
     .on('mouseleave', function(d) {
-      linksIndex[d.resolvers].forEach(line => {
-        line.classed("pathom-viz-index-explorer-attr-link-focus-highlight", false)
-      });
-
-      return label.html('')
+      unhighlightEdge(d.resolvers)
     });
 
   const drag = simulation => {

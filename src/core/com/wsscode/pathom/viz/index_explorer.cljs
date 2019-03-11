@@ -378,13 +378,21 @@
 
 (def simple-attribute (fp/factory SimpleAttribute))
 
-(defn out-attribute-events [this k]
+(defn attribute-graph-events [this k]
   (let [on-select-attribute (-> this fp/props fp/get-computed ::on-select-attribute)]
     {:onClick      #(on-select-attribute k)
      :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
                       ((gobj/get settings "highlightNode") (str k)))
      :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
                       ((gobj/get settings "unhighlightNode") (str k)))}))
+
+(defn resolver-graph-events [this k]
+  (let [on-select-resolver (-> this fp/props fp/get-computed ::on-select-resolver)]
+    {:onClick      #(on-select-resolver k)
+     :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
+                      ((gobj/get settings "highlightEdge") (str k)))
+     :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
+                      ((gobj/get settings "unhighlightEdge") (str k)))}))
 
 (>defn attr-provides->tree [attr-provides]
   [::pc/attr-provides => ::ex-tree/root]
@@ -573,7 +581,7 @@
                 (dom/div
                   (dom/div :.out-attr {:key   (pr-str input)
                                        :style (cond-> {} direct? (assoc :fontWeight "bold"))}
-                    (dom/div (out-attribute-events this (if (= 1 (count input))
+                    (dom/div (attribute-graph-events this (if (= 1 (count input))
                                                           (first input)
                                                           input))
                       (pr-str input)))
@@ -588,21 +596,21 @@
                         (for [[k i] (map vector path' (range))]
                           (dom/div :.out-attr {:key   (pr-str k)
                                                :style {:marginLeft (str (* i 10) "px")}}
-                            (dom/div (out-attribute-events this k)
+                            (dom/div (attribute-graph-events this k)
                               (pr-str k)))))))))))
 
           (if (seq attr-input-in)
             (panel {::panel-title "Input In"
                     ::panel-tag   (count attr-input-in)}
               (for [resolver (sort attr-input-in)]
-                (dom/div :.resolver (hash-map :key (pr-str resolver))
+                (dom/div :.resolver (assoc (resolver-graph-events this resolver) :key (pr-str resolver))
                   (pr-str resolver)))))
 
           (if (seq attr-combinations)
             (panel {::panel-title "Input Combinations"
                     ::panel-tag   (count attr-combinations)}
               (for [input (sort-by (comp vec sort) h/vector-compare (map #(into (sorted-set) %) attr-combinations))]
-                (dom/div :.out-attr (assoc (out-attribute-events this input) :key (pr-str input))
+                (dom/div :.out-attr (assoc (attribute-graph-events this input) :key (pr-str input))
                   (pr-str input)))))
 
           (if-let [form (si/safe-form attribute)]
@@ -626,7 +634,7 @@
             (ex-tree/expandable-tree provides-tree
               {::ex-tree/root    provides-tree-source
                ::ex-tree/render  (fn [{:keys [key]}]
-                                   (dom/div (assoc (out-attribute-events this key)
+                                   (dom/div (assoc (attribute-graph-events this key)
                                               :classes [(-> (css/get-classnames AttributeView) :out-attr)])
                                      (pr-str key)))
                ::ex-tree/sort-by :key})))
@@ -635,7 +643,7 @@
           (panel {::panel-title "Output In"
                   ::panel-tag   (count attr-output-in)}
             (for [resolver (sort attr-output-in)]
-              (dom/div :.resolver (hash-map :key (pr-str resolver))
+              (dom/div :.resolver (assoc (resolver-graph-events this resolver) :key (pr-str resolver))
                 (pr-str resolver)))))))))
 
 (gobj/set AttributeView "contextType" ExtensionContext)
@@ -706,7 +714,7 @@
                                               (let [{::keys [on-select-resolver]} (fp/get-computed (fp/props this))]
                                                 (on-select-resolver (first resolvers))))
                            :render          (fn [{:keys [key]}]
-                                              (dom/div (assoc (out-attribute-events this key)
+                                              (dom/div (assoc (attribute-graph-events this key)
                                                          :classes [(:attribute (css/get-classnames ResolverView))])
                                                 (pr-str key)))})}
   (let [input'         (if (= 1 (count input)) (first input) input)
@@ -720,7 +728,7 @@
       (dom/div :.columns
         (dom/div :.menu
           (panel {::panel-title "Input"}
-            (dom/div :.attribute (out-attribute-events this (if (= 1 (count input))
+            (dom/div :.attribute (attribute-graph-events this (if (= 1 (count input))
                                                               (first input)
                                                               input)) (h/pprint-str input)))
           (if output
