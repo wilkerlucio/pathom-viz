@@ -428,7 +428,7 @@
 (def panel (fp/factory Panel))
 
 (fp/defsc AttributeView
-  [this {::pc/keys [attribute-paths attribute attr-reach-via attr-provides]
+  [this {::pc/keys [attr-combinations attribute attr-reach-via attr-provides]
          ::keys    [attr-depth direct-reaches? nested-reaches? direct-provides?
                     nested-provides? interconnections? show-graph?]
          :ui/keys  [provides-tree provides-tree-source]
@@ -456,6 +456,7 @@
                            {:ui/provides-tree-source (attr-provides->tree attr-provides)}))))
    :ident          [::pc/attribute ::pc/attribute]
    :query          [::pc/attribute ::pc/attribute-paths ::attr-depth ::direct-reaches? ::nested-reaches?
+                    ::pc/attr-combinations
                     ::direct-provides? ::nested-provides? ::interconnections? ::show-graph? ::pc/attr-reach-via ::pc/attr-provides
                     {::attr-provides [::pc/attribute]}
                     {:ui/provides-tree (fp/get-query ex-tree/ExpandableTree)}
@@ -470,9 +471,12 @@
                                 :margin                "16px 0"}]
                     [:.data-list {:white-space   "nowrap"
                                   ;:overflow      "auto"
-                                  ;:width         "260px"
+                                  :box-sizing    "border-box"
+                                  :width         "50%"
                                   :padding-right "12px"}]
                     [:.data-list-right {:white-space "nowrap"
+                                        :width       "50%"
+                                        :box-sizing  "border-box"
                                         ;:overflow    "auto"
                                         ;     :width       "300px"
                                         :padding     "0 12px"}]
@@ -583,6 +587,12 @@
                                                :style {:marginLeft (str (* i 10) "px")}}
                             (dom/div (out-attribute-events this k)
                               (pr-str k)))))))))))
+
+          (if attr-combinations
+            (panel {::panel-title "Input Combinations"}
+              (for [input attr-combinations]
+                (dom/div :.out-attr (assoc (out-attribute-events this input) :key (pr-str input))
+                  (pr-str input)))))
 
           (if-let [form (si/safe-form attribute)]
             (fp/fragment
@@ -815,17 +825,20 @@
                ::attr-edges-count
                {::top-connection-hubs [::pc/attribute ::attr-edges-count]}]}
   (fp/fragment
-    (dom/div "Attribute count: " attribute-count)
-    (dom/div "Resolver count: " resolver-count)
-    (dom/div "Globals count: " globals-count)
-    (dom/div "Idents count: " idents-count)
-    (dom/div "Edges count: " attr-edges-count)
-    (dom/h3 "Most Connected Attributes")
-    (for [{::pc/keys [attribute]
-           ::keys    [attr-edges-count]} top-connection-hubs]
-      (simple-attribute {:react-key (pr-str attribute)
-                         :onClick   #(on-select-attribute attribute)}
-        (str "[" attr-edges-count "] " (pr-str attribute))))))
+    (dom/h1 :$title "Stats")
+    (dom/div :$content
+      (dom/div "Attribute count: " attribute-count)
+      (dom/div "Resolver count: " resolver-count)
+      (dom/div "Globals count: " globals-count)
+      (dom/div "Idents count: " idents-count)
+      (dom/div "Edges count: " attr-edges-count))
+    (dom/h2 :$subtitle "Most Connected Attributes")
+    (dom/div :$content
+      (for [{::pc/keys [attribute]
+             ::keys    [attr-edges-count]} top-connection-hubs]
+        (simple-attribute {:react-key (pr-str attribute)
+                           :onClick   #(on-select-attribute attribute)}
+          (str "[" attr-edges-count "] " (pr-str attribute)))))))
 
 (def stats-view (fp/factory StatsView {:keyfn ::id}))
 
@@ -942,7 +955,8 @@
                     {:ui/page (fp/get-query MainViewUnion)}]
    :css            [[:.container {:flex           "1"
                                   :display        "flex"
-                                  :flex-direction "column"}]
+                                  :flex-direction "column"
+                                  :width          "100%"}]
                     [:.graph {:height  "800px"
                               :display "flex"
                               :border  "1px solid #000"}]
