@@ -506,10 +506,10 @@
     (dom/h1 :$title (pr-str attribute))
 
     (dom/div :.toolbar
-      (dom/div
-        (dom/label "Depth")
-        (dom/input {:type     "number" :min 1 :value attr-depth
-                    :onChange #(fm/set-integer! this ::attr-depth :event %)}))
+      (dom/div :$row-center
+        (dom/label :$label$is-small "Depth")
+        (dom/input :$input$is-small {:type     "number" :min 1 :value attr-depth
+                                     :onChange #(fm/set-integer! this ::attr-depth :event %)}))
       (dom/label
         (dom/input {:type     "checkbox" :checked direct-reaches?
                     :onChange #(fm/set-value! this ::direct-reaches? (gobj/getValueByKeys % "target" "checked"))})
