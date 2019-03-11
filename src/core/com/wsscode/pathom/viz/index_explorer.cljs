@@ -468,7 +468,8 @@
                     [:.toolbar {:display               "grid"
                                 :grid-template-columns "repeat(10, max-content)"
                                 :grid-gap              "10px"
-                                :margin                "16px 0"}]
+                                :align-items           "center"
+                                :margin-bottom         "16px"}]
                     [:.data-list {:white-space   "nowrap"
                                   ;:overflow      "auto"
                                   :box-sizing    "border-box"
@@ -503,13 +504,17 @@
   (dom/div :.container
     #_(attribute-line-view header-view)
 
-    (dom/h1 :$title$is-marginless (pr-str attribute))
-
     (dom/div :.toolbar
+      (dom/h1 :$title$is-marginless (pr-str attribute))
+
       (dom/div :$row-center
         (dom/label :$label$is-small "Depth")
         (dom/input :$input$is-small {:type     "number" :min 1 :value attr-depth
                                      :onChange #(fm/set-integer! this ::attr-depth :event %)}))
+      (dom/label
+        (dom/input {:type     "checkbox" :checked show-graph?
+                    :onChange #(fm/set-value! this ::show-graph? (gobj/getValueByKeys % "target" "checked"))})
+        "Graph")
       (dom/label
         (dom/input {:type     "checkbox" :checked direct-reaches?
                     :onChange #(fm/set-value! this ::direct-reaches? (gobj/getValueByKeys % "target" "checked"))})
@@ -529,11 +534,7 @@
       (dom/label
         (dom/input {:type     "checkbox" :checked interconnections?
                     :onChange #(fm/set-value! this ::interconnections? (gobj/getValueByKeys % "target" "checked"))})
-        "Interconnections")
-      (dom/label
-        (dom/input {:type     "checkbox" :checked show-graph?
-                    :onChange #(fm/set-value! this ::show-graph? (gobj/getValueByKeys % "target" "checked"))})
-        "Graph"))
+        "Interconnections"))
 
     (if show-graph?
       (dom/div :$panel
