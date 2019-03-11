@@ -44,6 +44,45 @@
                   p/request-cache-plugin
                   p/trace-plugin]}))
 
+(def abrams-plugin
+  {::iex/plugin-id
+   ::abrams-service
+
+   ::iex/plugin-render-to-attr-left-menu
+   (fn [{:abrams.diplomat.api/keys [attr-services-in attr-services-out]}]
+     (let [services
+           (-> (merge-with merge
+                 (into {} (map #(vector % {:abrams.diplomat.api/service % ::service-in true})) attr-services-in)
+                 (into {} (map #(vector % {:abrams.diplomat.api/service % ::service-out true})) attr-services-out))
+               (vals))]
+       (dom/div
+         (if (seq services)
+           (dom/div :$panel
+             (dom/p :$panel-heading$row-center
+               (dom/span :$flex (str "Services"))
+               (dom/span :$tag$is-dark (count services)))
+             (for [{:keys  [abrams.diplomat.api/service]
+                    ::keys [service-in service-out]} (sort-by :abrams.diplomat.api/service services)]
+               (dom/div :$panel-block$row-center$tag-spaced
+                 (dom/div :$flex (name service))
+                 (if service-in
+                   (dom/span :$tag$is-family-code$is-primary {:title "Input"} "I"))
+                 (if service-out
+                   (dom/span :$tag$is-family-code$is-link {:title "Output"} "O")))))))))
+
+   ::iex/plugin-render-to-resolver-menu
+   (fn [{:abrams.diplomat.api/keys [service endpoint]}]
+     (dom/div
+       (if service
+         (fp/fragment
+           (dom/div :$title$is-4 "Service")
+           (dom/div (name service))))
+
+       (if endpoint
+         (fp/fragment
+           (dom/div :$title$is-4 "Endpoint")
+           (dom/div (str "/api/" endpoint))))))})
+
 (ws/defcard index-explorer
   {::wsm/align ::wsm/stretch-flex}
   (let [id (random-uuid)]
@@ -61,43 +100,7 @@
                                :target [:ui/root]}))}
 
        ::f.portal/computed
-       {::iex/plugins [{::iex/plugin-id
-                        ::abrams-service
-
-                        ::iex/plugin-render-to-attr-left-menu
-                        (fn [{:abrams.diplomat.api/keys [attr-services-in attr-services-out]}]
-                          (let [services
-                                (-> (merge-with merge
-                                      (into {} (map #(vector % {:abrams.diplomat.api/service % ::service-in true})) attr-services-in)
-                                      (into {} (map #(vector % {:abrams.diplomat.api/service % ::service-out true})) attr-services-out))
-                                    (vals))]
-                            (dom/div
-                              (if (seq services)
-                                (dom/div :$panel
-                                  (dom/p :$panel-heading$row-center
-                                    (dom/span :$flex (str "Services"))
-                                    (dom/span :$tag$is-dark (count services)))
-                                  (for [{:keys  [abrams.diplomat.api/service]
-                                         ::keys [service-in service-out]} (sort-by :abrams.diplomat.api/service services)]
-                                    (dom/div :$panel-block$row-center$tag-spaced
-                                      (dom/div :$flex (name service))
-                                      (if service-in
-                                        (dom/span :$tag$is-family-code$is-primary {:title "Input"} "I"))
-                                      (if service-out
-                                        (dom/span :$tag$is-family-code$is-link {:title "Output"} "O")))))))))
-
-                        ::iex/plugin-render-to-resolver-menu
-                        (fn [{:abrams.diplomat.api/keys [service endpoint]}]
-                          (dom/div
-                            (if service
-                              (fp/fragment
-                                (dom/div :$title$is-4 "Service")
-                                (dom/div (name service))))
-
-                            (if endpoint
-                              (fp/fragment
-                                (dom/div :$title$is-4 "Endpoint")
-                                (dom/div (str "/api/" endpoint))))))}]}})))
+       {::iex/plugins [abrams-plugin]}})))
 
 (fp/defsc AttributeGraphDemo
   [this {::keys []}]

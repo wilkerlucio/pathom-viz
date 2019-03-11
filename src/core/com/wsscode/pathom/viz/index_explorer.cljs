@@ -547,31 +547,32 @@
               (dom/span :$tag$is-dark (count attr-reach-via)))
             (dom/div :$panel-block
               (dom/div :$scrollbars
-                (for [[input v] (->> attr-reach-via
-                                     (group-by (comp attr-path-key-root first))
-                                     (sort-by (comp pr-str attr-path-key-root first)))
-                      :let [direct? (some (comp direct-input? first) v)]
-                      :when (or direct? nested-reaches?)]
-                  (dom/div
-                    (dom/div :.out-attr {:key   (pr-str input)
-                                         :style (cond-> {} direct? (assoc :fontWeight "bold"))}
-                      (dom/div (out-attribute-events this (if (= 1 (count input))
-                                                            (first input)
-                                                            input))
-                        (pr-str input)))
-                    (if nested-reaches?
-                      (for [[path resolvers] (->> v
-                                                  (map #(update % 0 (fn [x] (if (set? x) [x] x))))
-                                                  (sort-by (comp #(update % 0 (comp vec sort)) first)))
-                            :let [path' (next path)]
-                            :when path']
-                        (dom/div {:key   (pr-str path)
-                                  :style {:marginLeft (str 10 "px")}}
-                          (for [[k i] (map vector path' (range))]
-                            (dom/div :.out-attr {:key   (pr-str k)
-                                                 :style {:marginLeft (str (* i 10) "px")}}
-                              (dom/div (out-attribute-events this k)
-                                (pr-str k))))))))))))
+                (let [nested-reaches? true]
+                  (for [[input v] (->> attr-reach-via
+                                       (group-by (comp attr-path-key-root first))
+                                       (sort-by (comp pr-str attr-path-key-root first)))
+                        :let [direct? (some (comp direct-input? first) v)]
+                        :when (or direct? nested-reaches?)]
+                    (dom/div
+                      (dom/div :.out-attr {:key   (pr-str input)
+                                           :style (cond-> {} direct? (assoc :fontWeight "bold"))}
+                        (dom/div (out-attribute-events this (if (= 1 (count input))
+                                                              (first input)
+                                                              input))
+                          (pr-str input)))
+                      (if nested-reaches?
+                        (for [[path resolvers] (->> v
+                                                    (map #(update % 0 (fn [x] (if (set? x) [x] x))))
+                                                    (sort-by (comp #(update % 0 (comp vec sort)) first)))
+                              :let [path' (next path)]
+                              :when path']
+                          (dom/div {:key   (pr-str path)
+                                    :style {:marginLeft (str 10 "px")}}
+                            (for [[k i] (map vector path' (range))]
+                              (dom/div :.out-attr {:key   (pr-str k)
+                                                   :style {:marginLeft (str (* i 10) "px")}}
+                                (dom/div (out-attribute-events this k)
+                                  (pr-str k)))))))))))))
 
           (if-let [form (si/safe-form attribute)]
             (fp/fragment
