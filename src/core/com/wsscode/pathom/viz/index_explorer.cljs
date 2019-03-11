@@ -68,7 +68,6 @@
 
 (def css-attribute-font
   {:color       "#9a45b1"
-   :font-family "sans-serif"
    :font-size   "14px"
    :line-height "1.4em"})
 
@@ -408,6 +407,14 @@
                         (reverse)))]
     {:children (:items provides)}))
 
+(defn render-plugin-extension [this view]
+  (let [plugins (-> (gobj/get this "context") ::plugins)
+        data    (-> this fp/get-reconciler fp/app-state deref (get-in (fp/get-ident this)))]
+    (for [{::keys [plugin-id] :as plugin} plugins
+          :when (contains? plugin view)]
+      (dom/div {:key (pr-str plugin-id)}
+        ((get plugin view) data)))))
+
 (fp/defsc AttributeView
   [this {::pc/keys [attribute-paths attribute attr-reach-via attr-provides]
          ::keys    [attr-depth direct-reaches? nested-reaches? direct-provides?
@@ -428,7 +435,7 @@
                           ::direct-provides?  true
                           ::nested-provides?  false
                           ::interconnections? true
-                          ::show-graph?       true
+                          ::show-graph?       false
                           :>/header-view      {::pc/attribute attr}
                           :ui/provides-tree   {}}
                          current-normalized
@@ -447,15 +454,16 @@
                                   :display        "flex"}]
                     [:.toolbar {:display               "grid"
                                 :grid-template-columns "repeat(10, max-content)"
-                                :grid-gap              "10px"}]
-                    [:.data-list {:white-space  "nowrap"
-                                  :border-right "1px solid #000"
-                                  :overflow     "auto"
-                                  :width        "260px"}]
+                                :grid-gap              "10px"
+                                :margin                "16px 0"}]
+                    [:.data-list {:white-space   "nowrap"
+                                  ;:overflow      "auto"
+                                  ;:width         "260px"
+                                  :padding-right "12px"}]
                     [:.data-list-right {:white-space "nowrap"
-                                        :border-left "1px solid #000"
-                                        :overflow    "auto"
-                                        :width       "300px"}]
+                                        ;:overflow    "auto"
+                                        ;     :width       "300px"
+                                        :padding "0 12px"}]
                     [:.data-header {:padding     "9px 4px"
                                     :font-weight "bold"
                                     :font-family "Verdana"}]
@@ -465,8 +473,7 @@
                     [:.path {:margin-bottom "6px"}]
                     [:.provides-container {:margin-left "8px"}]
                     [:.graph {:display "flex"
-                              :flex    "1"
-                              :border  "1px solid #000"}
+                              :flex    "1"}
                      [:text {:font "bold 16px Verdana, Helvetica, Arial, sans-serif"}]]]
    :css-include    [AttributeGraph]
    :initLocalState (fn [] {:graph-comm      (atom nil)
@@ -474,7 +481,9 @@
                                               (let [{::keys [on-select-resolver]} (fp/get-computed (fp/props this))]
                                                 (on-select-resolver (first resolvers))))})}
   (dom/div :.container
-    (attribute-line-view header-view)
+    #_(attribute-line-view header-view)
+
+    (dom/h1 :$title (pr-str attribute))
 
     (dom/div :.toolbar
       (dom/div
@@ -505,48 +514,59 @@
         (dom/input {:type     "checkbox" :checked show-graph?
                     :onChange #(fm/set-value! this ::show-graph? (gobj/getValueByKeys % "target" "checked"))})
         "Graph"))
+
     (let [index (h/index-by ::pc/attribute attributes)]
-      (dom/div :.graph
+      (dom/div :.graph$scrollbars
         (if (seq attr-reach-via)
           (dom/div :.data-list
-            (dom/div :.data-header "Reach via")
-            (for [[input v] (->> attr-reach-via
-                                 (group-by (comp attr-path-key-root first))
-                                 (sort-by (comp pr-str attr-path-key-root first)))
-                  :let [direct? (some (comp direct-input? first) v)]
-                  :when (or direct? nested-reaches?)]
-              (dom/div
-                (dom/div :.out-attr {:key   (pr-str input)
-                                     :style (cond-> {} direct? (assoc :fontWeight "bold"))}
-                  (dom/div (out-attribute-events this (if (= 1 (count input))
-                                                        (first input)
-                                                        input))
-                    (pr-str input)))
-                (if nested-reaches?
-                  (for [[path resolvers] (->> v
-                                              (map #(update % 0 (fn [x] (if (set? x) [x] x))))
-                                              (sort-by (comp #(update % 0 (comp vec sort)) first)))
-                        :let [path' (next path)]
-                        :when path']
-                    (dom/div {:key   (pr-str path)
-                              :style {:marginLeft (str 10 "px")}}
-                      (for [[k i] (map vector path' (range))]
-                        (dom/div :.out-attr {:key   (pr-str k)
-                                             :style {:marginLeft (str (* i 10) "px")}}
-                          (dom/div (out-attribute-events this k)
-                            (pr-str k)))))))))
+            (dom/div :$panel
+              (dom/p :$panel-heading "Reach via")
+              (dom/div :$panel-block
+                (dom/div :$scrollbars
+                  (for [[input v] (->> attr-reach-via
+                                       (group-by (comp attr-path-key-root first))
+                                       (sort-by (comp pr-str attr-path-key-root first)))
+                        :let [direct? (some (comp direct-input? first) v)]
+                        :when (or direct? nested-reaches?)]
+                    (dom/div
+                      (dom/div :.out-attr {:key   (pr-str input)
+                                           :style (cond-> {} direct? (assoc :fontWeight "bold"))}
+                        (dom/div (out-attribute-events this (if (= 1 (count input))
+                                                              (first input)
+                                                              input))
+                          (pr-str input)))
+                      (if nested-reaches?
+                        (for [[path resolvers] (->> v
+                                                    (map #(update % 0 (fn [x] (if (set? x) [x] x))))
+                                                    (sort-by (comp #(update % 0 (comp vec sort)) first)))
+                              :let [path' (next path)]
+                              :when path']
+                          (dom/div {:key   (pr-str path)
+                                    :style {:marginLeft (str 10 "px")}}
+                            (for [[k i] (map vector path' (range))]
+                              (dom/div :.out-attr {:key   (pr-str k)
+                                                   :style {:marginLeft (str (* i 10) "px")}}
+                                (dom/div (out-attribute-events this k)
+                                  (pr-str k))))))))))))
 
             (if-let [form (si/safe-form attribute)]
-              (dom/div
-                (dom/div :.data-header "Spec")
-                (pr-str form)
+              (fp/fragment
+                (dom/div :$panel
+                  (dom/p :$panel-heading "Spec")
+                  (dom/div :$panel-block (pr-str form)))
 
-                (dom/div :.data-header "Examples")
-                (try
-                  (for [example (gen/sample (s/gen attribute))]
-                    (dom/div (pr-str example)))
-                  (catch :default _
-                    (dom/div "Error generating samples")))))))
+                (dom/div :$panel
+                  (dom/p :$panel-heading "Examples")
+                  (dom/div :$panel-block
+                    (dom/div :$scrollbars
+                      (try
+                        (for [example (gen/sample (s/gen attribute))]
+                          (dom/div {:key (pr-str example)} (pr-str example)))
+                        (catch :default _
+                          (dom/div "Error generating samples"))))))))
+
+            (render-plugin-extension this ::plugin-render-to-attr-left-menu)))
+
         (if show-graph?
           (let [shared-options {::direct-reaches?   direct-reaches?
                                 ::nested-reaches?   nested-reaches?
@@ -567,28 +587,20 @@
 
         (if (seq attr-provides)
           (dom/div :.data-list-right
-            (dom/div :.data-header "Provides")
+            (dom/div :$panel
+              (dom/p :$panel-heading "Provides")
 
-            (dom/div :.provides-container
-              (ex-tree/expandable-tree provides-tree
-                {::ex-tree/root    provides-tree-source
-                 ::ex-tree/render  (fn [{:keys [key]}]
-                                     (dom/div (assoc (out-attribute-events this key)
-                                                :classes [(-> (css/get-classnames AttributeView) :out-attr)])
-                                       (pr-str key)))
-                 ::ex-tree/sort-by :key}))
-            #_
-            (for [[_ v] (->> (group-by (comp attr-path-key-root first) attr-provides)
-                             (sort-by (comp attr-path-key-root first)))]
-              (for [[path resolvers] (->> v
-                                          (map #(update % 0 (fn [x] (if (keyword? x) [x] x))))
-                                          (remove #(and (not nested-provides?) (> (count (first %)) 1)))
-                                          (sort-by first))
-                    :let [k (peek path)]]
-                (dom/div :.out-attr {:key   (pr-str path)
-                                     :style {:marginLeft (str (* 10 (dec (count path))) "px")}}
-                  (dom/div (out-attribute-events this k)
-                    (pr-str k)))))))))))
+              (dom/div :$panel-block
+                (dom/div :$scrollbars
+                  (ex-tree/expandable-tree provides-tree
+                    {::ex-tree/root    provides-tree-source
+                     ::ex-tree/render  (fn [{:keys [key]}]
+                                         (dom/div (assoc (out-attribute-events this key)
+                                                    :classes [(-> (css/get-classnames AttributeView) :out-attr)])
+                                           (pr-str key)))
+                     ::ex-tree/sort-by :key}))))))))))
+
+(gobj/set AttributeView "contextType" ExtensionContext)
 
 (def attribute-view (fp/computed-factory AttributeView {:keyfn ::pc/attribute}))
 
@@ -660,13 +672,11 @@
                                                          :classes [(:attribute (css/get-classnames ResolverView))])
                                                 (pr-str key)))})}
   (let [input'         (if (= 1 (count input)) (first input) input)
-        data           (-> this fp/get-reconciler fp/app-state deref (get-in (fp/get-ident this)))
         resolver-attrs (conj (out-all-attributes (->> output eql/query->ast)) input')
         attrs          (-> (h/index-by ::pc/attribute attributes)
                            (select-keys resolver-attrs)
                            (update input' assoc ::center? true)
-                           vals)
-        plugins        (-> (gobj/get this "context") ::plugins)]
+                           vals)]
     (dom/div :.container
       (dom/div :.header (str sym))
       (dom/div :.columns
@@ -682,10 +692,7 @@
                  ::ex-tree/render  (fp/get-state this :render)
                  ::ex-tree/sort-by :key})))
 
-          (for [{::keys [plugin-id plugin-render-to-resolver-menu]} plugins
-                :when plugin-render-to-resolver-menu]
-            (dom/div {:key (pr-str plugin-id)}
-              (plugin-render-to-resolver-menu data))))
+          (render-plugin-extension this ::plugin-render-to-resolver-menu))
 
         (attribute-graph {::attributes      attrs
                           ::graph-comm      (fp/get-state this :graph-comm)
@@ -745,11 +752,13 @@
                              (fp/transact! this [`(fm/set-props {::text           ""
                                                                  ::search-results []})]))})}
   (dom/div
-    (dom/div
-      (dom/input :.input
-        {:type     "text"
-         :value    text
-         :onChange #(fp/transact! this [`(search {::text ~(h/target-value %)})])}))
+    (dom/div :$control$has-icons-left
+      (dom/input :$input$is-small
+        {:type        "text"
+         :value       text
+         :placeholder "Search"
+         :onChange    #(fp/transact! this [`(search {::text ~(h/target-value %)})])})
+      (dom/span :$icon$is-small$is-left (dom/i :$fas$fa-search)))
     (if (seq search-results)
       (dom/div
         (for [item (take 20 search-results)]
@@ -906,7 +915,7 @@
                          {::id     id
                           :ui/menu {::id id}
                           ;:ui/page {::id id}
-                          :ui/page {::pc/sym 'abrams.controllers.graph.revolver/revolver-by-account}
+                          :ui/page {::pc/attribute :account/id}
                           })
                        current-normalized
                        data-tree
@@ -927,7 +936,9 @@
                                   :flex-direction "column"}]
                     [:.graph {:height  "800px"
                               :display "flex"
-                              :border  "1px solid #000"}]]
+                              :border  "1px solid #000"}]
+                    [:$row-center {:display "flex" :align-items "center"}]
+                    [:$scrollbars {:overflow "auto"}]]
    :css-include    [SimpleAttribute]
    :initLocalState (fn [] {:select-attribute #(fp/transact! this [`(navigate-to-attribute {::pc/attribute ~%})])
                            :select-resolver  #(fp/transact! this [`(navigate-to-resolver {::pc/sym ~%})])})}

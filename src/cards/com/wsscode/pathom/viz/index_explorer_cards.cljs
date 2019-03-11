@@ -64,17 +64,34 @@
        {::iex/plugins [{::iex/plugin-id
                         ::abrams-service
 
+                        ::iex/plugin-render-to-attr-left-menu
+                        (fn [{:abrams.diplomat.api/keys [attr-services-in attr-services-out]}]
+                          (let [services
+                                (-> (merge-with merge
+                                      (into {} (map #(vector % {:abrams.diplomat.api/service % ::service-in true})) attr-services-in)
+                                      (into {} (map #(vector % {:abrams.diplomat.api/service % ::service-out true})) attr-services-out))
+                                    (vals))]
+                            (dom/div
+                              (if (seq services)
+                                (dom/div :$panel
+                                  (dom/p :$panel-heading$row-center
+                                    (str "Services") (dom/span :$tag$is-black {:style {:marginLeft "8px"}} (count services)))
+                                  (for [{:keys  [abrams.diplomat.api/service]
+                                         ::keys [service-in service-out]} (sort-by :abrams.diplomat.api/service services)]
+                                    (dom/div :$panel-block
+                                      (name service))))))))
+
                         ::iex/plugin-render-to-resolver-menu
                         (fn [{:abrams.diplomat.api/keys [service endpoint]}]
                           (dom/div
                             (if service
                               (fp/fragment
-                                (dom/div :.data-header "Service")
+                                (dom/div :$title$is-4 "Service")
                                 (dom/div (name service))))
 
                             (if endpoint
                               (fp/fragment
-                                (dom/div :.data-header "Endpoint")
+                                (dom/div :$title$is-4 "Endpoint")
                                 (dom/div (str "/api/" endpoint))))))}]}})))
 
 (fp/defsc AttributeGraphDemo
