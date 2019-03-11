@@ -589,7 +589,8 @@
                               (pr-str k)))))))))))
 
           (if attr-combinations
-            (panel {::panel-title "Input Combinations"}
+            (panel {::panel-title "Input Combinations"
+                    ::panel-tag   (count attr-combinations)}
               (for [input attr-combinations]
                 (dom/div :.out-attr (assoc (out-attribute-events this input) :key (pr-str input))
                   (pr-str input)))))
