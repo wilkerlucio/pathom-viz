@@ -3,21 +3,21 @@
             ["./detect-element-size" :refer [addResizeListener]]
             [cljs.reader :refer [read-string]]
             [cljs.spec.alpha :as s]
+            [clojure.string :as str]
+            [clojure.test.check.generators :as gen]
             [com.wsscode.fuzzy :as fuzzy]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.viz.helpers :as h]
+            [com.wsscode.pathom.viz.ui.expandable-tree :as ex-tree]
+            [com.wsscode.spec-inspec :as si]
             [edn-query-language.core :as eql]
+            [fulcro-css.css :as css]
             [fulcro.client.localized-dom :as dom]
             [fulcro.client.mutations :as fm]
             [fulcro.client.primitives :as fp]
-            [com.wsscode.pathom.viz.ui.expandable-tree :as ex-tree]
             [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ?]]
-            [goog.object :as gobj]
-            [clojure.string :as str]
-            [fulcro-css.css :as css]
-            [com.wsscode.spec-inspec :as si]
-            [clojure.test.check.generators :as gen]))
+            [goog.object :as gobj]))
 
 ; region specs
 
