@@ -592,7 +592,7 @@
           (if attr-combinations
             (panel {::panel-title "Input Combinations"
                     ::panel-tag   (count attr-combinations)}
-              (for [input attr-combinations]
+              (for [input (sort-by (comp vec sort) h/vector-compare (map #(into (sorted-set) %) attr-combinations))]
                 (dom/div :.out-attr (assoc (out-attribute-events this input) :key (pr-str input))
                   (pr-str input)))))
 
