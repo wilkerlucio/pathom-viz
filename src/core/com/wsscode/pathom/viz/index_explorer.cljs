@@ -68,6 +68,7 @@
 
 (def css-attribute-font
   {:color       "#9a45b1"
+   ; color "#660e7a"
    :font-size   "14px"
    :line-height "1.4em"})
 
@@ -413,6 +414,19 @@
       (dom/div {:key (pr-str plugin-id)}
         ((get plugin view) data)))))
 
+(fp/defsc Panel
+  [this {::keys [panel-title panel-tag]}]
+  {}
+  (dom/div :$panel
+    (dom/p :$panel-heading$row-center
+      (dom/span :$flex panel-title)
+      (if panel-tag (dom/span :$tag$is-dark panel-tag)))
+    (dom/div :$panel-block
+      (dom/div :$scrollbars
+        (fp/children this)))))
+
+(def panel (fp/factory Panel))
+
 (fp/defsc AttributeView
   [this {::pc/keys [attribute-paths attribute attr-reach-via attr-provides]
          ::keys    [attr-depth direct-reaches? nested-reaches? direct-provides?
@@ -541,73 +555,61 @@
     (dom/div :.columns$scrollbars
       (if (seq attr-reach-via)
         (dom/div :.data-list
-          (dom/div :$panel
-            (dom/p :$panel-heading$row-center
-              (dom/span :$flex (str "Reach via"))
-              (dom/span :$tag$is-dark (count attr-reach-via)))
-            (dom/div :$panel-block
-              (dom/div :$scrollbars
-                (let [nested-reaches? true]
-                  (for [[input v] (->> attr-reach-via
-                                       (group-by (comp attr-path-key-root first))
-                                       (sort-by (comp pr-str attr-path-key-root first)))
-                        :let [direct? (some (comp direct-input? first) v)]
-                        :when (or direct? nested-reaches?)]
-                    (dom/div
-                      (dom/div :.out-attr {:key   (pr-str input)
-                                           :style (cond-> {} direct? (assoc :fontWeight "bold"))}
-                        (dom/div (out-attribute-events this (if (= 1 (count input))
-                                                              (first input)
-                                                              input))
-                          (pr-str input)))
-                      (if nested-reaches?
-                        (for [[path resolvers] (->> v
-                                                    (map #(update % 0 (fn [x] (if (set? x) [x] x))))
-                                                    (sort-by (comp #(update % 0 (comp vec sort)) first)))
-                              :let [path' (next path)]
-                              :when path']
-                          (dom/div {:key   (pr-str path)
-                                    :style {:marginLeft (str 10 "px")}}
-                            (for [[k i] (map vector path' (range))]
-                              (dom/div :.out-attr {:key   (pr-str k)
-                                                   :style {:marginLeft (str (* i 10) "px")}}
-                                (dom/div (out-attribute-events this k)
-                                  (pr-str k)))))))))))))
+          (panel {::panel-title "Reach via"
+                  ::panel-tag   (count attr-reach-via)}
+            (let [nested-reaches? true]
+              (for [[input v] (->> attr-reach-via
+                                   (group-by (comp attr-path-key-root first))
+                                   (sort-by (comp pr-str attr-path-key-root first)))
+                    :let [direct? (some (comp direct-input? first) v)]
+                    :when (or direct? nested-reaches?)]
+                (dom/div
+                  (dom/div :.out-attr {:key   (pr-str input)
+                                       :style (cond-> {} direct? (assoc :fontWeight "bold"))}
+                    (dom/div (out-attribute-events this (if (= 1 (count input))
+                                                          (first input)
+                                                          input))
+                      (pr-str input)))
+                  (if nested-reaches?
+                    (for [[path resolvers] (->> v
+                                                (map #(update % 0 (fn [x] (if (set? x) [x] x))))
+                                                (sort-by (comp #(update % 0 (comp vec sort)) first)))
+                          :let [path' (next path)]
+                          :when path']
+                      (dom/div {:key   (pr-str path)
+                                :style {:marginLeft (str 10 "px")}}
+                        (for [[k i] (map vector path' (range))]
+                          (dom/div :.out-attr {:key   (pr-str k)
+                                               :style {:marginLeft (str (* i 10) "px")}}
+                            (dom/div (out-attribute-events this k)
+                              (pr-str k)))))))))))
 
           (if-let [form (si/safe-form attribute)]
             (fp/fragment
-              (dom/div :$panel
-                (dom/p :$panel-heading "Spec")
-                (dom/div :$panel-block (pr-str form)))
+              (panel {::panel-title "Spec"
+                      ::panel-tag   (count attr-reach-via)}
+                (pr-str form))
 
-              (dom/div :$panel
-                (dom/p :$panel-heading "Examples")
-                (dom/div :$panel-block
-                  (dom/div :$scrollbars
-                    (try
-                      (for [example (gen/sample (s/gen attribute))]
-                        (dom/div {:key (pr-str example)} (pr-str example)))
-                      (catch :default _
-                        (dom/div "Error generating samples"))))))))
+              (panel {::panel-title "Examples"}
+                (try
+                  (for [example (gen/sample (s/gen attribute))]
+                    (dom/div {:key (pr-str example)} (pr-str example)))
+                  (catch :default _
+                    (dom/div "Error generating samples"))))))
 
           (render-plugin-extension this ::plugin-render-to-attr-left-menu)))
 
       (if (seq attr-provides)
         (dom/div :.data-list-right
-          (dom/div :$panel
-            (dom/p :$panel-heading$row-center
-              (dom/span :$flex (str "Provides"))
-              (dom/span :$tag$is-dark (count attr-provides)))
-
-            (dom/div :$panel-block
-              (dom/div :$scrollbars
-                (ex-tree/expandable-tree provides-tree
-                  {::ex-tree/root    provides-tree-source
-                   ::ex-tree/render  (fn [{:keys [key]}]
-                                       (dom/div (assoc (out-attribute-events this key)
-                                                  :classes [(-> (css/get-classnames AttributeView) :out-attr)])
-                                         (pr-str key)))
-                   ::ex-tree/sort-by :key})))))))))
+          (panel {::panel-title "Provides"
+                  ::panel-tag   (count attr-provides)}
+            (ex-tree/expandable-tree provides-tree
+              {::ex-tree/root    provides-tree-source
+               ::ex-tree/render  (fn [{:keys [key]}]
+                                   (dom/div (assoc (out-attribute-events this key)
+                                              :classes [(-> (css/get-classnames AttributeView) :out-attr)])
+                                     (pr-str key)))
+               ::ex-tree/sort-by :key})))))))
 
 (gobj/set AttributeView "contextType" ExtensionContext)
 
@@ -668,9 +670,9 @@
                     [:.attribute {:cursor "pointer"} css-attribute-font]
                     [:.columns {:display "flex"
                                 :flex    1}]
-                    [:.menu {:white-space  "nowrap"
-                             :border-right "1px solid #000"
-                             :overflow     "auto"}]]
+                    [:.menu {:white-space   "nowrap"
+                             :padding-right "12px"
+                             :overflow      "auto"}]]
    :css-include    [OutputAttributeView]
    :initLocalState (fn [] {:graph-comm      (atom nil)
                            :select-resolver (fn [{::keys [resolvers]}]
@@ -690,12 +692,10 @@
       (dom/div :.header (str sym))
       (dom/div :.columns
         (dom/div :.menu
-          (dom/div
-            (dom/div :.data-header "Input")
-            (dom/pre (h/pprint-str input)))
+          (panel {::panel-title "Input"}
+            (h/pprint-str input))
           (if output
-            (dom/div
-              (dom/div :.data-header "Output")
+            (panel {::panel-title "Output"}
               (ex-tree/expandable-tree output-tree
                 {::ex-tree/root    (eql/query->ast output)
                  ::ex-tree/render  (fp/get-state this :render)
@@ -956,7 +956,7 @@
                            :select-resolver  #(fp/transact! this [`(navigate-to-resolver {::pc/sym ~%})])})}
   (dom/create-element (gobj/get ExtensionContext "Provider") #js {:value extensions}
     (dom/div :.container {:key "container"}
-      #_ (search-everything menu {::on-select-attribute (fp/get-state this :select-attribute)})
+      (search-everything menu {::on-select-attribute (fp/get-state this :select-attribute)})
       (if page
         (main-view-union page (assoc index
                                 ::attributes attributes
