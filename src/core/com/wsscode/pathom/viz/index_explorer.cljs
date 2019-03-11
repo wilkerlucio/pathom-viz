@@ -503,7 +503,7 @@
   (dom/div :.container
     #_(attribute-line-view header-view)
 
-    (dom/h1 :$title (pr-str attribute))
+    (dom/h1 :$title$is-marginless (pr-str attribute))
 
     (dom/div :.toolbar
       (dom/div :$row-center
