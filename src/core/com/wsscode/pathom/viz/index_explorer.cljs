@@ -704,7 +704,9 @@
       (dom/div :.columns
         (dom/div :.menu
           (panel {::panel-title "Input"}
-            (h/pprint-str input))
+            (dom/div :.attribute (out-attribute-events this (if (= 1 (count input))
+                                                              (first input)
+                                                              input)) (h/pprint-str input)))
           (if output
             (panel {::panel-title "Output"}
               (ex-tree/expandable-tree output-tree
