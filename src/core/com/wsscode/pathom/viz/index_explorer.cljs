@@ -961,7 +961,8 @@
                                       :width   "100%"}]
                     [:.container {:flex           "1"
                                   :display        "flex"
-                                  :flex-direction "column"}]
+                                  :flex-direction "column"
+                                  :overflow       "hidden"}]
                     [:.graph {:height  "800px"
                               :display "flex"
                               :border  "1px solid #000"}]
