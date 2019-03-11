@@ -724,7 +724,7 @@
                            (update input' assoc ::center? true)
                            vals)]
     (dom/div :.container
-      (dom/div :.header (str sym))
+      (dom/h1 :$title (str sym))
       (dom/div :.columns
         (dom/div :.menu
           (panel {::panel-title "Input"}
