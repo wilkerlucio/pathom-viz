@@ -500,9 +500,9 @@
                      css-resolver-font]
                     [:.path {:margin-bottom "6px"}]
                     [:.provides-container {:margin-left "8px"}]
-                    [:.graph {:height "400px"
-                              :display "flex"
-                              :align-items "stretch"
+                    [:.graph {:height         "400px"
+                              :display        "flex"
+                              :align-items    "stretch"
                               :flex-direction "column"}]
                     [:.columns {:display "flex"
                                 :flex    "1"}
@@ -581,8 +581,8 @@
                   (dom/div :.out-attr {:key   (pr-str input)
                                        :style (cond-> {} direct? (assoc :fontWeight "bold"))}
                     (dom/div (attribute-graph-events this (if (= 1 (count input))
-                                                          (first input)
-                                                          input))
+                                                            (first input)
+                                                            input))
                       (pr-str input)))
                   (if nested-reaches?
                     (for [[path resolvers] (->> v
@@ -728,8 +728,8 @@
         (dom/div :.menu
           (ui/panel {::ui/panel-title "Input"}
             (dom/div :.attribute (attribute-graph-events this (if (= 1 (count input))
-                                                              (first input)
-                                                              input)) (h/pprint-str input)))
+                                                                (first input)
+                                                                input)) (h/pprint-str input)))
           (if output
             (ui/panel {::ui/panel-title "Output"}
               (ex-tree/expandable-tree output-tree
