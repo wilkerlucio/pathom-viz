@@ -10,6 +10,7 @@
             [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.viz.helpers :as h]
             [com.wsscode.pathom.viz.ui.expandable-tree :as ex-tree]
+            [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.wsscode.spec-inspec :as si]
             [edn-query-language.core :as eql]
             [fulcro-css.css :as css]
@@ -82,6 +83,33 @@
 (def ExtensionContext (js/React.createContext {}))
 
 ;; Views
+
+(defn attribute-graph-events [this k]
+  (let [on-select-attribute (-> this fp/props fp/get-computed ::on-select-attribute)]
+    {:onClick      #(on-select-attribute k)
+     :onMouseEnter #(if-let [settings (some-> (fp/get-state this :graph-comm) deref)]
+                      ((gobj/get settings "highlightNode") (str k)))
+     :onMouseLeave #(if-let [settings (some-> (fp/get-state this :graph-comm) deref)]
+                      ((gobj/get settings "unhighlightNode") (str k)))}))
+
+(defn resolver-graph-events [this k]
+  (let [on-select-resolver (-> this fp/props fp/get-computed ::on-select-resolver)]
+    {:onClick      #(on-select-resolver k)
+     :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
+                      ((gobj/get settings "highlightEdge") (str k)))
+     :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
+                      ((gobj/get settings "unhighlightEdge") (str k)))}))
+
+(fp/defsc AttributeText
+  [this {::pc/keys [attribute] :as props}]
+  {:css [[:.container css-attribute-font]
+         [:.pointer {:cursor "pointer"}]]}
+  (dom/div :.container (ui/props (merge (attribute-graph-events this attribute) props))
+    (pr-str attribute)))
+
+(def attribute-text (fp/computed-factory AttributeText))
+
+;; Main components
 
 (>defn node-radius
   [{::keys [weight reach]}]
@@ -378,22 +406,6 @@
 
 (def simple-attribute (fp/factory SimpleAttribute))
 
-(defn attribute-graph-events [this k]
-  (let [on-select-attribute (-> this fp/props fp/get-computed ::on-select-attribute)]
-    {:onClick      #(on-select-attribute k)
-     :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
-                      ((gobj/get settings "highlightNode") (str k)))
-     :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
-                      ((gobj/get settings "unhighlightNode") (str k)))}))
-
-(defn resolver-graph-events [this k]
-  (let [on-select-resolver (-> this fp/props fp/get-computed ::on-select-resolver)]
-    {:onClick      #(on-select-resolver k)
-     :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
-                      ((gobj/get settings "highlightEdge") (str k)))
-     :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
-                      ((gobj/get settings "unhighlightEdge") (str k)))}))
-
 (>defn attr-provides->tree [attr-provides]
   [::pc/attr-provides => ::ex-tree/root]
   (let [index    (->> attr-provides
@@ -426,19 +438,6 @@
           :when (contains? plugin view)]
       (dom/div {:key (pr-str plugin-id)}
         ((get plugin view) data)))))
-
-(fp/defsc Panel
-  [this {::keys [panel-title panel-tag]}]
-  {}
-  (dom/div :$panel
-    (dom/p :$panel-heading$row-center
-      (dom/span :$flex panel-title)
-      (if panel-tag (dom/span :$tag$is-dark panel-tag)))
-    (dom/div :$panel-block
-      (dom/div :$scrollbars
-        (fp/children this)))))
-
-(def panel (fp/factory Panel))
 
 (fp/defsc AttributeView
   [this {::pc/keys [attr-combinations attribute attr-reach-via attr-provides attr-input-in attr-output-in]
@@ -570,7 +569,7 @@
     (dom/div :.columns$scrollbars
       (if (seq attr-reach-via)
         (dom/div :.data-list
-          (panel {::panel-title "Reach via"
+          (ui/panel {::panel-title "Reach via"
                   ::panel-tag   (count attr-reach-via)}
             (let [nested-reaches? true]
               (for [[input v] (->> attr-reach-via
@@ -600,14 +599,14 @@
                               (pr-str k)))))))))))
 
           (if (seq attr-output-in)
-            (panel {::panel-title "Output In"
+            (ui/panel {::panel-title "Output In"
                     ::panel-tag   (count attr-output-in)}
               (for [resolver (sort attr-output-in)]
                 (dom/div :.resolver (assoc (resolver-graph-events this resolver) :key (pr-str resolver))
                   (pr-str resolver)))))
 
           (if (seq attr-combinations)
-            (panel {::panel-title "Input Combinations"
+            (ui/panel {::panel-title "Input Combinations"
                     ::panel-tag   (count attr-combinations)}
               (for [input (sort-by (comp vec sort) h/vector-compare (map #(into (sorted-set) %) attr-combinations))]
                 (dom/div :.out-attr (assoc (attribute-graph-events this input) :key (pr-str input))
@@ -615,10 +614,10 @@
 
           (if-let [form (si/safe-form attribute)]
             (fp/fragment
-              (panel {::panel-title "Spec"}
+              (ui/panel {::panel-title "Spec"}
                 (pr-str form))
 
-              (panel {::panel-title "Examples"}
+              (ui/panel {::panel-title "Examples"}
                 (try
                   (for [example (gen/sample (s/gen attribute))]
                     (dom/div {:key (pr-str example)} (pr-str example)))
@@ -629,7 +628,7 @@
 
       (dom/div :.data-list-right
         (if (seq attr-provides)
-          (panel {::panel-title "Provides"
+          (ui/panel {::panel-title "Provides"
                   ::panel-tag   (count attr-provides)}
             (ex-tree/expandable-tree provides-tree
               {::ex-tree/root    provides-tree-source
@@ -640,7 +639,7 @@
                ::ex-tree/sort-by :key})))
 
         (if (seq attr-input-in)
-          (panel {::panel-title "Input In"
+          (ui/panel {::panel-title "Input In"
                   ::panel-tag   (count attr-input-in)}
             (for [resolver (sort attr-input-in)]
               (dom/div :.resolver (assoc (resolver-graph-events this resolver) :key (pr-str resolver))
@@ -727,12 +726,12 @@
       (dom/h1 :$title (str sym))
       (dom/div :.columns
         (dom/div :.menu
-          (panel {::panel-title "Input"}
+          (ui/panel {::panel-title "Input"}
             (dom/div :.attribute (attribute-graph-events this (if (= 1 (count input))
                                                               (first input)
                                                               input)) (h/pprint-str input)))
           (if output
-            (panel {::panel-title "Output"}
+            (ui/panel {::panel-title "Output"}
               (ex-tree/expandable-tree output-tree
                 {::ex-tree/root    (eql/query->ast output)
                  ::ex-tree/render  (fp/get-state this :render)
@@ -774,7 +773,7 @@
     x))
 
 (fp/defsc SearchEverything
-  [this {::keys [text search-results]} computed]
+  [this {::keys [text search-results attributes]} computed]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
                      (merge
                        {::id             (random-uuid)
@@ -784,34 +783,39 @@
                        data-tree))
    :ident          [::id ::id]
    :query          [::id ::text
-                    {::search-results (fp/get-query AttributeLineView)}]
-   :css            [[:.input {:display    "block"
-                              :padding    "4px"
-                              :outline    "none"
-                              :border     "1px solid #233339"
-                              :width      "100%"
-                              :box-sizing "border-box"}]]
+                    {::search-results (fp/get-query AttributeLineView)}
+                    {::attributes [::pc/attribute]}]
+   :css            [[:.attributes {:white-space "nowrap"
+                                   :max-width   "300px"
+                                   :overflow    "auto"}]]
    :initLocalState (fn [] {::on-select-attribute
                            (fn [attr]
                              (if-let [orig (-> this fp/props fp/get-computed ::on-select-attribute)]
                                (orig attr))
                              (fp/transact! this [`(fm/set-props {::text           ""
                                                                  ::search-results []})]))})}
-  (dom/div
+  (ui/column {}
     (dom/div :$control$has-icons-left
       (dom/input :$input$is-small
         {:type        "text"
          :value       text
-         :placeholder "Search"
+         :placeholder "Filter"
          :onChange    #(fp/transact! this [`(search {::text ~(h/target-value %)})])})
       (dom/span :$icon$is-small$is-left (dom/i :$fas$fa-search)))
-    (if (seq search-results)
-      (dom/div
-        (for [item (take 20 search-results)]
-          (attribute-line-view item
-            (assoc computed
-              ::highlight? true
-              ::on-select-attribute (fp/get-state this ::on-select-attribute))))))))
+    (dom/div (ui/kc :.flex :.scrollbars)
+      (dom/div :.attributes
+        (mapv (fn [{::pc/keys [attribute]}]
+                (attribute-text {::pc/attribute attribute
+                                 :classes       [:.pointer]
+                                 :react-key     (pr-str attribute)} computed))
+          attributes))
+      (if (seq search-results)
+        (dom/div
+          (for [item (take 20 search-results)]
+            (attribute-line-view item
+              (assoc computed
+                ::highlight? true
+                ::on-select-attribute (fp/get-state this ::on-select-attribute)))))))))
 
 (def search-everything (fp/computed-factory SearchEverything))
 
@@ -990,18 +994,22 @@
                     [:.graph {:height  "800px"
                               :display "flex"
                               :border  "1px solid #000"}]
+                    [:.menu {:margin-right  "16px"
+                             :padding-right "16px"
+                             :overflow      "auto"}]
                     [:$row-center {:display "flex" :align-items "center"}]
                     [:$scrollbars {:overflow "auto"}]
                     [:$tag-spaced
                      [:$tag {:margin-left "4px"}]]
                     [:$flex {:flex "1"}]]
-   :css-include    [SimpleAttribute]
+   :css-include    [SimpleAttribute AttributeText ui/UIKit]
    :initLocalState (fn [] {:select-attribute #(fp/transact! this [`(navigate-to-attribute {::pc/attribute ~%})])
                            :select-resolver  #(fp/transact! this [`(navigate-to-resolver {::pc/sym ~%})])})}
   (dom/create-element (gobj/get ExtensionContext "Provider") #js {:value extensions}
     (dom/div :.out-container {:key "container"}
-      (dom/div
-        (search-everything menu {::on-select-attribute (fp/get-state this :select-attribute)}))
+      (dom/div :.menu
+        (search-everything menu {::on-select-attribute (fp/get-state this :select-attribute)
+                                 ::on-select-resolver  (fp/get-state this :select-resolver)}))
       (dom/div :.container
         (if page
           (main-view-union page (assoc index

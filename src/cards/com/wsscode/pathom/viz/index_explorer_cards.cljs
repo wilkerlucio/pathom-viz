@@ -16,7 +16,8 @@
             [cljs.test :refer [is]]
             [edn-query-language.core :as eql]
             [cljs.spec.alpha :as s]
-            [fulcro.client.localized-dom :as dom]))
+            [fulcro.client.localized-dom :as dom]
+            [com.wsscode.pathom.viz.ui.kit :as ui]))
 
 (s/def :customer/id uuid?)
 
@@ -74,11 +75,11 @@
    (fn [{:abrams.diplomat.api/keys [service endpoint]}]
      (dom/div
        (if service
-         (iex/panel {::iex/panel-title "Service"}
+         (ui/panel {::iex/panel-title "Service"}
            (dom/div (name service))))
 
        (if endpoint
-         (iex/panel {::iex/panel-title "Endpoint"}
+         (ui/panel {::iex/panel-title "Endpoint"}
            (dom/div (str "/api/" endpoint))))))})
 
 (ws/defcard index-explorer
