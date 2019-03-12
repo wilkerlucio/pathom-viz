@@ -599,10 +599,10 @@
                             (dom/div (attribute-graph-events this k)
                               (pr-str k)))))))))))
 
-          (if (seq attr-input-in)
-            (panel {::panel-title "Input In"
-                    ::panel-tag   (count attr-input-in)}
-              (for [resolver (sort attr-input-in)]
+          (if (seq attr-output-in)
+            (panel {::panel-title "Output In"
+                    ::panel-tag   (count attr-output-in)}
+              (for [resolver (sort attr-output-in)]
                 (dom/div :.resolver (assoc (resolver-graph-events this resolver) :key (pr-str resolver))
                   (pr-str resolver)))))
 
@@ -639,10 +639,10 @@
                                      (pr-str key)))
                ::ex-tree/sort-by :key})))
 
-        (if (seq attr-output-in)
-          (panel {::panel-title "Output In"
-                  ::panel-tag   (count attr-output-in)}
-            (for [resolver (sort attr-output-in)]
+        (if (seq attr-input-in)
+          (panel {::panel-title "Input In"
+                  ::panel-tag   (count attr-input-in)}
+            (for [resolver (sort attr-input-in)]
               (dom/div :.resolver (assoc (resolver-graph-events this resolver) :key (pr-str resolver))
                 (pr-str resolver)))))))))
 
