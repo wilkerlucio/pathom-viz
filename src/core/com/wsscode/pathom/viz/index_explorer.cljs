@@ -569,8 +569,8 @@
     (dom/div :.columns$scrollbars
       (if (seq attr-reach-via)
         (dom/div :.data-list
-          (ui/panel {::panel-title "Reach via"
-                  ::panel-tag   (count attr-reach-via)}
+          (ui/panel {::ui/panel-title "Reach via"
+                     ::ui/panel-tag   (count attr-reach-via)}
             (let [nested-reaches? true]
               (for [[input v] (->> attr-reach-via
                                    (group-by (comp attr-path-key-root first))
@@ -599,25 +599,25 @@
                               (pr-str k)))))))))))
 
           (if (seq attr-output-in)
-            (ui/panel {::panel-title "Output In"
-                    ::panel-tag   (count attr-output-in)}
+            (ui/panel {::ui/panel-title "Output In"
+                       ::ui/panel-tag   (count attr-output-in)}
               (for [resolver (sort attr-output-in)]
                 (dom/div :.resolver (assoc (resolver-graph-events this resolver) :key (pr-str resolver))
                   (pr-str resolver)))))
 
           (if (seq attr-combinations)
-            (ui/panel {::panel-title "Input Combinations"
-                    ::panel-tag   (count attr-combinations)}
+            (ui/panel {::ui/panel-title "Input Combinations"
+                       ::ui/panel-tag   (count attr-combinations)}
               (for [input (sort-by (comp vec sort) h/vector-compare (map #(into (sorted-set) %) attr-combinations))]
                 (dom/div :.out-attr (assoc (attribute-graph-events this input) :key (pr-str input))
                   (pr-str input)))))
 
           (if-let [form (si/safe-form attribute)]
             (fp/fragment
-              (ui/panel {::panel-title "Spec"}
+              (ui/panel {::ui/panel-title "Spec"}
                 (pr-str form))
 
-              (ui/panel {::panel-title "Examples"}
+              (ui/panel {::ui/panel-title "Examples"}
                 (try
                   (for [example (gen/sample (s/gen attribute))]
                     (dom/div {:key (pr-str example)} (pr-str example)))
@@ -628,8 +628,8 @@
 
       (dom/div :.data-list-right
         (if (seq attr-provides)
-          (ui/panel {::panel-title "Provides"
-                  ::panel-tag   (count attr-provides)}
+          (ui/panel {::ui/panel-title "Provides"
+                     ::ui/panel-tag   (count attr-provides)}
             (ex-tree/expandable-tree provides-tree
               {::ex-tree/root    provides-tree-source
                ::ex-tree/render  (fn [{:keys [key]}]
@@ -639,8 +639,8 @@
                ::ex-tree/sort-by :key})))
 
         (if (seq attr-input-in)
-          (ui/panel {::panel-title "Input In"
-                  ::panel-tag   (count attr-input-in)}
+          (ui/panel {::ui/panel-title "Input In"
+                     ::ui/panel-tag   (count attr-input-in)}
             (for [resolver (sort attr-input-in)]
               (dom/div :.resolver (assoc (resolver-graph-events this resolver) :key (pr-str resolver))
                 (pr-str resolver)))))))))
@@ -726,12 +726,12 @@
       (dom/h1 :$title (str sym))
       (dom/div :.columns
         (dom/div :.menu
-          (ui/panel {::panel-title "Input"}
+          (ui/panel {::ui/panel-title "Input"}
             (dom/div :.attribute (attribute-graph-events this (if (= 1 (count input))
                                                               (first input)
                                                               input)) (h/pprint-str input)))
           (if output
-            (ui/panel {::panel-title "Output"}
+            (ui/panel {::ui/panel-title "Output"}
               (ex-tree/expandable-tree output-tree
                 {::ex-tree/root    (eql/query->ast output)
                  ::ex-tree/render  (fp/get-state this :render)
