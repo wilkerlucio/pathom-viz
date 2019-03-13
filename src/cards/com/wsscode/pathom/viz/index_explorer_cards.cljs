@@ -75,11 +75,11 @@
    (fn [{:abrams.diplomat.api/keys [service endpoint]}]
      (dom/div
        (if service
-         (ui/panel {::iex/panel-title "Service"}
+         (ui/panel {::ui/panel-title "Service"}
            (dom/div (name service))))
 
        (if endpoint
-         (ui/panel {::iex/panel-title "Endpoint"}
+         (ui/panel {::ui/panel-title "Endpoint"}
            (dom/div (str "/api/" endpoint))))))})
 
 (ws/defcard index-explorer
