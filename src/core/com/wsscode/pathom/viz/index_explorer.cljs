@@ -406,7 +406,8 @@
             :let [direct? (some (comp direct-input? first) v)]
             :when (or direct? nested-reaches?)]
         (dom/div {:key (pr-str input)}
-          (attribute-text {::pc/attribute input
+          (attribute-text {::pc/attribute (cond-> input (= (count input) 1) first)
+                           ::ui/render    #(pr-str input)
                            :classes       [:.pointer]
                            :style         (cond-> {} direct? (assoc :fontWeight "bold"))}
             computed)
