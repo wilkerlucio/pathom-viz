@@ -101,11 +101,11 @@
                       ((gobj/get settings "unhighlightEdge") (str k)))}))
 
 (fp/defsc AttributeText
-  [this {::pc/keys [attribute] :as props}]
+  [this {::pc/keys [attribute] ::ui/keys [render] :as props}]
   {:css [[:.container css-attribute-font]
          [:.pointer {:cursor "pointer"}]]}
   (dom/div :.container (ui/props (merge (attribute-graph-events this attribute) props))
-    (pr-str attribute)))
+    (if render (render props) (pr-str attribute))))
 
 (def attribute-text (fp/computed-factory AttributeText))
 
@@ -271,52 +271,6 @@
 
 (def attribute-graph (fp/factory AttributeGraph))
 
-(fp/defsc AttributeLineView
-  [this {::pc/keys    [attribute]
-         ::fuzzy/keys [match-hl]
-         ::keys       [global-attribute? ident-attribute?]}
-   {::keys [on-select-attribute highlight?]
-    :or    {on-select-attribute identity}}]
-  {:pre-merge (fn [{:keys [current-normalized data-tree]}]
-                (merge {} current-normalized data-tree))
-   :ident     [::pc/attribute ::pc/attribute]
-   :query     [::pc/attribute ::global-attribute? ::ident-attribute?
-               ::fuzzy/match-hl]
-   :css       [[:.attribute {:background  "#263238"
-                             :display     "flex"
-                             :cursor      "pointer"
-                             :color       "#fff"
-                             :align-items "center"
-                             :font-family "'Open Sans'"
-                             :padding     "6px 8px"
-                             :font-size   "14px"
-                             :margin      "1px 0"}
-                [:b {:background "#F57F17"}]]
-               [:.link {:flex "1"}]
-               [:.global {:background  "#FFB74D"
-                          :width       "20px"
-                          :text-align  "center"
-                          :font-weight "bold"
-                          :margin-left "5px"}]
-               [:.ident {:background  "#4DB6AC"
-                         :width       "20px"
-                         :text-align  "center"
-                         :font-weight "bold"
-                         :margin-left "5px"}]]}
-  (dom/div :.attribute {:onClick (h/pd #(on-select-attribute attribute))}
-    (dom/div :.link
-      (cond-> {}
-        (and highlight? match-hl)
-        (assoc :dangerouslySetInnerHTML {:__html match-hl}))
-      (if-not (and highlight? match-hl)
-        (pr-str attribute)))
-    (if global-attribute?
-      (dom/div :.global "G"))
-    (if ident-attribute?
-      (dom/div :.ident "I"))))
-
-(def attribute-line-view (fp/computed-factory AttributeLineView {:keyfn ::pc/attribute}))
-
 (defn attribute-link
   [{::pc/keys [index-oir]
     ::keys    [on-select-attribute]}
@@ -439,10 +393,42 @@
       (dom/div {:key (pr-str plugin-id)}
         ((get plugin view) data)))))
 
+(fp/defsc AttributeInfoReachVia
+  [this {::pc/keys [attr-reach-via]}]
+  {:ident [::pc/attribute ::pc/attribute]
+   :query [::pc/attribute ::pc/attr-reach-via]}
+  (ui/panel {::ui/panel-title "Reach via"
+             ::ui/panel-tag   (count attr-reach-via)}
+    (let [nested-reaches? true]
+      (for [[input v] (->> attr-reach-via
+                           (group-by (comp attr-path-key-root first))
+                           (sort-by (comp pr-str attr-path-key-root first)))
+            :let [direct? (some (comp direct-input? first) v)]
+            :when (or direct? nested-reaches?)]
+        (dom/div {:key (pr-str input)}
+          (attribute-text {::pc/attribute input
+                           :classes       [:.pointer]
+                           :style         (cond-> {} direct? (assoc :fontWeight "bold"))})
+          (if nested-reaches?
+            (for [[path resolvers] (->> v
+                                        (map #(update % 0 (fn [x] (if (set? x) [x] x))))
+                                        (sort-by (comp #(update % 0 (comp vec sort)) first)))
+                  :let [path' (next path)]
+                  :when path']
+              (dom/div {:key   (pr-str path)
+                        :style {:marginLeft (str 10 "px")}}
+                (for [[k i] (map vector path' (range))]
+                  (attribute-text {::pc/attribute k
+                                   :classes       [:.pointer]
+                                   :style         {:marginLeft (str (* i 10) "px")}}))))))))))
+
+(def attribute-info-reach-via (fp/computed-factory AttributeInfoReachVia))
+
 (fp/defsc AttributeView
   [this {::pc/keys [attr-combinations attribute attr-reach-via attr-provides attr-input-in attr-output-in]
          ::keys    [attr-depth direct-reaches? nested-reaches? direct-provides?
                     nested-provides? interconnections? show-graph?]
+         :>/keys   [reach-via]
          :ui/keys  [provides-tree provides-tree-source]}
    {::keys [on-select-attribute attributes]
     :as    computed}]
@@ -459,6 +445,7 @@
                           ::nested-provides?  false
                           ::interconnections? true
                           ::show-graph?       false
+                          :>/reach-via        {::pc/attribute attr}
                           :ui/provides-tree   {}}
                          current-normalized
                          data-tree
@@ -468,7 +455,7 @@
    :query          [::pc/attribute ::attr-depth ::direct-reaches? ::nested-reaches?
                     ::pc/attr-combinations ::pc/attr-input-in ::pc/attr-output-in
                     ::direct-provides? ::nested-provides? ::interconnections? ::show-graph? ::pc/attr-reach-via ::pc/attr-provides
-                    {::attr-provides [::pc/attribute]}
+                    {:>/reach-via (fp/get-query AttributeInfoReachVia)}
                     {:ui/provides-tree (fp/get-query ex-tree/ExpandableTree)}
                     :ui/provides-tree-source]
    :css            [[:.container {:flex           "1"
@@ -501,6 +488,7 @@
                     [:.path {:margin-bottom "6px"}]
                     [:.provides-container {:margin-left "8px"}]
                     [:.graph {:height         "400px"
+                              :width          "100%"
                               :display        "flex"
                               :align-items    "stretch"
                               :flex-direction "column"}]
@@ -546,9 +534,9 @@
         "Interconnections"))
 
     (if show-graph?
-      (dom/div :$panel
-        (dom/p :$panel-heading "Graph")
-        (dom/div :$panel-block.graph
+      (ui/panel {::ui/panel-title "Graph"
+                 ::ui/scrollbars? false}
+        (dom/div :.graph
           (let [shared-options {::direct-reaches?   direct-reaches?
                                 ::nested-reaches?   nested-reaches?
                                 ::direct-provides?  direct-provides?
@@ -567,64 +555,37 @@
                 shared-options))))))
 
     (dom/div :.columns$scrollbars
-      (if (seq attr-reach-via)
-        (dom/div :.data-list
-          (ui/panel {::ui/panel-title "Reach via"
-                     ::ui/panel-tag   (count attr-reach-via)}
-            (let [nested-reaches? true]
-              (for [[input v] (->> attr-reach-via
-                                   (group-by (comp attr-path-key-root first))
-                                   (sort-by (comp pr-str attr-path-key-root first)))
-                    :let [direct? (some (comp direct-input? first) v)]
-                    :when (or direct? nested-reaches?)]
-                (dom/div
-                  (dom/div :.out-attr {:key   (pr-str input)
-                                       :style (cond-> {} direct? (assoc :fontWeight "bold"))}
-                    (dom/div (attribute-graph-events this (if (= 1 (count input))
-                                                            (first input)
-                                                            input))
-                      (pr-str input)))
-                  (if nested-reaches?
-                    (for [[path resolvers] (->> v
-                                                (map #(update % 0 (fn [x] (if (set? x) [x] x))))
-                                                (sort-by (comp #(update % 0 (comp vec sort)) first)))
-                          :let [path' (next path)]
-                          :when path']
-                      (dom/div {:key   (pr-str path)
-                                :style {:marginLeft (str 10 "px")}}
-                        (for [[k i] (map vector path' (range))]
-                          (dom/div :.out-attr {:key   (pr-str k)
-                                               :style {:marginLeft (str (* i 10) "px")}}
-                            (dom/div (attribute-graph-events this k)
-                              (pr-str k)))))))))))
+      (dom/div :.data-list
+        (if (seq attr-reach-via)
+          (attribute-info-reach-via reach-via computed))
 
-          (if (seq attr-output-in)
-            (ui/panel {::ui/panel-title "Output In"
-                       ::ui/panel-tag   (count attr-output-in)}
-              (for [resolver (sort attr-output-in)]
-                (dom/div :.resolver (assoc (resolver-graph-events this resolver) :key (pr-str resolver))
-                  (pr-str resolver)))))
+        (if (seq attr-output-in)
+          (ui/panel {::ui/panel-title "Output In"
+                     ::ui/panel-tag   (count attr-output-in)}
+            (for [resolver (sort attr-output-in)]
+              (dom/div :.resolver (assoc (resolver-graph-events this resolver) :key (pr-str resolver))
+                (pr-str resolver)))))
 
-          (if (seq attr-combinations)
-            (ui/panel {::ui/panel-title "Input Combinations"
-                       ::ui/panel-tag   (count attr-combinations)}
-              (for [input (sort-by (comp vec sort) h/vector-compare (map #(into (sorted-set) %) attr-combinations))]
-                (dom/div :.out-attr (assoc (attribute-graph-events this input) :key (pr-str input))
-                  (pr-str input)))))
+        (if (seq attr-combinations)
+          (ui/panel {::ui/panel-title "Input Combinations"
+                     ::ui/panel-tag   (count attr-combinations)}
+            (for [input (sort-by (comp vec sort) h/vector-compare (map #(into (sorted-set) %) attr-combinations))]
+              (dom/div :.out-attr (assoc (attribute-graph-events this input) :key (pr-str input))
+                (pr-str input)))))
 
-          (if-let [form (si/safe-form attribute)]
-            (fp/fragment
-              (ui/panel {::ui/panel-title "Spec"}
-                (pr-str form))
+        (if-let [form (si/safe-form attribute)]
+          (fp/fragment
+            (ui/panel {::ui/panel-title "Spec"}
+              (pr-str form))
 
-              (ui/panel {::ui/panel-title "Examples"}
-                (try
-                  (for [example (gen/sample (s/gen attribute))]
-                    (dom/div {:key (pr-str example)} (pr-str example)))
-                  (catch :default _
-                    (dom/div "Error generating samples"))))))
+            (ui/panel {::ui/panel-title "Examples"}
+              (try
+                (for [example (gen/sample (s/gen attribute))]
+                  (dom/div {:key (pr-str example)} (pr-str example)))
+                (catch :default _
+                  (dom/div "Error generating samples"))))))
 
-          (render-plugin-extension this ::plugin-render-to-attr-left-menu)))
+        (render-plugin-extension this ::plugin-render-to-attr-left-menu))
 
       (dom/div :.data-list-right
         (if (seq attr-provides)
@@ -753,7 +714,7 @@
 
 (declare SearchEverything)
 
-(def max-search-results 15)
+(def max-search-results 100)
 
 (fm/defmutation search [{::keys [text]}]
   (action [{:keys [ref state]}]
@@ -772,6 +733,24 @@
     (remove (fn [[_ v]] (contains? #{::p/not-found ::fp/not-found} v)))
     x))
 
+(fp/defsc AllAttributesList
+  [this {::keys [attributes]} computed]
+  {}
+  (dom/div
+    (attribute-text {::pc/attribute #{} :classes [:.pointer]} computed)
+    (into []
+          (comp
+            (filter (comp keyword? ::pc/attribute))
+            (map (fn [{::pc/keys [attribute]}]
+                   (attribute-text {::pc/attribute attribute
+                                    :classes       [:.pointer]
+                                    :react-key     (pr-str attribute)} computed))))
+          attributes)))
+
+(def all-attributes-list (fp/computed-factory AllAttributesList))
+
+(def last-value (atom nil))
+
 (fp/defsc SearchEverything
   [this {::keys [text search-results attributes]} computed]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
@@ -783,71 +762,56 @@
                        data-tree))
    :ident          [::id ::id]
    :query          [::id ::text
-                    {::search-results (fp/get-query AttributeLineView)}
+                    {::search-results [::pc/attribute ::fuzzy/match-hl]}
                     {::attributes [::pc/attribute]}]
    :css            [[:.attributes {:white-space "nowrap"
-                                   :max-width   "300px"
+                                   :width       "300px"
                                    :overflow    "auto"}]]
-   :initLocalState (fn [] {::on-select-attribute
-                           (fn [attr]
-                             (if-let [orig (-> this fp/props fp/get-computed ::on-select-attribute)]
-                               (orig attr))
-                             (fp/transact! this [`(fm/set-props {::text           ""
-                                                                 ::search-results []})]))})}
+   :initLocalState (fn [] {:search
+                           #(fp/transact! this [`(search {::text ~(h/target-value %)})])
+
+                           :all-attributes
+                           (let [props    (fp/props this)
+                                 computed (fp/get-computed props)]
+                             (dom/div
+                               (attribute-text {::pc/attribute #{} :classes [:.pointer]} computed)
+                               (into []
+                                     (comp
+                                       (filter (comp keyword? ::pc/attribute))
+                                       (map (fn [{::pc/keys [attribute]}]
+                                              (attribute-text {::pc/attribute attribute
+                                                               :classes       [:.pointer]
+                                                               :react-key     (pr-str attribute)} computed))))
+                                     (::attributes props))))})}
   (ui/column {}
-    (dom/div :$control$has-icons-left
+    (dom/div :$control$has-icons-left$has-icons-right
       (dom/input :$input$is-small
         {:type        "text"
          :value       text
          :placeholder "Filter"
-         :onChange    #(fp/transact! this [`(search {::text ~(h/target-value %)})])})
-      (dom/span :$icon$is-small$is-left (dom/i :$fas$fa-search)))
+         :onChange    (fp/get-state this :search)})
+      (dom/span :$icon$is-small$is-left (dom/i :$fas$fa-search))
+      (if (seq text)
+        (dom/span :$icon$is-small$is-right {:onClick #(fm/set-value! this ::text "")}
+          (dom/a :$delete$is-small))))
     (dom/div (ui/gc :.flex :.scrollbars)
       (dom/div :.attributes
-        (attribute-text {::pc/attribute #{} :classes [:.pointer]} computed)
-        (into []
-              (comp
-                (filter (comp keyword? ::pc/attribute))
-                (map (fn [{::pc/keys [attribute]}]
-                       (attribute-text {::pc/attribute attribute
-                                        :classes       [:.pointer]
-                                        :react-key     (pr-str attribute)} computed))))
-              attributes))
-      (if (seq search-results)
-        (dom/div
-          (for [item (take 20 search-results)]
-            (attribute-line-view item
-              (assoc computed
-                ::highlight? true
-                ::on-select-attribute (fp/get-state this ::on-select-attribute)))))))))
+        (if (seq text)
+          (into []
+                (comp
+                  (filter (comp keyword? ::pc/attribute))
+                  (map (fn [{::pc/keys    [attribute]
+                             ::fuzzy/keys [match-hl]}]
+                         (attribute-text {::pc/attribute attribute
+                                          ::ui/render    #(dom/div {:dangerouslySetInnerHTML {:__html match-hl}})
+                                          :classes       [:.pointer]
+                                          :react-key     (pr-str attribute)} computed))))
+                search-results)))
+
+      (dom/div :.attributes {:style {:display (if (> (count text) 2) "none")}}
+        (all-attributes-list {::attributes attributes} computed)))))
 
 (def search-everything (fp/computed-factory SearchEverything))
-
-(fp/defsc AttributeMenu
-  [this {::keys [attributes]} computed]
-  {:pre-merge (fn [{:keys [current-normalized data-tree]}]
-                (merge {} current-normalized data-tree))
-   :ident     [::id ::id]
-   :query     [::id {::attributes (fp/get-query AttributeLineView)}]
-   :css       [[:.container {:overflow    "auto"
-                             :max-height  "100%"
-                             :width       "300px"
-                             :background  "#cdc0b9"
-                             :white-space "nowrap"
-                             :padding     "10px"}]
-               [:.attribute {:background  "#263238"
-                             :display     "flex"
-                             :font-family "'Open Sans'"
-                             :padding     "6px 8px"
-                             :font-size   "14px"
-                             :margin      "6px 0"}
-                [:a {:color           "#fff"
-                     :text-decoration "none"}]]]}
-  (dom/div :.container
-    (for [attribute attributes]
-      (attribute-line-view attribute computed))))
-
-(def attribute-menu (fp/computed-factory AttributeMenu))
 
 (fp/defsc StatsView
   [this {::keys [attribute-count resolver-count globals-count idents-count

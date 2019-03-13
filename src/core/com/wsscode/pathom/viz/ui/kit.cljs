@@ -47,14 +47,18 @@
 ; region components
 
 (fp/defsc Panel
-  [this {::keys [panel-title panel-tag]}]
+  [this {::keys [panel-title panel-tag scrollbars?]
+         :or    {scrollbars? true}
+         :as    p}]
   {}
-  (dom/div :$panel
+  (dom/div :$panel (props p)
     (dom/p :$panel-heading$row-center
       (dom/span (gc :.flex) panel-title)
       (if panel-tag (dom/span :$tag$is-dark panel-tag)))
     (dom/div :$panel-block
-      (dom/div :$scrollbars
+      (if scrollbars?
+        (dom/div :$scrollbars
+          (fp/children this))
         (fp/children this)))))
 
 (def panel (fp/factory Panel))
