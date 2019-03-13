@@ -984,9 +984,7 @@
                     {::top-connection-hubs (fp/get-query AttributeIndex)}
                     {::resolvers (fp/get-query ResolverIndex)}
                     {:ui/page (fp/get-query MainViewUnion)}]
-   :css            [[:.out-container {:display "flex"
-                                      :flex    "1"
-                                      :width   "100%"}]
+   :css            [[:.out-container {:width "100%"}]
                     [:.container {:flex           "1"
                                   :display        "flex"
                                   :flex-direction "column"
@@ -1006,11 +1004,11 @@
    :initLocalState (fn [] {:select-attribute #(fp/transact! this [`(navigate-to-attribute {::pc/attribute ~%})])
                            :select-resolver  #(fp/transact! this [`(navigate-to-resolver {::pc/sym ~%})])})}
   (dom/create-element (gobj/get ExtensionContext "Provider") #js {:value extensions}
-    (dom/div :.out-container {:key "container"}
+    (ui/row {:react-key "container" :classes (ui/ccss this :.out-container)}
       (dom/div :.menu
         (search-everything menu {::on-select-attribute (fp/get-state this :select-attribute)
                                  ::on-select-resolver  (fp/get-state this :select-resolver)}))
-      (dom/div :.container
+      (ui/column :.container {}
         (if page
           (main-view-union page (assoc index
                                   ::attributes attributes
