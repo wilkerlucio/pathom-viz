@@ -394,7 +394,7 @@
         ((get plugin view) data)))))
 
 (fp/defsc AttributeInfoReachVia
-  [this {::pc/keys [attr-reach-via]}]
+  [this {::pc/keys [attr-reach-via]} computed]
   {:ident [::pc/attribute ::pc/attribute]
    :query [::pc/attribute ::pc/attr-reach-via]}
   (ui/panel {::ui/panel-title "Reach via"
@@ -408,7 +408,8 @@
         (dom/div {:key (pr-str input)}
           (attribute-text {::pc/attribute input
                            :classes       [:.pointer]
-                           :style         (cond-> {} direct? (assoc :fontWeight "bold"))})
+                           :style         (cond-> {} direct? (assoc :fontWeight "bold"))}
+            computed)
           (if nested-reaches?
             (for [[path resolvers] (->> v
                                         (map #(update % 0 (fn [x] (if (set? x) [x] x))))
@@ -420,7 +421,8 @@
                 (for [[k i] (map vector path' (range))]
                   (attribute-text {::pc/attribute k
                                    :classes       [:.pointer]
-                                   :style         {:marginLeft (str (* i 10) "px")}}))))))))))
+                                   :style         {:marginLeft (str (* i 10) "px")}}
+                    computed))))))))))
 
 (def attribute-info-reach-via (fp/computed-factory AttributeInfoReachVia))
 
