@@ -5,6 +5,8 @@
             [goog.object :as gobj]
             [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ?]]))
 
+(declare gc css)
+
 ; region helpers
 
 (>defn props [props]
@@ -49,7 +51,7 @@
   {}
   (dom/div :$panel
     (dom/p :$panel-heading$row-center
-      (dom/span :$flex panel-title)
+      (dom/span (gc :.flex) panel-title)
       (if panel-tag (dom/span :$tag$is-dark panel-tag)))
     (dom/div :$panel-block
       (dom/div :$scrollbars
@@ -77,8 +79,8 @@
   [k]
   (get-css ui-css k))
 
-(defn kc
-  "Return a map pointing to the given classes.
+(defn gc
+  "Return a map pointing to the given global classes.
   Eg: (kc :.flex :.scrollbars)"
   [& k]
   {:classes (mapv css k)})

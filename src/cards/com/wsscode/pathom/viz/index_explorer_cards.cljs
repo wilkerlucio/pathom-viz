@@ -60,12 +60,12 @@
          (if (seq services)
            (dom/div :$panel
              (dom/p :$panel-heading$row-center
-               (dom/span :$flex (str "Services"))
+               (dom/span (ui/gc :.flex) (str "Services"))
                (dom/span :$tag$is-dark (count services)))
              (for [{:keys  [abrams.diplomat.api/service]
                     ::keys [service-in service-out]} (sort-by :abrams.diplomat.api/service services)]
                (dom/div :$panel-block$row-center$tag-spaced
-                 (dom/div :$flex (name service))
+                 (dom/div (ui/gc :.flex) (name service))
                  (if service-in
                    (dom/span :$tag$is-family-code$is-primary {:title "Input"} "I"))
                  (if service-out

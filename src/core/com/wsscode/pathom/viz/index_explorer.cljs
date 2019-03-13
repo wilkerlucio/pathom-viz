@@ -802,13 +802,17 @@
          :placeholder "Filter"
          :onChange    #(fp/transact! this [`(search {::text ~(h/target-value %)})])})
       (dom/span :$icon$is-small$is-left (dom/i :$fas$fa-search)))
-    (dom/div (ui/kc :.flex :.scrollbars)
+    (dom/div (ui/gc :.flex :.scrollbars)
       (dom/div :.attributes
-        (mapv (fn [{::pc/keys [attribute]}]
-                (attribute-text {::pc/attribute attribute
-                                 :classes       [:.pointer]
-                                 :react-key     (pr-str attribute)} computed))
-          attributes))
+        (attribute-text {::pc/attribute #{} :classes [:.pointer]} computed)
+        (into []
+              (comp
+                (filter (comp keyword? ::pc/attribute))
+                (map (fn [{::pc/keys [attribute]}]
+                       (attribute-text {::pc/attribute attribute
+                                        :classes       [:.pointer]
+                                        :react-key     (pr-str attribute)} computed))))
+              attributes))
       (if (seq search-results)
         (dom/div
           (for [item (take 20 search-results)]
@@ -986,8 +990,6 @@
                     {:ui/page (fp/get-query MainViewUnion)}]
    :css            [[:.out-container {:width "100%"}]
                     [:.container {:flex           "1"
-                                  :display        "flex"
-                                  :flex-direction "column"
                                   :overflow       "hidden"}]
                     [:.graph {:height  "800px"
                               :display "flex"
@@ -998,8 +1000,7 @@
                     [:$row-center {:display "flex" :align-items "center"}]
                     [:$scrollbars {:overflow "auto"}]
                     [:$tag-spaced
-                     [:$tag {:margin-left "4px"}]]
-                    [:$flex {:flex "1"}]]
+                     [:$tag {:margin-left "4px"}]]]
    :css-include    [SimpleAttribute AttributeText ui/UIKit]
    :initLocalState (fn [] {:select-attribute #(fp/transact! this [`(navigate-to-attribute {::pc/attribute ~%})])
                            :select-resolver  #(fp/transact! this [`(navigate-to-resolver {::pc/sym ~%})])})}
@@ -1008,7 +1009,7 @@
       (dom/div :.menu
         (search-everything menu {::on-select-attribute (fp/get-state this :select-attribute)
                                  ::on-select-resolver  (fp/get-state this :select-resolver)}))
-      (ui/column :.container {}
+      (ui/column (ui/gc :.flex :.no-scrollbars)
         (if page
           (main-view-union page (assoc index
                                   ::attributes attributes
