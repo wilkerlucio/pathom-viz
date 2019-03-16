@@ -196,6 +196,6 @@
                    :deep      true}]})))
 
 (ws/deftest test-out-all-attributes
-  (is (= (iex/out-all-attributes (eql/query->ast [])) #{}))
-  (is (= (iex/out-all-attributes (eql/query->ast [:foo])) #{:foo}))
-  (is (= (iex/out-all-attributes (eql/query->ast [:foo {:bar [:baz]}])) #{:foo :bar :baz})))
+  (is (= (iex/out-all-attributes (eql/query->ast []) #{}) #{}))
+  (is (= (iex/out-all-attributes (eql/query->ast [:foo]) #{}) #{:foo}))
+  (is (= (iex/out-all-attributes (eql/query->ast [:foo {:bar [:baz]}]) #{}) #{:foo :bar :baz})))

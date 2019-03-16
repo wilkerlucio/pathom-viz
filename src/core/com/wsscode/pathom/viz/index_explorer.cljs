@@ -86,7 +86,8 @@
 
 (>defn call-graph-comm [comp f k]
   [any? string? any? => any?]
-  (if-let [settings (some-> (fp/get-state comp :graph-comm) deref)]
+  (if-let [settings (or (some-> (fp/get-state comp :graph-comm) deref)
+                        (some-> comp fp/props fp/get-computed ::graph-comm deref))]
     ((gobj/get settings f) (str k))))
 
 (defn attribute-graph-events [this k]
@@ -467,16 +468,6 @@
                                         ;:overflow    "auto"
                                         ;     :width       "300px"
                                         :padding     "0 12px"}]
-                    [:.data-header {:padding     "9px 4px"
-                                    :font-weight "bold"
-                                    :font-family "Verdana"}]
-                    [:.out-attr {:padding "0 2px"
-                                 :cursor  "pointer"}
-                     css-attribute-font]
-                    [:.resolver {:cursor "pointer"}
-                     css-resolver-font]
-                    [:.path {:margin-bottom "6px"}]
-                    [:.provides-container {:margin-left "8px"}]
                     [:.graph {:height         "400px"
                               :width          "100%"
                               :display        "flex"
@@ -490,110 +481,107 @@
                            :select-resolver (fn [{::keys [resolvers]}]
                                               (let [{::keys [on-select-resolver]} (fp/get-computed (fp/props this))]
                                                 (on-select-resolver (first resolvers))))})}
-  (dom/div :.container
-    (dom/div :.toolbar
-      (dom/h1 :$title$is-marginless (pr-str attribute))
+  (let [computed (assoc computed ::graph-comm (fp/get-state this :graph-comm))]
+    (dom/div :.container
+      (dom/div :.toolbar
+        (dom/h1 :$title$is-marginless (pr-str attribute))
 
-      (dom/div :$row-center
-        (dom/label :$label$is-small "Depth")
-        (dom/input :$input$is-small {:type     "number" :min 1 :value attr-depth
-                                     :onChange #(fm/set-integer! this ::attr-depth :event %)}))
-      (dom/label
-        (dom/input {:type     "checkbox" :checked show-graph?
-                    :onChange #(fm/set-value! this ::show-graph? (gobj/getValueByKeys % "target" "checked"))})
-        "Graph")
-      (dom/label
-        (dom/input {:type     "checkbox" :checked direct-reaches?
-                    :onChange #(fm/set-value! this ::direct-reaches? (gobj/getValueByKeys % "target" "checked"))})
-        "Direct inputs")
-      (dom/label
-        (dom/input {:type     "checkbox" :checked nested-reaches?
-                    :onChange #(fm/set-value! this ::nested-reaches? (gobj/getValueByKeys % "target" "checked"))})
-        "Nested inputs")
-      (dom/label
-        (dom/input {:type     "checkbox" :checked direct-provides?
-                    :onChange #(fm/set-value! this ::direct-provides? (gobj/getValueByKeys % "target" "checked"))})
-        "Direct outputs")
-      (dom/label
-        (dom/input {:type     "checkbox" :checked nested-provides?
-                    :onChange #(fm/set-value! this ::nested-provides? (gobj/getValueByKeys % "target" "checked"))})
-        "Nested outputs")
-      (dom/label
-        (dom/input {:type     "checkbox" :checked interconnections?
-                    :onChange #(fm/set-value! this ::interconnections? (gobj/getValueByKeys % "target" "checked"))})
-        "Interconnections"))
+        (dom/div :$row-center
+          (dom/label :$label$is-small "Depth")
+          (dom/input :$input$is-small {:type     "number" :min 1 :value attr-depth
+                                       :onChange #(fm/set-integer! this ::attr-depth :event %)}))
+        (dom/label
+          (dom/input {:type     "checkbox" :checked show-graph?
+                      :onChange #(fm/set-value! this ::show-graph? (gobj/getValueByKeys % "target" "checked"))})
+          "Graph")
+        (dom/label
+          (dom/input {:type     "checkbox" :checked direct-reaches?
+                      :onChange #(fm/set-value! this ::direct-reaches? (gobj/getValueByKeys % "target" "checked"))})
+          "Direct inputs")
+        (dom/label
+          (dom/input {:type     "checkbox" :checked nested-reaches?
+                      :onChange #(fm/set-value! this ::nested-reaches? (gobj/getValueByKeys % "target" "checked"))})
+          "Nested inputs")
+        (dom/label
+          (dom/input {:type     "checkbox" :checked direct-provides?
+                      :onChange #(fm/set-value! this ::direct-provides? (gobj/getValueByKeys % "target" "checked"))})
+          "Direct outputs")
+        (dom/label
+          (dom/input {:type     "checkbox" :checked nested-provides?
+                      :onChange #(fm/set-value! this ::nested-provides? (gobj/getValueByKeys % "target" "checked"))})
+          "Nested outputs")
+        (dom/label
+          (dom/input {:type     "checkbox" :checked interconnections?
+                      :onChange #(fm/set-value! this ::interconnections? (gobj/getValueByKeys % "target" "checked"))})
+          "Interconnections"))
 
-    (if show-graph?
-      (ui/panel {::ui/panel-title "Graph"
-                 ::ui/scrollbars? false}
-        (dom/div :.graph
-          (let [shared-options {::direct-reaches?   direct-reaches?
-                                ::nested-reaches?   nested-reaches?
-                                ::direct-provides?  direct-provides?
-                                ::nested-provides?  nested-provides?
-                                ::interconnections? interconnections?}]
-            (attribute-graph
-              (merge {::attributes      (attribute-network
-                                          (merge {::attr-depth attr-depth
-                                                  ::attr-index (h/index-by ::pc/attribute attributes)
-                                                  ::attributes attributes}
-                                            shared-options)
-                                          attribute)
-                      ::on-show-details on-select-attribute
-                      ::on-click-edge   (fp/get-state this :select-resolver)
-                      ::graph-comm      (fp/get-state this :graph-comm)}
-                shared-options))))))
+      (if show-graph?
+        (ui/panel {::ui/panel-title "Graph"
+                   ::ui/scrollbars? false}
+          (dom/div :.graph
+            (let [shared-options {::direct-reaches?   direct-reaches?
+                                  ::nested-reaches?   nested-reaches?
+                                  ::direct-provides?  direct-provides?
+                                  ::nested-provides?  nested-provides?
+                                  ::interconnections? interconnections?}]
+              (attribute-graph
+                (merge {::attributes      (attribute-network
+                                            (merge {::attr-depth attr-depth
+                                                    ::attr-index (h/index-by ::pc/attribute attributes)
+                                                    ::attributes attributes}
+                                              shared-options)
+                                            attribute)
+                        ::on-show-details on-select-attribute
+                        ::on-click-edge   (fp/get-state this :select-resolver)
+                        ::graph-comm      (fp/get-state this :graph-comm)}
+                  shared-options))))))
 
-    (dom/div :.columns$scrollbars
-      (dom/div :.data-list
-        (if (seq attr-reach-via)
-          (attribute-info-reach-via reach-via computed))
+      (dom/div :.columns$scrollbars
+        (dom/div :.data-list
+          (if (seq attr-reach-via)
+            (attribute-info-reach-via reach-via computed))
 
-        (if (seq attr-output-in)
-          (ui/panel {::ui/panel-title "Output In"
-                     ::ui/panel-tag   (count attr-output-in)}
-            (for [resolver (sort attr-output-in)]
-              (resolver-link {::pc/sym resolver} computed))))
+          (if (seq attr-output-in)
+            (ui/panel {::ui/panel-title "Output In"
+                       ::ui/panel-tag   (count attr-output-in)}
+              (for [resolver (sort attr-output-in)]
+                (resolver-link {::pc/sym resolver} computed))))
 
-        (if (seq attr-combinations)
-          (ui/panel {::ui/panel-title "Input Combinations"
-                     ::ui/panel-tag   (count attr-combinations)}
-            (for [input (sort-by (comp vec sort) h/vector-compare (map #(into (sorted-set) %) attr-combinations))]
-              (dom/div :.out-attr (assoc (attribute-graph-events this input) :key (pr-str input))
-                (pr-str input)))))
+          (if (seq attr-combinations)
+            (ui/panel {::ui/panel-title "Input Combinations"
+                       ::ui/panel-tag   (count attr-combinations)}
+              (for [input (sort-by (comp vec sort) h/vector-compare (map #(into (sorted-set) %) attr-combinations))]
+                (attribute-link {::pc/attribute input} computed))))
 
-        (if-let [form (si/safe-form attribute)]
-          (fp/fragment
-            (ui/panel {::ui/panel-title "Spec"}
-              (pr-str form))
+          (if-let [form (si/safe-form attribute)]
+            (fp/fragment
+              (ui/panel {::ui/panel-title "Spec"}
+                (pr-str form))
 
-            (ui/panel {::ui/panel-title "Examples"}
-              (try
-                (for [example (gen/sample (s/gen attribute))]
-                  (dom/div {:key (pr-str example)} (pr-str example)))
-                (catch :default _
-                  (dom/div "Error generating samples"))))))
+              (ui/panel {::ui/panel-title "Examples"}
+                (try
+                  (for [example (gen/sample (s/gen attribute))]
+                    (dom/div {:key (pr-str example)} (pr-str example)))
+                  (catch :default _
+                    (dom/div "Error generating samples"))))))
 
-        (render-plugin-extension this ::plugin-render-to-attr-left-menu))
+          (render-plugin-extension this ::plugin-render-to-attr-left-menu))
 
-      (dom/div :.data-list-right
-        (if (seq attr-provides)
-          (ui/panel {::ui/panel-title "Provides"
-                     ::ui/panel-tag   (count attr-provides)}
-            (ex-tree/expandable-tree provides-tree
-              {::ex-tree/root    provides-tree-source
-               ::ex-tree/render  (fn [{:keys [key]}]
-                                   (dom/div (assoc (attribute-graph-events this key)
-                                              :classes [(-> (css/get-classnames AttributeView) :out-attr)])
-                                     (pr-str key)))
-               ::ex-tree/sort-by :key})))
+        (dom/div :.data-list-right
+          (if (seq attr-provides)
+            (ui/panel {::ui/panel-title "Provides"
+                       ::ui/panel-tag   (count attr-provides)}
+              (ex-tree/expandable-tree provides-tree
+                {::ex-tree/root    provides-tree-source
+                 ::ex-tree/render  (fn [{:keys [key]}]
+                                     (attribute-link {::pc/attribute key} computed))
+                 ::ex-tree/sort-by :key})))
 
-        (if (seq attr-input-in)
-          (ui/panel {::ui/panel-title "Input In"
-                     ::ui/panel-tag   (count attr-input-in)}
-            (for [resolver (sort attr-input-in)]
-              (dom/div :.resolver (assoc (resolver-graph-events this resolver) :key (pr-str resolver))
-                (pr-str resolver)))))))))
+          (if (seq attr-input-in)
+            (ui/panel {::ui/panel-title "Input In"
+                       ::ui/panel-tag   (count attr-input-in)}
+              (for [resolver (sort attr-input-in)]
+                (resolver-link {::pc/sym resolver} computed)))))))))
 
 (gobj/set AttributeView "contextType" ExtensionContext)
 
@@ -613,7 +601,7 @@
 (fp/defsc ResolverView
   [this {::pc/keys [sym input output]
          :ui/keys  [output-tree]}
-   {::keys [on-select-attribute attributes]}
+   {::keys [on-select-attribute attributes] :as computed}
    css]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
                      (merge
@@ -623,26 +611,7 @@
    :ident          [::pc/sym ::pc/sym]
    :query          [::pc/sym ::pc/input ::pc/output
                     {:ui/output-tree (fp/get-query ex-tree/ExpandableTree)}]
-   :css            [[:.container {:flex           "1"
-                                  :display        "flex"
-                                  :flex-direction "column"}]
-                    [:.data-header {:padding     "9px 4px"
-                                    :font-weight "bold"
-                                    :font-family "Verdana"}]
-                    [:.header {:background  "#40879e"
-                               :display     "flex"
-                               :cursor      "pointer"
-                               :color       "#fff"
-                               :align-items "center"
-                               :font-family "'Open Sans'"
-                               :padding     "6px 8px"
-                               :font-size   "14px"
-                               :margin      "1px 0"}
-                     [:b {:background "#F57F17"}]]
-                    [:.attribute {:cursor "pointer"} css-attribute-font]
-                    [:.columns {:display "flex"
-                                :flex    1}]
-                    [:.menu {:white-space   "nowrap"
+   :css            [[:.menu {:white-space   "nowrap"
                              :padding-right "12px"
                              :overflow      "auto"}]]
    :initLocalState (fn [] {:graph-comm      (atom nil)
@@ -650,23 +619,19 @@
                                               (let [{::keys [on-select-resolver]} (fp/get-computed (fp/props this))]
                                                 (on-select-resolver (first resolvers))))
                            :render          (fn [{:keys [key]}]
-                                              (dom/div (assoc (attribute-graph-events this key)
-                                                         :classes [(:attribute (css/get-classnames ResolverView))])
-                                                (pr-str key)))})}
+                                              (attribute-link {::pc/attribute key} (-> this fp/props fp/get-computed)))})}
   (let [input'         (if (= 1 (count input)) (first input) input)
         resolver-attrs (conj (out-all-attributes (->> output eql/query->ast) input) input')
         attrs          (-> (h/index-by ::pc/attribute attributes)
                            (select-keys resolver-attrs)
                            (update input' assoc ::center? true)
                            vals)]
-    (dom/div :.container
+    (ui/column (ui/gc :.flex)
       (dom/h1 :$title (str sym))
-      (dom/div :.columns
+      (ui/row (ui/gc :.flex :.no-scrollbars)
         (dom/div :.menu
           (ui/panel {::ui/panel-title "Input"}
-            (dom/div :.attribute (attribute-graph-events this (if (= 1 (count input))
-                                                                (first input)
-                                                                input)) (h/pprint-str input)))
+            (attribute-link {::pc/attribute input'} computed))
           (if output
             (ui/panel {::ui/panel-title "Output"}
               (ex-tree/expandable-tree output-tree
