@@ -599,13 +599,14 @@
 
 (def attribute-view (fp/computed-factory AttributeView {:keyfn ::pc/attribute}))
 
-(>defn out-all-attributes [{:keys [children]}]
-  [:edn-query-language.ast/node => (s/coll-of ::p/attribute :kind set?)]
+(>defn out-all-attributes [{:keys [children]} input]
+  [:edn-query-language.ast/node ::pc/input
+   => (s/coll-of ::p/attribute :kind set?)]
   (reduce
     (fn [attrs {:keys [key children] :as node}]
-      (cond-> (conj attrs key)
+      (cond-> (if (contains? input key) attrs (conj attrs key))
         children
-        (into (out-all-attributes node))))
+        (into (out-all-attributes node input))))
     #{}
     children))
 
@@ -653,7 +654,7 @@
                                                          :classes [(:attribute (css/get-classnames ResolverView))])
                                                 (pr-str key)))})}
   (let [input'         (if (= 1 (count input)) (first input) input)
-        resolver-attrs (conj (out-all-attributes (->> output eql/query->ast)) input')
+        resolver-attrs (conj (out-all-attributes (->> output eql/query->ast) input) input')
         attrs          (-> (h/index-by ::pc/attribute attributes)
                            (select-keys resolver-attrs)
                            (update input' assoc ::center? true)
@@ -669,7 +670,9 @@
           (if output
             (ui/panel {::ui/panel-title "Output"}
               (ex-tree/expandable-tree output-tree
-                {::ex-tree/root    (eql/query->ast output)
+                {::ex-tree/root    (-> (eql/query->ast output)
+                                       (update :children
+                                         #(remove (comp input :key) %)))
                  ::ex-tree/render  (fp/get-state this :render)
                  ::ex-tree/sort-by :key})))
 
