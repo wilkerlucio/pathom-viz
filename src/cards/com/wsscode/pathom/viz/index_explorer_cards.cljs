@@ -136,7 +136,14 @@
                                    :simple          #{'path}})
          {:children
           [{:key      :simple ::pc/sym-set #{'path}
-            :children [{:key :multi ::pc/sym-set #{'path}}]}]})))
+            :children [{:key :multi ::pc/sym-set #{'path}}]}]}))
+  (is (= (iex/attr-provides->tree {[:simple :multi] #{'path}
+                                   [:simple :multi :more] #{'path}
+                                   :simple          #{'path}})
+         {:children
+          [{:key      :simple ::pc/sym-set #{'path}
+            :children [{:key :multi ::pc/sym-set #{'path}
+                        :children [{:key :more ::pc/sym-set #{'path}}]}]}]})))
 
 (ws/deftest test-compute-nodes-links
   (is (= (iex/compute-nodes-links {::iex/attributes []})

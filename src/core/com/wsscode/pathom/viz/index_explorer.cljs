@@ -370,12 +370,12 @@
                       (into {}))
 
         provides (reduce
-                   (fn [{:keys [items index]} [path node]]
+                   (fn [{:keys [items index]} [path]]
                      (if (> (count path) 1)
                        (let [prev (subvec path 0 (dec (count path)))]
                          {:items items
                           :index (update-in index [prev :children] (fnil conj [])
-                                   node)})
+                                   (get index path))})
                        {:items (conj items (get index path))
                         :index index}))
                    {:items []
