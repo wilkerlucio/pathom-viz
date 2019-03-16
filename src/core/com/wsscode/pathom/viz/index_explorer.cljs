@@ -84,30 +84,38 @@
 
 ;; Views
 
+(>defn call-graph-comm [comp f k]
+  [any? string? any? => any?]
+  (if-let [settings (some-> (fp/get-state comp :graph-comm) deref)]
+    ((gobj/get settings f) (str k))))
+
 (defn attribute-graph-events [this k]
   (let [on-select-attribute (-> this fp/props fp/get-computed ::on-select-attribute)]
     {:onClick      #(on-select-attribute k)
-     :onMouseEnter #(if-let [settings (some-> (fp/get-state this :graph-comm) deref)]
-                      ((gobj/get settings "highlightNode") (str k)))
-     :onMouseLeave #(if-let [settings (some-> (fp/get-state this :graph-comm) deref)]
-                      ((gobj/get settings "unhighlightNode") (str k)))}))
+     :onMouseEnter #(call-graph-comm this "highlightNode" k)
+     :onMouseLeave #(call-graph-comm this "unhighlightNode" k)}))
 
 (defn resolver-graph-events [this k]
   (let [on-select-resolver (-> this fp/props fp/get-computed ::on-select-resolver)]
     {:onClick      #(on-select-resolver k)
-     :onMouseEnter #(if-let [settings @(fp/get-state this :graph-comm)]
-                      ((gobj/get settings "highlightEdge") (str k)))
-     :onMouseLeave #(if-let [settings @(fp/get-state this :graph-comm)]
-                      ((gobj/get settings "unhighlightEdge") (str k)))}))
+     :onMouseEnter #(call-graph-comm this "highlightEdge" k)
+     :onMouseLeave #(call-graph-comm this "unhighlightEdge" k)}))
 
-(fp/defsc AttributeText
+(fp/defsc AttributeLink
   [this {::pc/keys [attribute] ::ui/keys [render] :as props}]
-  {:css [[:.container css-attribute-font]
-         [:.pointer {:cursor "pointer"}]]}
+  {:css [[:.container {:cursor "pointer"} css-attribute-font]]}
   (dom/div :.container (ui/props (merge (attribute-graph-events this attribute) props))
     (if render (render props) (pr-str attribute))))
 
-(def attribute-text (fp/computed-factory AttributeText))
+(def attribute-link (fp/computed-factory AttributeLink {:keyfn (comp pr-str ::pc/attribute)}))
+
+(fp/defsc ResolverLink
+  [this {::pc/keys [sym] ::ui/keys [render] :as props}]
+  {:css [[:.container {:cursor "pointer"} css-resolver-font]]}
+  (dom/div :.container (ui/props (merge (resolver-graph-events this sym) props))
+    (if render (render props) (pr-str sym))))
+
+(def resolver-link (fp/computed-factory ResolverLink {:keyfn (comp pr-str ::pc/sym)}))
 
 ;; Main components
 
@@ -271,15 +279,6 @@
 
 (def attribute-graph (fp/factory AttributeGraph))
 
-(defn attribute-link
-  [{::pc/keys [index-oir]
-    ::keys    [on-select-attribute]}
-   attr]
-  (if (contains? index-oir attr)
-    (dom/a {:href "#" :onClick (h/pd #(on-select-attribute attr))}
-      (pr-str attr))
-    (pr-str attr)))
-
 (defn pull-attr [{::keys [attr-index interconnections?]} attr]
   (cond-> (get attr-index attr)
     (false? interconnections?)
@@ -361,7 +360,7 @@
 (def simple-attribute (fp/factory SimpleAttribute))
 
 (>defn attr-provides->path-map [attr-provides]
-  [::pc/attr-provides => ::path-map]
+  [::pc/attr-provides => ::h/path-map]
   (into {}
         (comp (map #(update % 0 (fn [x] (if (keyword? x) [x] x))))
               (map (fn [[path resolvers]]
@@ -396,9 +395,8 @@
             :let [direct? (some (comp direct-input? first) v)]
             :when (or direct? nested-reaches?)]
         (dom/div {:key (pr-str input)}
-          (attribute-text {::pc/attribute (cond-> input (= (count input) 1) first)
+          (attribute-link {::pc/attribute (cond-> input (= (count input) 1) first)
                            ::ui/render    #(pr-str input)
-                           :classes       [:.pointer]
                            :style         (cond-> {} direct? (assoc :fontWeight "bold"))}
             computed)
           (if nested-reaches?
@@ -410,8 +408,7 @@
               (dom/div {:key   (pr-str path)
                         :style {:marginLeft (str 10 "px")}}
                 (for [[k i] (map vector path' (range))]
-                  (attribute-text {::pc/attribute k
-                                   :classes       [:.pointer]
+                  (attribute-link {::pc/attribute k
                                    :style         {:marginLeft (str (* i 10) "px")}}
                     computed))))))))))
 
@@ -556,8 +553,7 @@
           (ui/panel {::ui/panel-title "Output In"
                      ::ui/panel-tag   (count attr-output-in)}
             (for [resolver (sort attr-output-in)]
-              (dom/div :.resolver (assoc (resolver-graph-events this resolver) :key (pr-str resolver))
-                (pr-str resolver)))))
+              (resolver-link {::pc/sym resolver} computed))))
 
         (if (seq attr-combinations)
           (ui/panel {::ui/panel-title "Input Combinations"
@@ -602,19 +598,6 @@
 (gobj/set AttributeView "contextType" ExtensionContext)
 
 (def attribute-view (fp/computed-factory AttributeView {:keyfn ::pc/attribute}))
-
-(fp/defsc OutputAttributeView
-  [this {:keys [key children] :as props}]
-  {:css [[:.container {:background  "#263238"
-                       :color       "#fff"
-                       :display     "flex"
-                       :font-family "'Open Sans'"
-                       :padding     "10px"}]
-         [:.title {:flex "1"}]]}
-  (dom/div :.container {:key (pr-str key)}
-    (dom/div :.title (attribute-link props key))))
-
-(def output-attribute-view (fp/computed-factory OutputAttributeView {:keyfn (comp pr-str :key)}))
 
 (>defn out-all-attributes [{:keys [children]}]
   [:edn-query-language.ast/node => (s/coll-of ::p/attribute :kind set?)]
@@ -661,7 +644,6 @@
                     [:.menu {:white-space   "nowrap"
                              :padding-right "12px"
                              :overflow      "auto"}]]
-   :css-include    [OutputAttributeView]
    :initLocalState (fn [] {:graph-comm      (atom nil)
                            :select-resolver (fn [{::keys [resolvers]}]
                                               (let [{::keys [on-select-resolver]} (fp/get-computed (fp/props this))]
@@ -730,13 +712,12 @@
   [this {::keys [attributes]} computed]
   {}
   (dom/div
-    (attribute-text {::pc/attribute #{} :classes [:.pointer]} computed)
+    (attribute-link {::pc/attribute #{}} computed)
     (into []
           (comp
             (filter (comp keyword? ::pc/attribute))
             (map (fn [{::pc/keys [attribute]}]
-                   (attribute-text {::pc/attribute attribute
-                                    :classes       [:.pointer]
+                   (attribute-link {::pc/attribute attribute
                                     :react-key     (pr-str attribute)} computed))))
           attributes)))
 
@@ -744,8 +725,16 @@
 
 (def last-value (atom nil))
 
+(fp/defsc AllResolversList
+  [this {::keys [resolvers]} computed]
+  {}
+  (dom/div
+    (mapv #(resolver-link % computed) resolvers)))
+
+(def all-resolvers-list (fp/computed-factory AllResolversList))
+
 (fp/defsc SearchEverything
-  [this {::keys [text search-results attributes]} computed]
+  [this {::keys [text search-results attributes resolvers]} computed]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
                      (merge
                        {::id             (random-uuid)
@@ -756,10 +745,11 @@
    :ident          [::id ::id]
    :query          [::id ::text
                     {::search-results [::pc/attribute ::fuzzy/match-hl]}
-                    {::attributes [::pc/attribute]}]
-   :css            [[:.attributes {:white-space "nowrap"
-                                   :width       "300px"
-                                   :overflow    "auto"}]]
+                    {::attributes [::pc/attribute]}
+                    {::resolvers [::pc/sym]}]
+   :css            [[:.container {:white-space "nowrap"
+                                  :width       "300px"
+                                  :overflow    "auto"}]]
    :initLocalState (fn [] {:search
                            #(fp/transact! this [`(search {::text ~(h/target-value %)})])
 
@@ -767,14 +757,12 @@
                            (let [props    (fp/props this)
                                  computed (fp/get-computed props)]
                              (dom/div
-                               (attribute-text {::pc/attribute #{} :classes [:.pointer]} computed)
+                               (attribute-link {::pc/attribute #{}} computed)
                                (into []
                                      (comp
                                        (filter (comp keyword? ::pc/attribute))
                                        (map (fn [{::pc/keys [attribute]}]
-                                              (attribute-text {::pc/attribute attribute
-                                                               :classes       [:.pointer]
-                                                               :react-key     (pr-str attribute)} computed))))
+                                              (attribute-link {::pc/attribute attribute} computed))))
                                      (::attributes props))))})}
   (ui/column {}
     (dom/div :$control$has-icons-left$has-icons-right
@@ -788,21 +776,20 @@
         (dom/span :$icon$is-small$is-right {:onClick #(fm/set-value! this ::text "")}
           (dom/a :$delete$is-small))))
     (dom/div (ui/gc :.flex :.scrollbars)
-      (dom/div :.attributes
+      (dom/div :.container
         (if (seq text)
           (into []
                 (comp
                   (filter (comp keyword? ::pc/attribute))
                   (map (fn [{::pc/keys    [attribute]
                              ::fuzzy/keys [match-hl]}]
-                         (attribute-text {::pc/attribute attribute
-                                          ::ui/render    #(dom/div {:dangerouslySetInnerHTML {:__html match-hl}})
-                                          :classes       [:.pointer]
-                                          :react-key     (pr-str attribute)} computed))))
+                         (attribute-link {::pc/attribute attribute
+                                          ::ui/render    #(dom/div {:dangerouslySetInnerHTML {:__html match-hl}})} computed))))
                 search-results)))
 
-      (dom/div :.attributes {:style {:display (if (> (count text) 2) "none")}}
-        (all-attributes-list {::attributes attributes} computed)))))
+      (dom/div :.container {:style {:display (if (> (count text) 2) "none")}}
+        (all-attributes-list {::attributes attributes} computed)
+        (all-resolvers-list {::resolvers resolvers} computed)))))
 
 (def search-everything (fp/computed-factory SearchEverything))
 
@@ -958,7 +945,7 @@
                     [:$scrollbars {:overflow "auto"}]
                     [:$tag-spaced
                      [:$tag {:margin-left "4px"}]]]
-   :css-include    [SimpleAttribute AttributeText ui/UIKit]
+   :css-include    [SimpleAttribute AttributeLink ResolverLink ui/UIKit]
    :initLocalState (fn [] {:select-attribute #(fp/transact! this [`(navigate-to-attribute {::pc/attribute ~%})])
                            :select-resolver  #(fp/transact! this [`(navigate-to-resolver {::pc/sym ~%})])})}
   (dom/create-element (gobj/get ExtensionContext "Provider") #js {:value extensions}
