@@ -370,7 +370,7 @@
                       (into {}))
 
         provides (reduce
-                   (fn [{:keys [items index]} [path]]
+                   (fn [{:keys [items index]} path]
                      (if (> (count path) 1)
                        (let [prev (subvec path 0 (dec (count path)))]
                          {:items items
@@ -381,8 +381,8 @@
                    {:items []
                     :index index}
                    (->> index
-                        (sort-by first h/vector-compare)
-                        (reverse)))]
+                        (keys)
+                        (sort #(h/vector-compare %2 %))))]
     {:children (:items provides)}))
 
 (defn render-plugin-extension [this view]
