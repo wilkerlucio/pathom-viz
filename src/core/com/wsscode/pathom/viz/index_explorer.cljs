@@ -11,6 +11,7 @@
             [com.wsscode.pathom.viz.helpers :as h]
             [com.wsscode.pathom.viz.ui.expandable-tree :as ex-tree]
             [com.wsscode.pathom.viz.ui.kit :as ui]
+            [com.wsscode.pathom.viz.ui.context :as uic]
             [com.wsscode.spec-inspec :as si]
             [edn-query-language.core :as eql]
             [fulcro-css.css :as css]
@@ -65,24 +66,9 @@
 
 ; endregion
 
-; region shared css
-
-(def css-attribute-font
-  {:color       "#9a45b1"
-   ; color "#660e7a"
-   :font-size   "14px"
-   :line-height "1.4em"})
-
-(def css-resolver-font
-  {:color       "#467cb7"
-   :font-size   "14px"
-   :line-height "1.4em"})
-
-; endregion
-
-(def ExtensionContext (js/React.createContext {}))
-
 ;; Views
+
+(def ExtensionContext (uic/new-context))
 
 (>defn call-graph-comm [comp f k]
   [any? string? any? => any?]
@@ -104,7 +90,10 @@
 
 (fp/defsc AttributeLink
   [this {::pc/keys [attribute] ::ui/keys [render] :as props}]
-  {:css [[:.container {:cursor "pointer"} css-attribute-font]]}
+  {:css [[:.container {:cursor      "pointer"
+                       :color       "#9a45b1"
+                       :font-size   "14px"
+                       :line-height "1.4em"}]]}
   (dom/div :.container (ui/props (merge (attribute-graph-events this attribute) props))
     (if render (render props) (pr-str attribute))))
 
@@ -112,11 +101,26 @@
 
 (fp/defsc ResolverLink
   [this {::pc/keys [sym] ::ui/keys [render] :as props}]
-  {:css [[:.container {:cursor "pointer"} css-resolver-font]]}
+  {:css [[:.container {:cursor      "pointer"
+                       :color       "#467cb7"
+                       :font-size   "14px"
+                       :line-height "1.4em"}]]}
   (dom/div :.container (ui/props (merge (resolver-graph-events this sym) props))
     (if render (render props) (pr-str sym))))
 
 (def resolver-link (fp/computed-factory ResolverLink {:keyfn (comp pr-str ::pc/sym)}))
+
+(fp/defsc MutationLink
+  [this {::pc/keys [sym] ::ui/keys [render] :as props}]
+  {:css [[:.container {:cursor      "pointer"
+                       :color       "#ef6c00"
+                       :font-size   "14px"
+                       :line-height "1.4em"}]]}
+  (let [on-select-mutation (-> this fp/props fp/get-computed ::on-select-mutation)]
+    (dom/div :.container (ui/props (merge {:onClick #(on-select-mutation sym)} props))
+      (if render (render props) (pr-str sym)))))
+
+(def mutation-link (fp/computed-factory MutationLink {:keyfn (comp pr-str ::pc/sym)}))
 
 ;; Main components
 
@@ -348,17 +352,6 @@
 
 (defn attr-path-key-root [x]
   (if (vector? x) (first x) x))
-
-(fp/defsc SimpleAttribute
-  [this props]
-  {:pre-merge (fn [{:keys [current-normalized data-tree]}]
-                (merge {} current-normalized data-tree))
-   :css       [[:.container {:cursor  "pointer"
-                             :padding "0 2px"}
-                css-attribute-font]]}
-  (apply dom/div :.container props (fp/children this)))
-
-(def simple-attribute (fp/factory SimpleAttribute))
 
 (>defn attr-provides->path-map [attr-provides]
   [::pc/attr-provides => ::h/path-map]
@@ -708,8 +701,16 @@
 
 (def all-resolvers-list (fp/computed-factory AllResolversList))
 
+(fp/defsc AllMutationsList
+  [this {::keys [mutations]} computed]
+  {}
+  (dom/div
+    (mapv #(mutation-link % computed) mutations)))
+
+(def all-mutations-list (fp/computed-factory AllMutationsList))
+
 (fp/defsc SearchEverything
-  [this {::keys [text search-results attributes resolvers]} computed]
+  [this {::keys [text search-results attributes resolvers mutations]} computed]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
                      (merge
                        {::id             (random-uuid)
@@ -721,7 +722,8 @@
    :query          [::id ::text
                     {::search-results [::pc/attribute ::fuzzy/match-hl]}
                     {::attributes [::pc/attribute]}
-                    {::resolvers [::pc/sym]}]
+                    {::resolvers [::pc/sym]}
+                    {::mutations [::pc/sym]}]
    :css            [[:.container {:white-space "nowrap"
                                   :width       "300px"
                                   :overflow    "auto"}]]
@@ -764,14 +766,15 @@
 
       (dom/div :.container {:style {:display (if (> (count text) 2) "none")}}
         (all-attributes-list {::attributes attributes} computed)
-        (all-resolvers-list {::resolvers resolvers} computed)))))
+        (all-resolvers-list {::resolvers resolvers} computed)
+        (all-mutations-list {::mutations mutations} computed)))))
 
 (def search-everything (fp/computed-factory SearchEverything))
 
 (fp/defsc StatsView
   [this {::keys [attribute-count resolver-count globals-count idents-count
                  attr-edges-count top-connection-hubs]}
-   {::keys [on-select-attribute]}]
+   computed]
   {:pre-merge (fn [{:keys [current-normalized data-tree]}]
                 (merge {} current-normalized data-tree))
    :ident     [::id ::id]
@@ -790,9 +793,8 @@
     (dom/div :$content
       (for [{::pc/keys [attribute]
              ::keys    [attr-edges-count]} top-connection-hubs]
-        (simple-attribute {:react-key (pr-str attribute)
-                           :onClick   #(on-select-attribute attribute)}
-          (str "[" attr-edges-count "] " (pr-str attribute)))))))
+        (attribute-link {::pc/attribute attribute
+                         ::ui/render    #(str "[" attr-edges-count "] " (pr-str attribute))} computed)))))
 
 (def stats-view (fp/factory StatsView {:keyfn ::id}))
 
@@ -833,7 +835,7 @@
                               (take 10)
                               vec)})
 
-(defn process-index [{::pc/keys [index-resolvers idents index-attributes]}]
+(defn process-index [{::pc/keys [index-resolvers idents index-attributes index-mutations]}]
   (let [attrs (->> index-attributes
                    (map (fn [[attr {::pc/keys [attr-reach-via attr-provides] :as data}]]
                           (assoc data
@@ -854,6 +856,11 @@
                            vals
                            (sort-by ::pc/sym)
                            vec)
+
+         ::mutations  (->> index-mutations
+                           vals
+                           (sort-by ::pc/sym)
+                           vec)
          ;:ui/page     {::pc/attribute :customer/cpf}
          }
         (augment compute-stats))))
@@ -869,14 +876,19 @@
   {:ident [::pc/sym ::pc/sym]
    :query [::pc/sym ::pc/input ::pc/output ::pc/params]})
 
+(fm/defmutation navigate-to-attribute [{::pc/keys [attribute]}]
+  (action [{:keys [state ref]}]
+    (swap! state fp/merge-component AttributeView {::pc/attribute attribute}
+      :replace (conj ref :ui/page))))
+
 (fm/defmutation navigate-to-resolver [{::pc/keys [sym]}]
   (action [{:keys [state ref]}]
     (swap! state fp/merge-component ResolverView {::pc/sym sym}
       :replace (conj ref :ui/page))))
 
-(fm/defmutation navigate-to-attribute [{::pc/keys [attribute]}]
+(fm/defmutation navigate-to-mutation [{::pc/keys [sym]}]
   (action [{:keys [state ref]}]
-    (swap! state fp/merge-component AttributeView {::pc/attribute attribute}
+    (swap! state fp/merge-component ResolverView {::pc/sym sym}
       :replace (conj ref :ui/page))))
 
 (fp/defsc IndexExplorer
@@ -920,20 +932,23 @@
                     [:$scrollbars {:overflow "auto"}]
                     [:$tag-spaced
                      [:$tag {:margin-left "4px"}]]]
-   :css-include    [SimpleAttribute AttributeLink ResolverLink ui/UIKit]
+   :css-include    [AttributeLink ResolverLink MutationLink ui/UIKit]
    :initLocalState (fn [] {:select-attribute #(fp/transact! this [`(navigate-to-attribute {::pc/attribute ~%})])
-                           :select-resolver  #(fp/transact! this [`(navigate-to-resolver {::pc/sym ~%})])})}
+                           :select-resolver  #(fp/transact! this [`(navigate-to-resolver {::pc/sym ~%})])
+                           :select-mutation  #(fp/transact! this [`(navigate-to-mutation {::pc/sym ~%})])})}
   (dom/create-element (gobj/get ExtensionContext "Provider") #js {:value extensions}
     (ui/row {:react-key "container" :classes (ui/ccss this :.out-container)}
       (dom/div :.menu
         (search-everything menu {::on-select-attribute (fp/get-state this :select-attribute)
-                                 ::on-select-resolver  (fp/get-state this :select-resolver)}))
+                                 ::on-select-resolver  (fp/get-state this :select-resolver)
+                                 ::on-select-mutation  (fp/get-state this :select-mutation)}))
       (ui/column (ui/gc :.flex :.no-scrollbars)
         (if page
           (main-view-union page (assoc index
                                   ::attributes attributes
                                   ::on-select-attribute (fp/get-state this :select-attribute)
-                                  ::on-select-resolver (fp/get-state this :select-resolver))))
+                                  ::on-select-resolver (fp/get-state this :select-resolver)
+                                  ::on-select-mutation  (fp/get-state this :select-mutation))))
 
         #_(dom/div :.graph
             (attribute-graph {::attributes       attributes
