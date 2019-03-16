@@ -1,11 +1,18 @@
 (ns com.wsscode.pathom.viz.helpers
   (:require ["react-draggable" :refer [DraggableCore]]
+            [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ?]]
             [clojure.pprint]
             [fulcro.client.dom :as dom]
             [fulcro.client.primitives :as fp]
             [fulcro.client.mutations :as fm]
             [goog.object :as gobj]
-            [clojure.walk :as walk]))
+            [clojure.walk :as walk]
+            [cljs.spec.alpha :as s]))
+
+(s/def ::path (s/coll-of keyword? :kind vector?))
+(s/def ::path-map (s/map-of ::path map?))
+(s/def ::node (s/keys :opt-un [::children]))
+(s/def ::children (s/coll-of ::node))
 
 (defn pd [f]
   (fn [e]
@@ -83,3 +90,34 @@
       (not (zero? result)) result
       (nil? value1) 0
       :else (recur rest1 rest2))))
+
+(>defn path-map->tree
+  "Generate a tree structure from a map of maps to data. For example, the given structure:
+
+  {[:a] {:any data}
+   [:a :b] {:more data}
+   [:c] {:key foo}}
+
+   It will return:
+
+   {:children [{:any data
+                :children [{:more data}]}
+               {:key foo}]}"
+  [path-map]
+  [::path-map => ::node]
+  (let [{:keys [items]}
+        (reduce
+          (fn [{:keys [items index]} path]
+            (if (> (count path) 1)
+              (let [prev (subvec path 0 (dec (count path)))]
+                {:items items
+                 :index (update-in index [prev :children] (fnil conj [])
+                          (get index path))})
+              {:items (conj items (get index path))
+               :index index}))
+          {:items []
+           :index path-map}
+          (->> path-map
+               (keys)
+               (sort #(vector-compare %2 %))))]
+    {:children items}))

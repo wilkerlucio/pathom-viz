@@ -360,30 +360,20 @@
 
 (def simple-attribute (fp/factory SimpleAttribute))
 
+(>defn attr-provides->path-map [attr-provides]
+  [::pc/attr-provides => ::path-map]
+  (into {}
+        (comp (map #(update % 0 (fn [x] (if (keyword? x) [x] x))))
+              (map (fn [[path resolvers]]
+                     (let [k (peek path)]
+                       [path {:key k ::pc/sym-set resolvers}]))))
+        attr-provides))
+
 (>defn attr-provides->tree [attr-provides]
   [::pc/attr-provides => ::ex-tree/root]
-  (let [index    (->> attr-provides
-                      (map #(update % 0 (fn [x] (if (keyword? x) [x] x))))
-                      (map (fn [[path resolvers]]
-                             (let [k (peek path)]
-                               [path {:key k ::pc/sym-set resolvers}])))
-                      (into {}))
-
-        provides (reduce
-                   (fn [{:keys [items index]} path]
-                     (if (> (count path) 1)
-                       (let [prev (subvec path 0 (dec (count path)))]
-                         {:items items
-                          :index (update-in index [prev :children] (fnil conj [])
-                                   (get index path))})
-                       {:items (conj items (get index path))
-                        :index index}))
-                   {:items []
-                    :index index}
-                   (->> index
-                        (keys)
-                        (sort #(h/vector-compare %2 %))))]
-    {:children (:items provides)}))
+  (-> attr-provides
+      attr-provides->path-map
+      h/path-map->tree))
 
 (defn render-plugin-extension [this view]
   (let [plugins (-> (gobj/get this "context") ::plugins)
