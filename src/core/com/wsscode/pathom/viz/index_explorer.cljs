@@ -599,7 +599,7 @@
     children))
 
 (fp/defsc ResolverView
-  [this {::pc/keys [sym input output]
+  [this {::pc/keys [sym input output batch?]
          :ui/keys  [output-tree]}
    {::keys [on-select-attribute attributes] :as computed}
    css]
@@ -609,7 +609,7 @@
                        current-normalized
                        data-tree))
    :ident          [::pc/sym ::pc/sym]
-   :query          [::pc/sym ::pc/input ::pc/output
+   :query          [::pc/sym ::pc/input ::pc/output ::pc/batch?
                     {:ui/output-tree (fp/get-query ex-tree/ExpandableTree)}]
    :css            [[:.menu {:white-space   "nowrap"
                              :padding-right "12px"
@@ -630,8 +630,13 @@
       (dom/h1 :$title (str sym))
       (ui/row (ui/gc :.flex :.no-scrollbars)
         (dom/div :.menu
+          (if batch?
+            (ui/panel {::ui/panel-title "Batch"}
+              "True"))
+
           (ui/panel {::ui/panel-title "Input"}
             (attribute-link {::pc/attribute input'} computed))
+
           (if output
             (ui/panel {::ui/panel-title "Output"}
               (ex-tree/expandable-tree output-tree
