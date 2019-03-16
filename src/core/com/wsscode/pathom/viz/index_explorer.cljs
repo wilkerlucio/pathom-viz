@@ -620,12 +620,7 @@
                                                 (on-select-resolver (first resolvers))))
                            :render          (fn [{:keys [key]}]
                                               (attribute-link {::pc/attribute key} (-> this fp/props fp/get-computed)))})}
-  (let [input'         (if (= 1 (count input)) (first input) input)
-        resolver-attrs (conj (out-all-attributes (->> output eql/query->ast) input) input')
-        attrs          (-> (h/index-by ::pc/attribute attributes)
-                           (select-keys resolver-attrs)
-                           (update input' assoc ::center? true)
-                           vals)]
+  (let [input' (if (= 1 (count input)) (first input) input)]
     (ui/column (ui/gc :.flex)
       (dom/h1 :$title (str sym))
       (ui/row (ui/gc :.flex :.no-scrollbars)
@@ -634,8 +629,9 @@
             (ui/panel {::ui/panel-title "Batch"}
               "True"))
 
-          (ui/panel {::ui/panel-title "Input"}
-            (attribute-link {::pc/attribute input'} computed))
+          (if input
+            (ui/panel {::ui/panel-title "Input"}
+              (attribute-link {::pc/attribute input'} computed)))
 
           (if output
             (ui/panel {::ui/panel-title "Output"}
@@ -648,10 +644,16 @@
 
           (render-plugin-extension this ::plugin-render-to-resolver-menu))
 
-        (attribute-graph {::attributes      attrs
-                          ::graph-comm      (fp/get-state this :graph-comm)
-                          ::on-show-details on-select-attribute
-                          ::on-click-edge   (fp/get-state this :select-resolver)})))))
+        (if input
+          (let [resolver-attrs (conj (out-all-attributes (->> output eql/query->ast) input) input')
+                attrs          (-> (h/index-by ::pc/attribute attributes)
+                                   (select-keys resolver-attrs)
+                                   (update input' assoc ::center? true)
+                                   vals)]
+            (attribute-graph {::attributes      attrs
+                              ::graph-comm      (fp/get-state this :graph-comm)
+                              ::on-show-details on-select-attribute
+                              ::on-click-edge   (fp/get-state this :select-resolver)})))))))
 
 (gobj/set ResolverView "contextType" ExtensionContext)
 
