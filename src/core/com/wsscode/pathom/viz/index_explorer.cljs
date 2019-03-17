@@ -673,13 +673,11 @@
 
 (fm/defmutation search [{::keys [text]}]
   (action [{:keys [ref state]}]
-    (let [attributes (->> (get-in @state (conj ref ::attributes))
-                          (realize-references @state)
-                          (mapv #(assoc % ::fuzzy/string (pr-str (::pc/attribute %)))))
-          fuzzy-res  (if (> (count text) 2)
-                       (fuzzy/fuzzy-match {::fuzzy/options      attributes
+    (let [items     (get-in @state (conj ref ::search-vector))
+          fuzzy-res (if (> (count text) 2)
+                      (fuzzy/fuzzy-match {::fuzzy/options       items
                                            ::fuzzy/search-input text})
-                       [])]
+                      [])]
       (swap! state fp/merge-component SearchEverything (into {::search-results (vec (take max-search-results fuzzy-res))} [ref]))
       (swap! state update-in ref assoc ::text text))))
 
@@ -735,13 +733,14 @@
                         ::text                   ""
                         ::search-results         []
                         :ui/collapse-attributes? false
-                        :ui/collapse-resolvers? false
-                        :ui/collapse-mutations? false}
+                        :ui/collapse-resolvers?  false
+                        :ui/collapse-mutations?  false}
                        current-normalized
                        data-tree))
    :ident          [::id ::id]
    :query          [::id ::text
-                    {::search-results [::pc/attribute ::fuzzy/match-hl]}
+                    {::search-results
+                     [::fuzzy/string ::fuzzy/match-hl ::search-type ::search-value]}
                     {::attributes [::pc/attribute]}
                     {::resolvers [::pc/sym]}
                     {::mutations [::pc/sym]}
@@ -791,11 +790,20 @@
         (if (seq text)
           (into []
                 (comp
-                  (filter (comp keyword? ::pc/attribute))
-                  (map (fn [{::pc/keys    [attribute]
+                  (map (fn [{::keys       [search-value search-type]
                              ::fuzzy/keys [match-hl]}]
-                         (attribute-link {::pc/attribute attribute
-                                          ::ui/render    #(dom/div {:dangerouslySetInnerHTML {:__html match-hl}})} computed))))
+                         (case search-type
+                           ::search-type-attribute
+                           (attribute-link {::pc/attribute search-value
+                                            ::ui/render    #(dom/div {:dangerouslySetInnerHTML {:__html match-hl}})} computed)
+
+                           ::search-type-resolver
+                           (resolver-link {::pc/sym    search-value
+                                           ::ui/render #(dom/div {:dangerouslySetInnerHTML {:__html match-hl}})} computed)
+
+                           ::search-type-mutation
+                           (mutation-link {::pc/sym    search-value
+                                           ::ui/render #(dom/div {:dangerouslySetInnerHTML {:__html match-hl}})} computed)))))
                 search-results)))
 
       (dom/div :.container {:style {:display (if (> (count text) 2) "none")}}
