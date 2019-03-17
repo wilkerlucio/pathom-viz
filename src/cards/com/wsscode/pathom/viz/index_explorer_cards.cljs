@@ -64,7 +64,7 @@
                (dom/span :$tag$is-dark (count services)))
              (for [{:keys  [abrams.diplomat.api/service]
                     ::keys [service-in service-out]} (sort-by :abrams.diplomat.api/service services)]
-               (dom/div :$panel-block$row-center$tag-spaced
+               (dom/div :$panel-block$row-center$tag-spaced {:key (pr-str service)}
                  (dom/div (ui/gc :.flex) (name service))
                  (if service-in
                    (dom/span :$tag$is-family-code$is-primary {:title "Input"} "I"))
