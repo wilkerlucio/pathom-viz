@@ -671,10 +671,13 @@
     :req [::fuzzy/string ::search-value ::search-type]
     :opt [::fuzzy/match-hl]))
 
+(defn active-search? [text]
+  (> (count text) 2))
+
 (fm/defmutation search [{::keys [text]}]
   (action [{:keys [ref state]}]
     (let [items     (get-in @state (conj ref ::search-vector))
-          fuzzy-res (if (> (count text) 2)
+          fuzzy-res (if (active-search? text)
                       (fuzzy/fuzzy-match {::fuzzy/options       items
                                            ::fuzzy/search-input text})
                       [])]
@@ -748,7 +751,8 @@
                     :ui/collapse-attributes?
                     :ui/collapse-resolvers?
                     :ui/collapse-mutations?]
-   :css            [[:.container {:white-space "nowrap"
+   :css            [[:.container {:flex        "1"
+                                  :white-space "nowrap"
                                   :width       "300px"
                                   :overflow    "auto"}]]
    :initLocalState (fn [] {:search
@@ -774,7 +778,7 @@
                                        (map (fn [{::pc/keys [attribute]}]
                                               (attribute-link {::pc/attribute attribute} computed))))
                                      (::attributes props))))})}
-  (ui/column {}
+  (ui/column (ui/gc :.flex)
     (dom/div :$control$has-icons-left$has-icons-right
       (dom/input :$input$is-small
         {:type        "text"
@@ -785,9 +789,9 @@
       (if (seq text)
         (dom/span :$icon$is-small$is-right {:onClick #(fm/set-value! this ::text "")}
           (dom/a :$delete$is-small))))
-    (dom/div (ui/gc :.flex :.scrollbars)
-      (dom/div :.container
-        (if (seq text)
+    (ui/column (ui/gc :.flex :.scrollbars)
+      (dom/div :.container {:style {:display (if-not (active-search? text) "none")}}
+        (if (active-search? text)
           (into []
                 (comp
                   (map (fn [{::keys       [search-value search-type]
@@ -1019,7 +1023,7 @@
                            :select-mutation  #(fp/transact! this [`(navigate-to-mutation {::pc/sym ~%})])})}
   (dom/create-element (gobj/get ExtensionContext "Provider") #js {:value extensions}
     (ui/row {:react-key "container" :classes (ui/ccss this :.out-container)}
-      (dom/div :.menu
+      (ui/column {:classes (ui/ccss this :.menu)}
         (search-everything menu {::on-select-attribute (fp/get-state this :select-attribute)
                                  ::on-select-resolver  (fp/get-state this :select-resolver)
                                  ::on-select-mutation  (fp/get-state this :select-mutation)}))
