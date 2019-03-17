@@ -1,23 +1,24 @@
 (ns com.wsscode.pathom.viz.index-explorer-cards
   (:require [cljs.reader :refer [read-string]]
+            [cljs.spec.alpha :as s]
+            [cljs.test :refer [is testing]]
             [com.wsscode.common.async-cljs :refer [go-catch <?]]
+            [com.wsscode.fuzzy :as fuzzy]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.diplomat.http :as p.http]
             [com.wsscode.pathom.diplomat.http.fetch :as p.http.fetch]
             [com.wsscode.pathom.fulcro.network :as p.network]
             [com.wsscode.pathom.viz.index-explorer :as iex]
+            [com.wsscode.pathom.viz.ui.kit :as ui]
+            [edn-query-language.core :as eql]
             [fulcro.client.data-fetch :as df]
+            [fulcro.client.localized-dom :as dom]
+            [fulcro.client.primitives :as fp]
             [nubank.workspaces.card-types.fulcro :as ct.fulcro]
             [nubank.workspaces.core :as ws]
             [nubank.workspaces.lib.fulcro-portal :as f.portal]
-            [nubank.workspaces.model :as wsm]
-            [fulcro.client.primitives :as fp]
-            [cljs.test :refer [is]]
-            [edn-query-language.core :as eql]
-            [cljs.spec.alpha :as s]
-            [fulcro.client.localized-dom :as dom]
-            [com.wsscode.pathom.viz.ui.kit :as ui]))
+            [nubank.workspaces.model :as wsm]))
 
 (s/def :customer/id uuid?)
 
@@ -199,3 +200,23 @@
   (is (= (iex/out-all-attributes (eql/query->ast []) #{}) #{}))
   (is (= (iex/out-all-attributes (eql/query->ast [:foo]) #{}) #{:foo}))
   (is (= (iex/out-all-attributes (eql/query->ast [:foo {:bar [:baz]}]) #{}) #{:foo :bar :baz})))
+
+(ws/deftest test-build-search-index
+  (is (= (iex/build-search-vector {})
+         []))
+  (is (= (iex/build-search-vector {::pc/index-resolvers {'foo {::pc/sym 'foo}}})
+         [{::fuzzy/string     "foo"
+           ::iex/search-value 'foo
+           ::iex/search-type  ::iex/search-type-resolver}]))
+  (is (= (iex/build-search-vector {::pc/index-resolvers  {'foo {::pc/sym 'foo}}
+                                   ::pc/index-mutations  {'mutation {::pc/sym 'mutation}}
+                                   ::pc/index-attributes {:customer/id {::pc/attribute :customer/id}}})
+         [{::fuzzy/string     "foo"
+           ::iex/search-value 'foo
+           ::iex/search-type  ::iex/search-type-resolver}
+          {::fuzzy/string     "mutation"
+           ::iex/search-value 'mutation
+           ::iex/search-type  ::iex/search-type-mutation}
+          {::fuzzy/string     ":customer/id"
+           ::iex/search-value :customer/id
+           ::iex/search-type  ::iex/search-type-attribute}])))

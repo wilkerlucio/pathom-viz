@@ -659,6 +659,18 @@
 
 (def max-search-results 100)
 
+(s/def ::search-type
+  #{::search-type-attribute
+    ::search-type-resolver
+    ::search-type-mutation})
+
+(s/def ::search-value any?)
+
+(s/def ::search-index-item
+  (s/keys
+    :req [::fuzzy/string ::search-value ::search-type]
+    :opt [::fuzzy/match-hl]))
+
 (fm/defmutation search [{::keys [text]}]
   (action [{:keys [ref state]}]
     (let [attributes (->> (get-in @state (conj ref ::attributes))
@@ -865,7 +877,29 @@
                               (take 10)
                               vec)})
 
-(defn process-index [{::pc/keys [index-resolvers idents index-attributes index-mutations]}]
+(defn build-search-vector [{::pc/keys [index-resolvers index-attributes index-mutations]}]
+  (->> (concat
+         (->> index-resolvers
+              vals
+              (map #(hash-map ::fuzzy/string (pr-str (::pc/sym %))
+                              ::search-value (::pc/sym %)
+                              ::search-type ::search-type-resolver))
+              (sort-by ::fuzzy/string))
+         (->> index-mutations
+              vals
+              (map #(hash-map ::fuzzy/string (pr-str (::pc/sym %))
+                              ::search-value (::pc/sym %)
+                              ::search-type ::search-type-mutation))
+              (sort-by ::fuzzy/string))
+         (->> index-attributes
+              vals
+              (map #(hash-map ::fuzzy/string (pr-str (::pc/attribute %))
+                              ::search-value (::pc/attribute %)
+                              ::search-type ::search-type-attribute))
+              (sort-by ::fuzzy/string)))
+       vec))
+
+(defn process-index [{::pc/keys [index-resolvers idents index-attributes index-mutations] :as index}]
   (let [attrs (->> index-attributes
                    (map (fn [[attr {::pc/keys [attr-reach-via attr-provides] :as data}]]
                           (assoc data
@@ -881,6 +915,8 @@
     (-> {::attributes attrs
          ::globals    (filterv ::global-attribute? attrs)
          ::idents     (filterv ::ident-attribute? attrs)
+
+         ::search-vector (build-search-vector index)
 
          ::resolvers  (->> index-resolvers
                            vals
@@ -957,8 +993,8 @@
                     {::mutations (fp/get-query MutationIndex)}
                     {:ui/page (fp/get-query MainViewUnion)}]
    :css            [[:.out-container {:width "100%"}]
-                    [:.container {:flex           "1"
-                                  :overflow       "hidden"}]
+                    [:.container {:flex     "1"
+                                  :overflow "hidden"}]
                     [:.graph {:height  "800px"
                               :display "flex"
                               :border  "1px solid #000"}]
