@@ -677,45 +677,54 @@
     x))
 
 (fp/defsc AllAttributesList
-  [this {::keys [attributes]} computed]
+  [this {::keys [attributes] :as props} computed]
   {}
-  (dom/div
-    (attribute-link {::pc/attribute #{}} computed)
-    (into []
-          (comp
-            (filter (comp keyword? ::pc/attribute))
-            (map (fn [{::pc/keys [attribute]}]
-                   (attribute-link {::pc/attribute attribute
-                                    :react-key     (pr-str attribute)} computed))))
-          attributes)))
+  (ui/collapsible-box (assoc props ::ui/title "Attributes")
+    (dom/div
+      (attribute-link {::pc/attribute #{}} computed)
+      (into []
+            (comp
+              (filter (comp keyword? ::pc/attribute))
+              (map (fn [{::pc/keys [attribute]}]
+                     (attribute-link {::pc/attribute attribute
+                                      :react-key     (pr-str attribute)} computed))))
+            attributes))))
 
 (def all-attributes-list (fp/computed-factory AllAttributesList))
 
 (def last-value (atom nil))
 
 (fp/defsc AllResolversList
-  [this {::keys [resolvers]} computed]
+  [this {::keys [resolvers] :as props} computed]
   {}
-  (dom/div
-    (mapv #(resolver-link % computed) resolvers)))
+  (ui/collapsible-box (assoc props ::ui/title "Resolvers")
+    (dom/div
+      (mapv #(resolver-link % computed) resolvers))))
 
 (def all-resolvers-list (fp/computed-factory AllResolversList))
 
 (fp/defsc AllMutationsList
-  [this {::keys [mutations]} computed]
+  [this {::keys [mutations] :as props} computed]
   {}
-  (dom/div
-    (mapv #(mutation-link % computed) mutations)))
+  (ui/collapsible-box (assoc props ::ui/title "Mutations")
+    (dom/div
+      (mapv #(mutation-link % computed) mutations))))
 
 (def all-mutations-list (fp/computed-factory AllMutationsList))
 
 (fp/defsc SearchEverything
-  [this {::keys [text search-results attributes resolvers mutations]} computed]
+  [this
+   {::keys   [text search-results attributes resolvers mutations]
+    :ui/keys [collapse-attributes? collapse-resolvers? collapse-mutations?]}
+   computed]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
                      (merge
-                       {::id             (random-uuid)
-                        ::text           ""
-                        ::search-results []}
+                       {::id                     (random-uuid)
+                        ::text                   ""
+                        ::search-results         []
+                        :ui/collapse-attributes? false
+                        :ui/collapse-resolvers? false
+                        :ui/collapse-mutations? false}
                        current-normalized
                        data-tree))
    :ident          [::id ::id]
@@ -723,12 +732,25 @@
                     {::search-results [::pc/attribute ::fuzzy/match-hl]}
                     {::attributes [::pc/attribute]}
                     {::resolvers [::pc/sym]}
-                    {::mutations [::pc/sym]}]
+                    {::mutations [::pc/sym]}
+
+                    :ui/collapse-attributes?
+                    :ui/collapse-resolvers?
+                    :ui/collapse-mutations?]
    :css            [[:.container {:white-space "nowrap"
                                   :width       "300px"
                                   :overflow    "auto"}]]
    :initLocalState (fn [] {:search
                            #(fp/transact! this [`(search {::text ~(h/target-value %)})])
+
+                           :toggle-attribute-collapse
+                           #(fm/toggle! this :ui/collapse-attributes?)
+
+                           :toggle-resolver-collapse
+                           #(fm/toggle! this :ui/collapse-resolvers?)
+
+                           :toggle-mutation-collapse
+                           #(fm/toggle! this :ui/collapse-mutations?)
 
                            :all-attributes
                            (let [props    (fp/props this)
@@ -765,9 +787,15 @@
                 search-results)))
 
       (dom/div :.container {:style {:display (if (> (count text) 2) "none")}}
-        (all-attributes-list {::attributes attributes} computed)
-        (all-resolvers-list {::resolvers resolvers} computed)
-        (all-mutations-list {::mutations mutations} computed)))))
+        (all-attributes-list {::attributes    attributes
+                              ::ui/collapsed? collapse-attributes?
+                              ::ui/on-toggle  (fp/get-state this :toggle-attribute-collapse)} computed)
+        (all-resolvers-list {::resolvers     resolvers
+                             ::ui/collapsed? collapse-resolvers?
+                             ::ui/on-toggle  (fp/get-state this :toggle-resolver-collapse)} computed)
+        (all-mutations-list {::mutations     mutations
+                             ::ui/collapsed? collapse-mutations?
+                             ::ui/on-toggle  (fp/get-state this :toggle-mutation-collapse)} computed)))))
 
 (def search-everything (fp/computed-factory SearchEverything))
 

@@ -3,9 +3,10 @@
             [fulcro.client.localized-dom :as dom]
             [fulcro-css.css :as css]
             [goog.object :as gobj]
-            [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ?]]))
+            [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ?]]
+            [cljs.spec.alpha :as s]))
 
-(declare gc css)
+(declare gc css ccss)
 
 ; region helpers
 
@@ -37,7 +38,8 @@
 (fp/defsc Row
   [this props]
   {:css [[:.container {:display   "flex"
-                       :max-width "100%"}]]}
+                       :max-width "100%"}]
+         [:.center {:align-items "center"}]]}
   (dom/div :.container props (fp/children this)))
 
 (def row (fp/factory Row))
@@ -63,13 +65,37 @@
 
 (def panel (fp/factory Panel))
 
+(s/def ::title string?)
+(s/def ::collapsed? boolean?)
+(s/def ::on-toggle (s/fspec :args (s/cat :active? boolean?)))
+
+(fp/defsc CollapsibleBox
+  [this {::keys [collapsed? on-toggle title]
+         :or    {on-toggle identity}
+         :as    p}]
+  {:css [[:.container {:cursor "pointer"}]
+         [:.header {:background "#f3f3f3"
+                    :color      "#717171"
+                    :padding    "1px 0"}]
+         [:.arrow {:padding   "0 4px"
+                   :font-size "11px"}]]}
+  (dom/div :.container (props p)
+    (row {:classes (into [:.center] (ccss this :.header))
+          :onClick #(on-toggle (not collapsed?))}
+      (dom/div :.arrow (if collapsed? "▶" "▼"))
+      (dom/div (gc :.flex) title))
+    (apply dom/div {:style {:display (if collapsed? "none")}}
+      (fp/children this))))
+
+(def collapsible-box (fp/factory CollapsibleBox {:keyfn :ui/id}))
+
 ; endregion
 
 (fp/defsc UIKit [_ _]
   {:css         [[:.flex {:flex "1"}]
                  [:.scrollbars {:overflow "auto"}]
                  [:.no-scrollbars {:overflow "hidden"}]]
-   :css-include [Panel Column Row]})
+   :css-include [Panel Column Row CollapsibleBox]})
 
 (def ui-css (css/get-classnames UIKit))
 
