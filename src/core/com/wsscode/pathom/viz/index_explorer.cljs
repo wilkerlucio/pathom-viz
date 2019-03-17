@@ -772,20 +772,21 @@
 (def search-everything (fp/computed-factory SearchEverything))
 
 (fp/defsc StatsView
-  [this {::keys [attribute-count resolver-count globals-count idents-count
+  [this {::keys [attribute-count resolver-count mutation-count globals-count idents-count
                  attr-edges-count top-connection-hubs]}
    computed]
   {:pre-merge (fn [{:keys [current-normalized data-tree]}]
                 (merge {} current-normalized data-tree))
    :ident     [::id ::id]
    :query     [::id ::attribute-count ::resolver-count ::globals-count ::idents-count
-               ::attr-edges-count
+               ::attr-edges-count ::mutation-count
                {::top-connection-hubs [::pc/attribute ::attr-edges-count]}]}
   (fp/fragment
     (dom/h1 :$title "Stats")
     (dom/div :$content
       (dom/div "Attribute count: " attribute-count)
       (dom/div "Resolver count: " resolver-count)
+      (dom/div "Mutation count: " mutation-count)
       (dom/div "Globals count: " globals-count)
       (dom/div "Idents count: " idents-count)
       (dom/div "Edges count: " attr-edges-count))
@@ -824,9 +825,10 @@
 (defn augment [data f]
   (merge data (f data)))
 
-(defn compute-stats [{::keys [attributes resolvers globals idents] :as data}]
+(defn compute-stats [{::keys [attributes resolvers mutations globals idents] :as data}]
   {::attribute-count     (count attributes)
    ::resolver-count      (count resolvers)
+   ::mutation-count      (count mutations)
    ::globals-count       (count globals)
    ::idents-count        (count idents)
    ::attr-edges-count    (transduce (map ::attr-edges-count) + attributes)
@@ -854,11 +856,13 @@
 
          ::resolvers  (->> index-resolvers
                            vals
+                           (map #(assoc % ::resolver? true))
                            (sort-by ::pc/sym)
                            vec)
 
          ::mutations  (->> index-mutations
                            vals
+                           (map #(assoc % ::mutation? true))
                            (sort-by ::pc/sym)
                            vec)
          ;:ui/page     {::pc/attribute :customer/cpf}
@@ -875,6 +879,10 @@
 (fp/defsc ResolverIndex [_ _]
   {:ident [::pc/sym ::pc/sym]
    :query [::pc/sym ::pc/input ::pc/output ::pc/params]})
+
+(fp/defsc MutationIndex [_ _]
+  {:ident [::pc/sym ::pc/sym]
+   :query [::pc/sym ::pc/output ::pc/params]})
 
 (fm/defmutation navigate-to-attribute [{::pc/keys [attribute]}]
   (action [{:keys [state ref]}]
@@ -918,6 +926,7 @@
                     {::idents (fp/get-query AttributeIndex)}
                     {::top-connection-hubs (fp/get-query AttributeIndex)}
                     {::resolvers (fp/get-query ResolverIndex)}
+                    {::mutations (fp/get-query MutationIndex)}
                     {:ui/page (fp/get-query MainViewUnion)}]
    :css            [[:.out-container {:width "100%"}]
                     [:.container {:flex           "1"
