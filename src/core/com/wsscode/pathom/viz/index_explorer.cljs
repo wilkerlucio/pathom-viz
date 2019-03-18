@@ -497,7 +497,12 @@
                               :flex-direction "column"}]
                     [:.columns {:display "flex"
                                 :flex    "1"}
-                     [:text {:font "bold 16px Verdana, Helvetica, Arial, sans-serif"}]]]
+                     [:text {:font "bold 16px Verdana, Helvetica, Arial, sans-serif"}]]
+                    [:.links-container
+                     [:&:hover
+                      [:.links-display {:display "block"}]]]
+                    [:.links-display {:display "none"
+                                      :margin-left "16px"}]]
    :css-include    [AttributeGraph]
    :initLocalState (fn [] {:graph-comm      (atom nil)
                            :select-resolver (fn [{::keys [resolvers]}]
@@ -601,8 +606,12 @@
                        ::ui/panel-tag   (count attr-provides)}
               (ex-tree/expandable-tree provides-tree
                 {::ex-tree/root    provides-tree-source
-                 ::ex-tree/render  (fn [{:keys [key]}]
-                                     (attribute-link {::pc/attribute key} computed))
+                 ::ex-tree/render  (fn [{:keys [key] ::pc/keys [sym-set]}]
+                                     (dom/div {:classes (ui/ccss this :.links-container)}
+                                       (attribute-link {::pc/attribute key} computed)
+                                       (dom/div {:classes (ui/ccss this :.links-display)}
+                                         (for [sym (sort sym-set)]
+                                           (resolver-link {::pc/sym sym} computed)))))
                  ::ex-tree/sort-by :key})))
 
           (if (seq attr-input-in)
