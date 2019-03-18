@@ -66,7 +66,7 @@
 
 ; endregion
 
-;; Views
+; region view helpers
 
 (def ExtensionContext (uic/new-context))
 
@@ -88,10 +88,12 @@
      :onMouseEnter #(call-graph-comm this "highlightEdge" k)
      :onMouseLeave #(call-graph-comm this "unhighlightEdge" k)}))
 
+(def color-attribute "#9a45b1")
+
 (fp/defsc AttributeLink
   [this {::pc/keys [attribute] ::ui/keys [render] :as props}]
   {:css [[:.container {:cursor      "pointer"
-                       :color       "#9a45b1"
+                       :color       color-attribute
                        :font-size   "14px"
                        :line-height "1.4em"}]]}
   (dom/div :.container (ui/props (merge (attribute-graph-events this attribute) props))
@@ -99,10 +101,12 @@
 
 (def attribute-link (fp/computed-factory AttributeLink {:keyfn (comp pr-str ::pc/attribute)}))
 
+(def color-resolver "#467cb7")
+
 (fp/defsc ResolverLink
   [this {::pc/keys [sym] ::ui/keys [render] :as props}]
   {:css [[:.container {:cursor      "pointer"
-                       :color       "#467cb7"
+                       :color       color-resolver
                        :font-size   "14px"
                        :line-height "1.4em"}]]}
   (dom/div :.container (ui/props (merge (resolver-graph-events this sym) props))
@@ -110,10 +114,12 @@
 
 (def resolver-link (fp/computed-factory ResolverLink {:keyfn (comp pr-str ::pc/sym)}))
 
+(def color-mutation "#ef6c00")
+
 (fp/defsc MutationLink
   [this {::pc/keys [sym] ::ui/keys [render] :as props}]
   {:css [[:.container {:cursor      "pointer"
-                       :color       "#ef6c00"
+                       :color       color-mutation
                        :font-size   "14px"
                        :line-height "1.4em"}]]}
   (let [on-select-mutation (-> this fp/props fp/get-computed ::on-select-mutation)]
@@ -121,6 +127,8 @@
       (if render (render props) (pr-str sym)))))
 
 (def mutation-link (fp/computed-factory MutationLink {:keyfn (comp pr-str ::pc/sym)}))
+
+;endregion
 
 ;; Main components
 
@@ -474,6 +482,7 @@
    :css            [[:.container {:flex           "1"
                                   :flex-direction "column"
                                   :display        "flex"}]
+                    [:.title {:color color-attribute}]
                     [:.toolbar {:display               "grid"
                                 :grid-template-columns "repeat(10, max-content)"
                                 :grid-gap              "10px"
@@ -509,7 +518,7 @@
   (let [computed (assoc computed ::graph-comm (fp/get-state this :graph-comm))]
     (dom/div :.container
       (dom/div :.toolbar
-        (dom/h1 :$title$is-marginless (pr-str attribute))
+        (dom/h1 :.title$title$is-marginless (pr-str attribute))
 
         (dom/div :$row-center
           (dom/label :$label$is-small "Depth")
@@ -646,7 +655,8 @@
    :ident          [::pc/sym ::pc/sym]
    :query          [::pc/sym ::pc/input ::pc/output ::pc/batch?
                     {:ui/output-tree (fp/get-query ex-tree/ExpandableTree)}]
-   :css            [[:.menu {:white-space   "nowrap"
+   :css            [[:.title {:color color-resolver}]
+                    [:.menu {:white-space   "nowrap"
                              :padding-right "12px"
                              :overflow      "auto"}]]
    :initLocalState (fn [] {:graph-comm      (atom nil)
@@ -657,7 +667,7 @@
                                               (attribute-link {::pc/attribute key} (-> this fp/props fp/get-computed)))})}
   (let [input' (if (= 1 (count input)) (first input) input)]
     (ui/column (ui/gc :.flex)
-      (dom/h1 :$title (str sym))
+      (dom/h1 :.title$title (str sym))
       (ui/row (ui/gc :.flex :.no-scrollbars)
         (dom/div :.menu
           (if batch?
@@ -693,6 +703,51 @@
 (gobj/set ResolverView "contextType" ExtensionContext)
 
 (def resolver-view (fp/factory ResolverView {:keyfn ::pc/sym}))
+
+(fp/defsc MutationView
+  [this {::pc/keys [sym params output]
+         :ui/keys  [mutation-params-tree mutation-output-tree]}]
+  {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
+                     (merge
+                       {:ui/mutation-params-tree {}
+                        :ui/mutation-output-tree {}}
+                       current-normalized
+                       data-tree))
+   :ident          [::mutation-sym ::mutation-sym]
+   :query          [::mutation-sym ::pc/sym ::pc/params ::pc/output
+                    {:ui/mutation-params-tree (fp/get-query ex-tree/ExpandableTree)}
+                    {:ui/mutation-output-tree (fp/get-query ex-tree/ExpandableTree)}]
+   :css            [[:.title {:color color-mutation}]]
+   :initLocalState (fn [] {:render (fn [{:keys [key]}]
+                                     (attribute-link {::pc/attribute key} (-> this fp/props fp/get-computed)))})}
+  (ui/column (ui/gc :.flex)
+    (dom/h1 :.title$title (str sym))
+    (ui/row (ui/gc :.flex :.scrollbars :.nowrap)
+      (dom/div (ui/gc :.flex)
+        (if params
+          (ui/panel {::ui/panel-title "Params"}
+            (ex-tree/expandable-tree mutation-params-tree
+              {::ex-tree/root    (eql/query->ast params)
+               ::ex-tree/render  (fp/get-state this :render)
+               ::ex-tree/sort-by :key})))
+
+        (render-plugin-extension this ::plugin-render-to-mutation-view-left))
+
+      (dom/div {:style {:width "12px"}})
+
+      (dom/div (ui/gc :.flex)
+        (if output
+          (ui/panel {::ui/panel-title "Output"}
+            (ex-tree/expandable-tree mutation-output-tree
+              {::ex-tree/root    (eql/query->ast output)
+               ::ex-tree/render  (fp/get-state this :render)
+               ::ex-tree/sort-by :key})))
+
+        (render-plugin-extension this ::plugin-render-to-mutation-view-right)))))
+
+(gobj/set MutationView "contextType" ExtensionContext)
+
+(def mutation-view (fp/factory MutationView {:keyfn ::pc/sym}))
 
 (defn realize-references [state coll]
   (mapv #(get-in state %) coll))
@@ -898,7 +953,7 @@
                  [% val]) props)
         [:invalid "ident"])))
 
-(def main-view-ident (prop-presence-ident [::id ::pc/sym ::pc/attribute]))
+(def main-view-ident (prop-presence-ident [::id ::mutation-sym ::pc/sym ::pc/attribute]))
 
 (fp/defsc MainViewUnion
   [this props]
@@ -906,10 +961,12 @@
    :query (fn []
             {::pc/attribute (fp/get-query AttributeView)
              ::pc/sym       (fp/get-query ResolverView)
+             ::mutation-sym (fp/get-query MutationView)
              ::id           (fp/get-query StatsView)})}
   (case (first (fp/get-ident this))
     ::pc/attribute (attribute-view props)
     ::pc/sym (resolver-view props)
+    ::mutation-sym (mutation-view props)
     ::id (stats-view props)
     (dom/div "Blank page")))
 
@@ -979,7 +1036,7 @@
 
          ::mutations  (->> index-mutations
                            vals
-                           (map #(assoc % ::mutation? true))
+                           (map #(assoc % ::mutation? true ::mutation-sym (::pc/sym %)))
                            (sort-by ::pc/sym)
                            vec)
          ;:ui/page     {::pc/attribute :customer/cpf}
@@ -998,8 +1055,8 @@
    :query [::pc/sym ::pc/input ::pc/output ::pc/params]})
 
 (fp/defsc MutationIndex [_ _]
-  {:ident [::pc/sym ::pc/sym]
-   :query [::pc/sym ::pc/output ::pc/params]})
+  {:ident [::mutation-sym ::mutation-sym]
+   :query [::pc/sym ::mutation-sym ::pc/output ::pc/params]})
 
 (fm/defmutation navigate-to-attribute [{::pc/keys [attribute]}]
   (action [{:keys [state ref]}]
@@ -1011,9 +1068,9 @@
     (swap! state fp/merge-component ResolverView {::pc/sym sym}
       :replace (conj ref :ui/page))))
 
-(fm/defmutation navigate-to-mutation [{::pc/keys [sym]}]
+(fm/defmutation navigate-to-mutation [{::keys [mutation-sym]}]
   (action [{:keys [state ref]}]
-    (swap! state fp/merge-component ResolverView {::pc/sym sym}
+    (swap! state fp/merge-component MutationView {::mutation-sym mutation-sym}
       :replace (conj ref :ui/page))))
 
 (fp/defsc IndexExplorer
@@ -1062,7 +1119,7 @@
    :css-include    [AttributeLink ResolverLink MutationLink ui/UIKit]
    :initLocalState (fn [] {:select-attribute #(fp/transact! this [`(navigate-to-attribute {::pc/attribute ~%})])
                            :select-resolver  #(fp/transact! this [`(navigate-to-resolver {::pc/sym ~%})])
-                           :select-mutation  #(fp/transact! this [`(navigate-to-mutation {::pc/sym ~%})])})}
+                           :select-mutation  #(fp/transact! this [`(navigate-to-mutation {::mutation-sym ~%})])})}
   (dom/create-element (gobj/get ExtensionContext "Provider") #js {:value extensions}
     (ui/row {:react-key "container" :classes (ui/ccss this :.out-container)}
       (ui/column {:classes (ui/ccss this :.menu)}

@@ -94,7 +94,8 @@
 (fp/defsc UIKit [_ _]
   {:css         [[:.flex {:flex "1"}]
                  [:.scrollbars {:overflow "auto"}]
-                 [:.no-scrollbars {:overflow "hidden"}]]
+                 [:.no-scrollbars {:overflow "hidden"}]
+                 [:.nowrap {:white-space "nowrap"}]]
    :css-include [Panel Column Row CollapsibleBox]})
 
 (def ui-css (css/get-classnames UIKit))
