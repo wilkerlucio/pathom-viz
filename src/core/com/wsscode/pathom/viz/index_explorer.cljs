@@ -487,8 +487,6 @@
                     [:.data-list-right {:white-space "nowrap"
                                         :width       "50%"
                                         :box-sizing  "border-box"
-                                        ;:overflow    "auto"
-                                        ;     :width       "300px"
                                         :padding     "0 12px"}]
                     [:.graph {:height         "400px"
                               :width          "100%"
@@ -797,7 +795,6 @@
                     :ui/collapse-mutations?]
    :css            [[:.container {:flex        "1"
                                   :white-space "nowrap"
-                                  :width       "300px"
                                   :overflow    "auto"}]]
    :initLocalState (fn [] {:search
                            #(fp/transact! this [`(search {::text ~(h/target-value %)})])
@@ -876,18 +873,18 @@
    :ident     [::id ::id]
    :query     [::id ::attribute-count ::resolver-count ::globals-count ::idents-count
                ::attr-edges-count ::mutation-count
-               {::top-connection-hubs [::pc/attribute ::attr-edges-count]}]}
-  (fp/fragment
+               {::top-connection-hubs [::pc/attribute ::attr-edges-count]}]
+   :css       [[:.container {:padding-right "12px"}]]}
+  (dom/div :.container (ui/gc :.flex :.scrollbars)
     (dom/h1 :$title "Stats")
-    (dom/div :$content
+    (ui/panel {::ui/panel-title "Counters"}
       (dom/div "Attribute count: " attribute-count)
       (dom/div "Resolver count: " resolver-count)
       (dom/div "Mutation count: " mutation-count)
       (dom/div "Globals count: " globals-count)
       (dom/div "Idents count: " idents-count)
       (dom/div "Edges count: " attr-edges-count))
-    (dom/h2 :$subtitle "Most Connected Attributes")
-    (dom/div :$content
+    (ui/panel {::ui/panel-title "Most Connected Attributes"}
       (for [{::pc/keys [attribute]
              ::keys    [attr-edges-count]} top-connection-hubs]
         (attribute-link {::pc/attribute attribute
@@ -930,7 +927,7 @@
    ::attr-edges-count    (transduce (map ::attr-edges-count) + attributes)
    ::top-connection-hubs (->> attributes
                               (sort-by ::attr-edges-count #(compare %2 %))
-                              (take 10)
+                              (take 30)
                               vec)})
 
 (defn build-search-vector [{::pc/keys [index-resolvers index-attributes index-mutations]}]
@@ -1056,7 +1053,8 @@
                               :border  "1px solid #000"}]
                     [:.menu {:margin-right  "16px"
                              :padding-right "16px"
-                             :overflow      "auto"}]
+                             :overflow      "auto"
+                             :width         "30%"}]
                     [:$row-center {:display "flex" :align-items "center"}]
                     [:$scrollbars {:overflow "auto"}]
                     [:$tag-spaced
