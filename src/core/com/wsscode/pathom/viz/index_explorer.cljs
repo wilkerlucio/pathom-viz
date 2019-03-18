@@ -408,11 +408,35 @@
 
 (def attribute-info-reach-via (fp/computed-factory AttributeInfoReachVia))
 
+(fp/defsc AttributeInfoMutationParamIn
+  [this {::pc/keys [attr-mutation-param-in]} computed]
+  {:ident [::pc/attribute ::pc/attribute]
+   :query [::pc/attribute ::pc/attr-mutation-param-in]}
+  (ui/panel {::ui/panel-title "Mutation Param In"
+             ::ui/panel-tag   (count attr-mutation-param-in)}
+    (for [sym (sort attr-mutation-param-in)]
+      (mutation-link {::pc/sym sym} computed))))
+
+(def attribute-info-mutation-param-in (fp/computed-factory AttributeInfoMutationParamIn))
+
+(fp/defsc AttributeInfoMutationOutputIn
+  [this {::pc/keys [attr-mutation-output-in]} computed]
+  {:ident [::pc/attribute ::pc/attribute]
+   :query [::pc/attribute ::pc/attr-mutation-output-in]}
+  (ui/panel {::ui/panel-title "Mutation Output In"
+             ::ui/panel-tag   (count attr-mutation-output-in)}
+    (for [sym (sort attr-mutation-output-in)]
+      (mutation-link {::pc/sym sym} computed))))
+
+(def attribute-info-mutation-output-in (fp/computed-factory AttributeInfoMutationOutputIn))
+
 (fp/defsc AttributeView
-  [this {::pc/keys [attr-combinations attribute attr-reach-via attr-provides attr-input-in attr-output-in]
+  [this {::pc/keys [attr-combinations attribute attr-reach-via attr-provides
+                    attr-input-in attr-output-in
+                    attr-mutation-param-in attr-mutation-output-in]
          ::keys    [attr-depth direct-reaches? nested-reaches? direct-provides?
                     nested-provides? interconnections? show-graph?]
-         :>/keys   [reach-via]
+         :>/keys   [reach-via mutation-param-in mutation-output-in]
          :ui/keys  [provides-tree provides-tree-source]}
    {::keys [on-select-attribute attributes]
     :as    computed}]
@@ -422,15 +446,17 @@
                            attr-provides (or (::pc/attr-provides data-tree)
                                              (::pc/attr-provides current-normalized))]
                        (merge
-                         {::attr-depth        1
-                          ::direct-reaches?   true
-                          ::nested-reaches?   false
-                          ::direct-provides?  true
-                          ::nested-provides?  false
-                          ::interconnections? true
-                          ::show-graph?       false
-                          :>/reach-via        {::pc/attribute attr}
-                          :ui/provides-tree   {}}
+                         {::attr-depth          1
+                          ::direct-reaches?     true
+                          ::nested-reaches?     false
+                          ::direct-provides?    true
+                          ::nested-provides?    false
+                          ::interconnections?   true
+                          ::show-graph?         false
+                          :>/reach-via          {::pc/attribute attr}
+                          :>/mutation-param-in  {::pc/attribute attr}
+                          :>/mutation-output-in {::pc/attribute attr}
+                          :ui/provides-tree     {}}
                          current-normalized
                          data-tree
                          (if attr-provides
@@ -438,8 +464,11 @@
    :ident          [::pc/attribute ::pc/attribute]
    :query          [::pc/attribute ::attr-depth ::direct-reaches? ::nested-reaches?
                     ::pc/attr-combinations ::pc/attr-input-in ::pc/attr-output-in
+                    ::pc/attr-mutation-param-in ::pc/attr-mutation-output-in
                     ::direct-provides? ::nested-provides? ::interconnections? ::show-graph? ::pc/attr-reach-via ::pc/attr-provides
                     {:>/reach-via (fp/get-query AttributeInfoReachVia)}
+                    {:>/mutation-param-in (fp/get-query AttributeInfoMutationParamIn)}
+                    {:>/mutation-output-in (fp/get-query AttributeInfoMutationOutputIn)}
                     {:ui/provides-tree (fp/get-query ex-tree/ExpandableTree)}
                     :ui/provides-tree-source]
    :css            [[:.container {:flex           "1"
@@ -545,6 +574,12 @@
                        ::ui/panel-tag   (count attr-combinations)}
               (for [input (sort-by (comp vec sort) h/vector-compare (map #(into (sorted-set) %) attr-combinations))]
                 (attribute-link {::pc/attribute input} computed))))
+
+          (if (seq attr-mutation-param-in)
+            (attribute-info-mutation-param-in mutation-param-in computed))
+
+          (if (seq attr-mutation-output-in)
+            (attribute-info-mutation-output-in mutation-output-in computed))
 
           (if-let [form (si/safe-form attribute)]
             (fp/fragment
