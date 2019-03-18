@@ -664,8 +664,11 @@
                                               (let [{::keys [on-select-resolver]} (fp/get-computed (fp/props this))]
                                                 (on-select-resolver (first resolvers))))
                            :render          (fn [{:keys [key]}]
-                                              (attribute-link {::pc/attribute key} (-> this fp/props fp/get-computed)))})}
-  (let [input' (if (= 1 (count input)) (first input) input)]
+                                              (let [computed (-> this fp/props fp/get-computed)
+                                                    computed (assoc computed ::graph-comm (fp/get-state this :graph-comm))]
+                                                (attribute-link {::pc/attribute key} computed)))})}
+  (let [input'   (if (= 1 (count input)) (first input) input)
+        computed (assoc computed ::graph-comm (fp/get-state this :graph-comm))]
     (ui/column (ui/gc :.flex)
       (dom/h1 :.title$title (str sym))
       (ui/row (ui/gc :.flex :.no-scrollbars)
