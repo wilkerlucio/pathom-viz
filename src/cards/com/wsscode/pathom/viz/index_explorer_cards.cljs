@@ -81,6 +81,17 @@
 
        (if endpoint
          (ui/panel {::ui/panel-title "Endpoint"}
+           (dom/div (str "/api/" endpoint))))))
+
+   ::iex/plugin-render-to-mutation-view-left
+   (fn [{:abrams.diplomat.api/keys [service endpoint]}]
+     (dom/div
+       (if service
+         (ui/panel {::ui/panel-title "Service"}
+           (dom/div (name service))))
+
+       (if endpoint
+         (ui/panel {::ui/panel-title "Endpoint"}
            (dom/div (str "/api/" endpoint))))))})
 
 (ws/defcard index-explorer
