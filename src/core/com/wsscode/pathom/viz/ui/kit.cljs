@@ -3,8 +3,10 @@
             [fulcro.client.localized-dom :as dom]
             [fulcro-css.css :as css]
             [goog.object :as gobj]
+            [goog.string :as gstr]
             [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ?]]
-            [cljs.spec.alpha :as s]))
+            [cljs.spec.alpha :as s]
+            [fulcro.client.dom :as domc]))
 
 (declare gc css ccss)
 
@@ -13,6 +15,10 @@
 (>defn props [props]
   [map? => map?]
   (into {} (remove (comp qualified-keyword? first)) props))
+
+(>defn event-value [e]
+  [any? => string?]
+  (gobj/getValueByKeys e "target" "value"))
 
 ; endregion
 
@@ -89,6 +95,41 @@
 
 (def collapsible-box (fp/factory CollapsibleBox {:keyfn :ui/id}))
 
+(fp/defsc NumberInput
+  [this p]
+  {:css            [[:.container {:display     "inline-flex"
+                                  :align-items "center"
+                                  :font-family "sans-serif"
+                                  :font-size   "12px"}]
+                    [:.arrow {:cursor      "pointer"
+                              :padding     "0px 6px"
+                              :user-select "none"}
+                     [:&:hover {:background "#b0bec5"}]]
+                    [:.input {:border     "0"
+                              :outline    "none"
+                              :text-align "center"
+                              :width      "20px"}
+                     ["&::-webkit-inner-spin-button" {:-webkit-appearance "none"}]]]
+
+   :initLocalState (fn [] {:decrease (fn []
+                                       (let [{:keys [value onChange]} (fp/props this)]
+                                         (onChange (js/Event. "") (dec value))))
+                           :increase (fn []
+                                       (let [{:keys [value onChange]} (fp/props this)]
+                                         (onChange (js/Event. "") (inc value))))})}
+  (let [p (update p :onChange
+            (fn [onChange]
+              (if onChange
+                (fn [e]
+                  (onChange e (-> e event-value gstr/parseInt))))))]
+    (dom/div :.container
+      (dom/div :.arrow {:onClick (fp/get-state this :decrease)} "<")
+      (with-redefs [domc/form-elements? #{}]
+        (dom/input :.input (merge {:type "number"} (props p))))
+      (dom/div :.arrow {:onClick (fp/get-state this :increase)} ">"))))
+
+(def number-input (fp/factory NumberInput))
+
 ; endregion
 
 (fp/defsc UIKit [_ _]
@@ -96,7 +137,7 @@
                  [:.scrollbars {:overflow "auto"}]
                  [:.no-scrollbars {:overflow "hidden"}]
                  [:.nowrap {:white-space "nowrap"}]]
-   :css-include [Panel Column Row CollapsibleBox]})
+   :css-include [Panel Column Row CollapsibleBox NumberInput]})
 
 (def ui-css (css/get-classnames UIKit))
 

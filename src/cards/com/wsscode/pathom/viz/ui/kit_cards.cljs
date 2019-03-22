@@ -16,4 +16,13 @@
                            ::ui/on-toggle  #(reset! state %)}
         (dom/div "Whatever")))))
 
+(ws/defcard number-input-card
+  {::wsm/align {:width "100%"}}
+  (let [state (atom 0)]
+    (ct.react/react-card state
+      (ui/number-input {:value    @state
+                        :onChange (fn [_ n]
+                                    (js/console.log "RESET!" n)
+                                    (reset! state n))}))))
+
 (f.portal/add-component-css! ui/UIKit)
