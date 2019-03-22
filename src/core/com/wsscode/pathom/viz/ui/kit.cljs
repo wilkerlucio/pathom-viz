@@ -111,12 +111,10 @@
                               :width      "20px"}
                      ["&::-webkit-inner-spin-button" {:-webkit-appearance "none"}]]]
 
-   :initLocalState (fn [] {:decrease (fn []
-                                       (let [{:keys [value onChange]} (fp/props this)]
-                                         (onChange (js/Event. "") (dec value))))
-                           :increase (fn []
-                                       (let [{:keys [value onChange]} (fp/props this)]
-                                         (onChange (js/Event. "") (inc value))))})}
+   :initLocalState (fn [] {:decrease #(let [{:keys [min value onChange]} (fp/props this)]
+                                        (onChange (js/Event. "") (cond-> value (> value (or min (- js/Infinity))) dec)))
+                           :increase #(let [{:keys [max value onChange]} (fp/props this)]
+                                        (onChange (js/Event. "") (cond-> value (< value (or max js/Infinity)) inc)))})}
   (let [p (update p :onChange
             (fn [onChange]
               (if onChange
