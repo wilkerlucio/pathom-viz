@@ -71,8 +71,9 @@
 
 (fp/defsc Button
   [this props]
-  {:css [[:.container {:border "1px solid #000"}]]}
-  (dom/div :.container props (fp/children this)))
+  {:css [[:.button {:cursor "pointer"}
+          [:&:disabled {:cursor "default"}]]]}
+  (dom/button :.button props (fp/children this)))
 
 (def button (fp/factory Button))
 
@@ -434,7 +435,8 @@
                  [:.scrollbars {:overflow "auto"}]
                  [:.no-scrollbars {:overflow "hidden"}]
                  [:.nowrap {:white-space "nowrap"}]]
-   :css-include [CollapsibleBox
+   :css-include [Button
+                 CollapsibleBox
                  Column
                  NumberInput
                  Panel

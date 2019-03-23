@@ -1066,42 +1066,88 @@
   {:ident [::mutation-sym ::mutation-sym]
    :query [::pc/sym ::mutation-sym ::pc/output ::pc/params]})
 
+(defn history-append [{::keys [history history-index] :as x} ref]
+  (let [history' (conj (subvec history 0 (inc history-index)) ref)]
+    (assoc x
+      ::history history'
+      ::history-index (dec (count history'))
+      :ui/page ref)))
+
 (fm/defmutation navigate-to-attribute [{::pc/keys [attribute]}]
   (action [{:keys [state ref]}]
-    (swap! state fp/merge-component AttributeView {::pc/attribute attribute}
-      :replace (conj ref :ui/page))))
+    (swap! state fp/merge-component AttributeView {::pc/attribute attribute})
+    (swap! state update-in ref history-append [::pc/attribute attribute])))
 
 (fm/defmutation navigate-to-resolver [{::pc/keys [sym]}]
   (action [{:keys [state ref]}]
-    (swap! state fp/merge-component ResolverView {::pc/sym sym}
-      :replace (conj ref :ui/page))))
+    (swap! state fp/merge-component ResolverView {::pc/sym sym})
+    (swap! state update-in ref history-append [::pc/sym sym])))
 
 (fm/defmutation navigate-to-mutation [{::keys [mutation-sym]}]
   (action [{:keys [state ref]}]
-    (swap! state fp/merge-component MutationView {::mutation-sym mutation-sym}
-      :replace (conj ref :ui/page))))
+    (swap! state fp/merge-component MutationView {::mutation-sym mutation-sym})
+    (swap! state update-in ref history-append [::mutation-sym mutation-sym])))
+
+(fm/defmutation navigate-stats [_]
+  (action [{:keys [state ref]}]
+    (swap! state update-in ref history-append ref)))
+
+(defn can-go-back? [{::keys [history-index]}]
+  (> history-index 0))
+
+(defn can-go-forward? [{::keys [history history-index]}]
+  (< history-index (dec (count history))))
+
+(fm/defmutation navigate-backwards [_]
+  (action [{:keys [state ref]}]
+    (let [{::keys [history history-index] :as props} (get-in @state ref)]
+      (if (can-go-back? props)
+        (let [page (nth history (dec history-index))]
+          (swap! state update-in ref assoc
+            :ui/page page
+            ::history-index (dec history-index)))))))
+
+(fm/defmutation navigate-forwards [_]
+  (action [{:keys [state ref]}]
+    (let [{::keys [history history-index] :as props} (get-in @state ref)]
+      (if (can-go-forward? props)
+        (let [page (nth history (inc history-index))]
+          (swap! state update-in ref assoc
+            :ui/page page
+            ::history-index (inc history-index)))))))
+
+(defn clear-not-found [x]
+  (into {}
+        (remove (fn [[_ v]] (= v ::fp/not-found)))
+        x))
 
 (fp/defsc IndexExplorer
   [this {::keys   [index attributes]
-         :ui/keys [menu page]}
+         :ui/keys [menu page]
+         :as      props}
    extensions]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
-                     (merge
-                       (let [id (or (::id data-tree)
-                                    (::id current-normalized)
-                                    (random-uuid))]
-                         {::id     id
-                          :ui/menu {::id id}
-                          :ui/page {::id id}
-                          ;:ui/page {::pc/attribute :account/id}
-                          })
-                       current-normalized
-                       data-tree
-                       (if-let [index (get data-tree ::index)]
-                         (process-index index))))
+                     (let [v
+                           (merge
+                             (let [id (or (::id data-tree)
+                                          (::id current-normalized)
+                                          (random-uuid))]
+                               {::id            id
+                                ::history       [[::id id]]
+                                ::history-index 0
+                                :ui/menu        {::id id}
+                                :ui/page        {::id id}
+                                ;:ui/page {::pc/attribute :account/id}
+                                })
+                             current-normalized
+                             (clear-not-found data-tree)
+                             (if-let [index (get data-tree ::index)]
+                               (process-index index)))]
+                       (js/console.log "INIT" v)
+                       v))
    :initial-state  {}
    :ident          [::id ::id]
-   :query          [::id ::index
+   :query          [::id ::index ::history ::history-index
                     {:ui/menu (fp/get-query SearchEverything)}
                     {::attributes (fp/get-query AttributeIndex)}
                     {::globals (fp/get-query AttributeIndex)}
@@ -1127,7 +1173,10 @@
    :css-include    [AttributeLink ResolverLink MutationLink ui/UIKit]
    :initLocalState (fn [] {:select-attribute #(fp/transact! this [`(navigate-to-attribute {::pc/attribute ~%})])
                            :select-resolver  #(fp/transact! this [`(navigate-to-resolver {::pc/sym ~%})])
-                           :select-mutation  #(fp/transact! this [`(navigate-to-mutation {::mutation-sym ~%})])})}
+                           :select-mutation  #(fp/transact! this [`(navigate-to-mutation {::mutation-sym ~%})])
+                           :go-back          #(fp/transact! this [`(navigate-backwards)])
+                           :go-forward       #(fp/transact! this [`(navigate-forwards)])
+                           :go-stats         #(fp/transact! this [`(navigate-stats)])})}
   (dom/create-element (gobj/get ExtensionContext "Provider") #js {:value extensions}
     (ui/row {:react-key "container" :classes (ui/ccss this :.out-container)}
       (ui/column {:classes (ui/ccss this :.menu)}
@@ -1135,6 +1184,16 @@
                                  ::on-select-resolver  (fp/get-state this :select-resolver)
                                  ::on-select-mutation  (fp/get-state this :select-mutation)}))
       (ui/column (ui/gc :.flex :.no-scrollbars)
+        (ui/row {}
+          (ui/button {:onClick  (fp/get-state this :go-back)
+                      :disabled (not (can-go-back? props))}
+            "◀")
+          (ui/button {:onClick  (fp/get-state this :go-forward)
+                      :disabled (not (can-go-forward? props))}
+            "▶")
+          (ui/button {:onClick  (fp/get-state this :go-stats)
+                      :disabled (= (main-view-ident page) (fp/get-ident this))
+                      :style    {:marginLeft "12px"}} "Go to stats"))
         (if page
           (main-view-union page (assoc index
                                   ::attributes attributes
