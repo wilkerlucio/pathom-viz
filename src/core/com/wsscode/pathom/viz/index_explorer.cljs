@@ -1143,7 +1143,6 @@
                              (clear-not-found data-tree)
                              (if-let [index (get data-tree ::index)]
                                (process-index index)))]
-                       (js/console.log "INIT" v)
                        v))
    :initial-state  {}
    :ident          [::id ::id]
