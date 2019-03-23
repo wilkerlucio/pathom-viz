@@ -114,7 +114,8 @@
                  :padding-right    ".75em"
                  :white-space      "nowrap"}
           [:&.is-family-code
-           {:font-family font-code}]
+           {:font-family font-code
+            :font-size   "0.9rem"}]
 
           [:&.is-primary
            {:background-color "#00d1b2"
@@ -129,10 +130,41 @@
 
 (def tag (fp/factory Tag))
 
+(fp/defsc PanelBlock
+  [this {::keys [scrollbars?]
+         :or    {scrollbars? false}
+         :as    props}]
+  {:css [[:.panel-block
+          {:border-bottom "1px solid #dbdbdb"
+           :border-left   "1px solid #dbdbdb"
+           :border-right  "1px solid #dbdbdb"}
+
+          {:align-items     "center"
+           :color           "#363636"
+           :display         "flex"
+           :line-height     "1.5"
+           :justify-content "flex-start"
+           :padding         ".5em .75em"}
+
+          text-base]]}
+  (dom/div :.panel-block (dom-props props)
+    (if scrollbars?
+      (dom/div (gc :.scrollbars)
+        (fp/children this))
+      (fp/children this))))
+
+(def panel-block (fp/factory PanelBlock))
+
+(s/def ::panel-title string?)
+(s/def ::panel-tag (s/or :string string? :number number?))
+(s/def ::scrollbars? boolean?)
+(s/def ::block-wrap? boolean?)
+
 (fp/defsc Panel
-  [this {::keys [panel-title panel-tag scrollbars?]
-         :or    {scrollbars? true}
-         :as    p}]
+  [this {::keys [panel-title panel-tag scrollbars? block-wrap?]
+         :or    {scrollbars? true
+                 block-wrap? true}
+         :as    props}]
   {:css [[:.panel
           {:font-size "1rem"}
 
@@ -158,33 +190,18 @@
           text-base
 
           [:&:first-child
-           {:border-top "1px solid #dbdbdb"}]
-
-          [:.row-center
-           {}]]
-
-         [:.panel-block
-          {:border-bottom "1px solid #dbdbdb"
-           :border-left   "1px solid #dbdbdb"
-           :border-right  "1px solid #dbdbdb"}
-
-          {:align-items     "center"
-           :color           "#363636"
-           :display         "flex"
-           :line-height     "1.5"
-           :justify-content "flex-start"
-           :padding         ".5em .75em"}
-
-          text-base]]}
-  (dom/div :.panel (dom-props p)
+           {:border-top "1px solid #dbdbdb"}]]]}
+  (dom/div :.panel (dom-props props)
     (dom/p :.panel-heading
       (dom/span (gc :.flex) panel-title)
       (if panel-tag (tag {:classes [:.is-dark]} panel-tag)))
-    (dom/div :.panel-block
-      (if scrollbars?
-        (dom/div (gc :.scrollbars)
-          (fp/children this))
-        (fp/children this)))))
+    (if block-wrap?
+      (panel-block props
+        (if scrollbars?
+          (dom/div (gc :.scrollbars)
+            (fp/children this))
+          (fp/children this)))
+      (fp/children this))))
 
 (def panel (fp/factory Panel))
 
@@ -417,7 +434,15 @@
                  [:.scrollbars {:overflow "auto"}]
                  [:.no-scrollbars {:overflow "hidden"}]
                  [:.nowrap {:white-space "nowrap"}]]
-   :css-include [Panel Column Row CollapsibleBox Tag TextField NumberInput ToggleAction]})
+   :css-include [CollapsibleBox
+                 Column
+                 NumberInput
+                 Panel
+                 PanelBlock
+                 Row
+                 Tag
+                 TextField
+                 ToggleAction]})
 
 (def ui-css (css/get-classnames UIKit))
 
