@@ -411,7 +411,7 @@
                   :let [path' (next path)]
                   :when path']
               (dom/div {:key   (pr-str path)
-                        :style {:marginLeft (str 10 "px")}}
+                        :style {:marginLeft "10px"}}
                 (for [[k i] (map vector path' (range))]
                   (attribute-link {::pc/attribute k
                                    :style         {:marginLeft (str (* i 10) "px")}}
@@ -488,11 +488,15 @@
                     [:.title {:color color-attribute}
                      ui/css-header
                      ui/text-base]
-                    [:.toolbar {:display               "grid"
-                                :grid-template-columns "repeat(10, max-content)"
-                                :grid-gap              "10px"
-                                :align-items           "center"
-                                :margin-bottom         "16px"}]
+                    [:.toolbar {:display       "flex"
+                                :align-items   "center"
+                                :margin-bottom "16px"}]
+                    [:.show-graph {:padding     "8px"
+                                   :font-family ui/font-base
+                                   :font-size   "1.1rem"}]
+                    [:.graph-options {:font-size "0.9rem"}
+                     [(ui/component-class ui/ToggleAction :.container)
+                      {:margin "0 2px"}]]
                     [:.data-list {:white-space   "nowrap"
                                   ;:overflow      "auto"
                                   :box-sizing    "border-box"
@@ -513,9 +517,9 @@
                     [:.links-container
                      [:&:hover
                       [:.links-display {:display "block"}]]]
-                    [:.links-display {:display "none"
+                    [:.links-display {:display     "none"
                                       :margin-left "16px"}]]
-   :css-include    [AttributeGraph]
+   :css-include    [AttributeGraph ui/ToggleAction]
    :initLocalState (fn [] {:graph-comm      (atom nil)
                            :select-resolver (fn [{::keys [resolvers]}]
                                               (let [{::keys [on-select-resolver]} (fp/get-computed (fp/props this))]
@@ -523,17 +527,17 @@
   (let [computed (assoc computed ::graph-comm (fp/get-state this :graph-comm))]
     (dom/div :.container
       (dom/div :.toolbar
-        (dom/h1 :.title (pr-str attribute))
+        (dom/h1 :.title (ui/gc :.flex) (pr-str attribute))
 
-        (dom/label
-          (dom/input {:type     "checkbox" :checked show-graph?
-                      :onChange #(fm/set-value! this ::show-graph? (gobj/getValueByKeys % "target" "checked"))})
-          "Graph"))
+        (ui/toggle-action {::ui/active? show-graph?
+                           :classes     (ui/ccss this :.show-graph)
+                           :onClick     #(fm/set-value! this ::show-graph? (not show-graph?))}
+          "Graph View"))
 
       (if show-graph?
-        (ui/panel {::ui/panel-title (ui/row {}
-                                      (dom/div :$row-center
-                                        (dom/label :$label$is-small "Depth")
+        (ui/panel {::ui/panel-title (ui/row {:classes (ui/ccss this :.graph-options)}
+                                      (ui/row {:classes [:.center]}
+                                        (dom/label "Depth")
                                         (ui/number-input {:min      1
                                                           :value    attr-depth
                                                           :onChange #(fm/set-value! this ::attr-depth %2)}))

@@ -192,7 +192,7 @@
           [:&:first-child
            {:border-top "1px solid #dbdbdb"}]]]}
   (dom/div :.panel (dom-props props)
-    (dom/p :.panel-heading
+    (dom/div :.panel-heading
       (dom/span (gc :.flex) panel-title)
       (if panel-tag (tag {:classes [:.is-dark]} panel-tag)))
     (if block-wrap?
@@ -461,6 +461,9 @@
   Eg: (kc :.flex :.scrollbars)"
   [& k]
   {:classes (mapv css k)})
+
+(defn component-class [class k]
+  (str "." (some-> class css/get-classnames (get-css k))))
 
 (defn ccss [component & k]
   (if-let [css-map (try
