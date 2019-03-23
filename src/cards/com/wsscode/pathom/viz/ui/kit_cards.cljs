@@ -6,7 +6,26 @@
             [nubank.workspaces.model :as wsm]
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [fulcro.client.localized-dom :as dom]
+            [cljs.test :refer-macros [is are run-tests async testing]]
             [cljs.spec.alpha :as s]))
+
+(ws/deftest test-merge-with-mergers []
+  (is (= (ui/merge-with-mergers {}
+           {:a 1 :b 2} {:a 2 :c 3})
+         {:a 2 :b 2 :c 3}))
+  (is (= (ui/merge-with-mergers {:a +}
+           {:a 1 :b 2} {:a 2 :c 3})
+         {:a 3 :b 2 :c 3})))
+
+(ws/deftest test-dom-props
+  (is (= (ui/dom-props {}) {}))
+  (is (= (ui/dom-props {:foo "bar"}) {:foo "bar"}))
+  (is (= (ui/dom-props {::ns "gone"}) {}))
+  (is (= (ui/dom-props {::ns "gone" :foo "bar"}) {:foo "bar"}))
+  (is (= (ui/dom-props {:classes [:.default]} {:extra "data"})
+         {:classes [:.default] :extra "data"}))
+  (is (= (ui/dom-props {:classes [:.default]} {:classes [:.more]})
+         {:classes [:.default :.more]})))
 
 (ws/defcard collapsible-box-card
   {::wsm/align {:width "100%"}}

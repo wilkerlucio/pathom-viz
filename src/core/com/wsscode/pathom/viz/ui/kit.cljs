@@ -12,9 +12,32 @@
 
 ; region helpers
 
-(>defn props [props]
-  [map? => map?]
-  (into {} (remove (comp qualified-keyword? first)) props))
+(def mergers
+  {:classes (fn [a b]
+              (into a b))})
+
+(s/def ::merger-map (s/map-of keyword? fn?))
+
+(>defn merge-with-mergers
+  [mergers a b]
+  [::merger-map map? map? => map?]
+  (persistent!
+    (reduce-kv
+      (fn [a k v]
+        (if (and (contains? a k)
+                 (contains? mergers k))
+          (assoc! a k ((get mergers k) (get a k) v))
+          (assoc! a k v)))
+      (transient a)
+      b)))
+
+(>defn dom-props
+  ([props]
+   [map? => map?]
+   (into {} (remove (comp qualified-keyword? first)) props))
+  ([default props']
+   [map? map? => map?]
+   (dom-props (merge-with-mergers mergers default props'))))
 
 (>defn event-value [e]
   [any? => string?]
@@ -59,7 +82,7 @@
          :or    {scrollbars? true}
          :as    p}]
   {}
-  (dom/div :$panel (props p)
+  (dom/div :$panel (dom-props p)
     (dom/p :$panel-heading$row-center
       (dom/span (gc :.flex) panel-title)
       (if panel-tag (dom/span :$tag$is-dark panel-tag)))
@@ -85,7 +108,7 @@
                     :padding    "1px 0"}]
          [:.arrow {:padding   "0 4px"
                    :font-size "11px"}]]}
-  (dom/div :.container (props p)
+  (dom/div :.container (dom-props p)
     (row {:classes (into [:.center] (ccss this :.header))
           :onClick #(on-toggle (not collapsed?))}
       (dom/div :.arrow (if collapsed? "▶" "▼"))
@@ -123,7 +146,7 @@
     (dom/div :.container
       (dom/div :.arrow {:onClick (fp/get-state this :decrease)} "<")
       (with-redefs [domc/form-elements? #{}]
-        (dom/input :.input (merge {:type "number"} (props p))))
+        (dom/input :.input (merge {:type "number"} (dom-props p))))
       (dom/div :.arrow {:onClick (fp/get-state this :increase)} ">"))))
 
 (def number-input (fp/factory NumberInput))

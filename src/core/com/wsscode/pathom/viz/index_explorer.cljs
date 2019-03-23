@@ -96,7 +96,7 @@
                        :color       color-attribute
                        :font-size   "14px"
                        :line-height "1.4em"}]]}
-  (dom/div :.container (ui/props (merge (attribute-graph-events this attribute) props))
+  (dom/div :.container (ui/dom-props (merge (attribute-graph-events this attribute) props))
     (if render (render props) (pr-str attribute))))
 
 (def attribute-link (fp/computed-factory AttributeLink {:keyfn (comp pr-str ::pc/attribute)}))
@@ -109,7 +109,7 @@
                        :color       color-resolver
                        :font-size   "14px"
                        :line-height "1.4em"}]]}
-  (dom/div :.container (ui/props (merge (resolver-graph-events this sym) props))
+  (dom/div :.container (ui/dom-props (merge (resolver-graph-events this sym) props))
     (if render (render props) (pr-str sym))))
 
 (def resolver-link (fp/computed-factory ResolverLink {:keyfn (comp pr-str ::pc/sym)}))
@@ -123,7 +123,7 @@
                        :font-size   "14px"
                        :line-height "1.4em"}]]}
   (let [on-select-mutation (-> this fp/props fp/get-computed ::on-select-mutation)]
-    (dom/div :.container (ui/props (merge {:onClick #(on-select-mutation sym)} props))
+    (dom/div :.container (ui/dom-props (merge {:onClick #(on-select-mutation sym)} props))
       (if render (render props) (pr-str sym)))))
 
 (def mutation-link (fp/computed-factory MutationLink {:keyfn (comp pr-str ::pc/sym)}))
@@ -520,37 +520,39 @@
       (dom/div :.toolbar
         (dom/h1 :.title$title$is-marginless (pr-str attribute))
 
-        (dom/div :$row-center
-          (dom/label :$label$is-small "Depth")
-          (dom/input :$input$is-small {:type     "number" :min 1 :value attr-depth
-                                       :onChange #(fm/set-integer! this ::attr-depth :event %)}))
         (dom/label
           (dom/input {:type     "checkbox" :checked show-graph?
                       :onChange #(fm/set-value! this ::show-graph? (gobj/getValueByKeys % "target" "checked"))})
-          "Graph")
-        (dom/label
-          (dom/input {:type     "checkbox" :checked direct-reaches?
-                      :onChange #(fm/set-value! this ::direct-reaches? (gobj/getValueByKeys % "target" "checked"))})
-          "Direct inputs")
-        (dom/label
-          (dom/input {:type     "checkbox" :checked nested-reaches?
-                      :onChange #(fm/set-value! this ::nested-reaches? (gobj/getValueByKeys % "target" "checked"))})
-          "Nested inputs")
-        (dom/label
-          (dom/input {:type     "checkbox" :checked direct-provides?
-                      :onChange #(fm/set-value! this ::direct-provides? (gobj/getValueByKeys % "target" "checked"))})
-          "Direct outputs")
-        (dom/label
-          (dom/input {:type     "checkbox" :checked nested-provides?
-                      :onChange #(fm/set-value! this ::nested-provides? (gobj/getValueByKeys % "target" "checked"))})
-          "Nested outputs")
-        (dom/label
-          (dom/input {:type     "checkbox" :checked interconnections?
-                      :onChange #(fm/set-value! this ::interconnections? (gobj/getValueByKeys % "target" "checked"))})
-          "Interconnections"))
+          "Graph"))
 
       (if show-graph?
-        (ui/panel {::ui/panel-title "Graph"
+        (ui/panel {::ui/panel-title (ui/row {}
+                                      (dom/div "Graph")
+                                      (dom/div :$row-center
+                                        (dom/label :$label$is-small "Depth")
+                                        (ui/number-input {:min      1
+                                                          :value    attr-depth
+                                                          :onChange #(fm/set-value! this ::attr-depth %2)}))
+                                      (dom/label
+                                        (dom/input {:type     "checkbox" :checked direct-reaches?
+                                                    :onChange #(fm/set-value! this ::direct-reaches? (gobj/getValueByKeys % "target" "checked"))})
+                                        "Direct inputs")
+                                      (dom/label
+                                        (dom/input {:type     "checkbox" :checked nested-reaches?
+                                                    :onChange #(fm/set-value! this ::nested-reaches? (gobj/getValueByKeys % "target" "checked"))})
+                                        "Nested inputs")
+                                      (dom/label
+                                        (dom/input {:type     "checkbox" :checked direct-provides?
+                                                    :onChange #(fm/set-value! this ::direct-provides? (gobj/getValueByKeys % "target" "checked"))})
+                                        "Direct outputs")
+                                      (dom/label
+                                        (dom/input {:type     "checkbox" :checked nested-provides?
+                                                    :onChange #(fm/set-value! this ::nested-provides? (gobj/getValueByKeys % "target" "checked"))})
+                                        "Nested outputs")
+                                      (dom/label
+                                        (dom/input {:type     "checkbox" :checked interconnections?
+                                                    :onChange #(fm/set-value! this ::interconnections? (gobj/getValueByKeys % "target" "checked"))})
+                                        "Interconnections"))
                    ::ui/scrollbars? false}
           (dom/div :.graph
             (let [shared-options {::direct-reaches?   direct-reaches?
@@ -736,7 +738,7 @@
 
         (render-plugin-extension this ::plugin-render-to-mutation-view-left))
 
-      (dom/div {:style {:width "12px"}})
+      (dom/div {:style {:width "24px"}})
 
       (dom/div (ui/gc :.flex)
         (if output
