@@ -787,8 +787,8 @@
   (action [{:keys [ref state]}]
     (let [items     (get-in @state (conj ref ::search-vector))
           fuzzy-res (if (active-search? text)
-                      (fuzzy/fuzzy-match {::fuzzy/options       items
-                                           ::fuzzy/search-input text})
+                      (fuzzy/fuzzy-match {::fuzzy/options      items
+                                          ::fuzzy/search-input text})
                       [])]
       (swap! state fp/merge-component SearchEverything (into {::search-results (vec (take max-search-results fuzzy-res))} [ref]))
       (swap! state update-in ref assoc ::text text))))
@@ -1030,23 +1030,23 @@
                             ::ident-attribute? (contains? idents attr))))
                    (sort-by (comp pr-str ::pc/attribute))
                    (vec))]
-    (-> {::attributes attrs
-         ::globals    (filterv ::global-attribute? attrs)
-         ::idents     (filterv ::ident-attribute? attrs)
+    (-> {::attributes    attrs
+         ::globals       (filterv ::global-attribute? attrs)
+         ::idents        (filterv ::ident-attribute? attrs)
 
          ::search-vector (build-search-vector index)
 
-         ::resolvers  (->> index-resolvers
-                           vals
-                           (map #(assoc % ::resolver? true))
-                           (sort-by ::pc/sym)
-                           vec)
+         ::resolvers     (->> index-resolvers
+                              vals
+                              (map #(assoc % ::resolver? true))
+                              (sort-by ::pc/sym)
+                              vec)
 
-         ::mutations  (->> index-mutations
-                           vals
-                           (map #(assoc % ::mutation? true ::mutation-sym (::pc/sym %)))
-                           (sort-by ::pc/sym)
-                           vec)
+         ::mutations     (->> index-mutations
+                              vals
+                              (map #(assoc % ::mutation? true ::mutation-sym (::pc/sym %)))
+                              (sort-by ::pc/sym)
+                              vec)
          ;:ui/page     {::pc/attribute :customer/cpf}
          }
         (augment compute-stats))))
@@ -1198,7 +1198,7 @@
                                   ::attributes attributes
                                   ::on-select-attribute (fp/get-state this :select-attribute)
                                   ::on-select-resolver (fp/get-state this :select-resolver)
-                                  ::on-select-mutation  (fp/get-state this :select-mutation))))
+                                  ::on-select-mutation (fp/get-state this :select-mutation))))
 
         #_(dom/div :.graph
             (attribute-graph {::attributes       attributes
