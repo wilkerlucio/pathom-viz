@@ -10,6 +10,12 @@
 
 (declare gc css ccss)
 
+; region variables
+
+(def base-font "BlinkMacSystemFont,-apple-system,\"Segoe UI\",Roboto,Oxygen,Ubuntu,Cantarell,\"Fira Sans\",\"Droid Sans\",\"Helvetica Neue\",Helvetica,Arial,sans-serif")
+
+; endregion
+
 ; region helpers
 
 (def mergers
@@ -103,9 +109,10 @@
          :or    {on-toggle identity}
          :as    p}]
   {:css [[:.container {:cursor "pointer"}]
-         [:.header {:background "#f3f3f3"
-                    :color      "#717171"
-                    :padding    "1px 0"}]
+         [:.header {:background  "#f3f3f3"
+                    :color       "#717171"
+                    :font-family base-font
+                    :padding     "1px 0"}]
          [:.arrow {:padding   "0 4px"
                    :font-size "11px"}]]}
   (dom/div :.container (dom-props p)
@@ -117,6 +124,23 @@
       (fp/children this))))
 
 (def collapsible-box (fp/factory CollapsibleBox {:keyfn :ui/id}))
+
+(fp/defsc TextField
+  [this {:keys  [value] :as props
+         ::keys [on-clear]}]
+  {:css []}
+  (dom/div :$control$has-icons-left$has-icons-right
+    (with-redefs [domc/form-elements? #{}]
+      (dom/input :$input$is-small
+        (dom-props
+          {:type "text"}
+          props)))
+    (dom/span :$icon$is-small$is-left (dom/i :$fas$fa-search))
+    (if (and on-clear (seq value))
+      (dom/span :$icon$is-small$is-right {:onClick #(on-clear % this)}
+        (dom/a :$delete$is-small)))))
+
+(def text-field (fp/factory TextField))
 
 (fp/defsc NumberInput
   [this p]
@@ -173,7 +197,7 @@
                  [:.scrollbars {:overflow "auto"}]
                  [:.no-scrollbars {:overflow "hidden"}]
                  [:.nowrap {:white-space "nowrap"}]]
-   :css-include [Panel Column Row CollapsibleBox NumberInput ToggleAction]})
+   :css-include [Panel Column Row CollapsibleBox TextField NumberInput ToggleAction]})
 
 (def ui-css (css/get-classnames UIKit))
 

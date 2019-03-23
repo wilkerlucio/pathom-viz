@@ -94,6 +94,7 @@
   [this {::pc/keys [attribute] ::ui/keys [render] :as props}]
   {:css [[:.container {:cursor      "pointer"
                        :color       color-attribute
+                       :font-family ui/base-font
                        :font-size   "14px"
                        :line-height "1.4em"}]]}
   (dom/div :.container (ui/dom-props (merge (attribute-graph-events this attribute) props))
@@ -107,6 +108,7 @@
   [this {::pc/keys [sym] ::ui/keys [render] :as props}]
   {:css [[:.container {:cursor      "pointer"
                        :color       color-resolver
+                       :font-family ui/base-font
                        :font-size   "14px"
                        :line-height "1.4em"}]]}
   (dom/div :.container (ui/dom-props (merge (resolver-graph-events this sym) props))
@@ -120,6 +122,7 @@
   [this {::pc/keys [sym] ::ui/keys [render] :as props}]
   {:css [[:.container {:cursor      "pointer"
                        :color       color-mutation
+                       :font-family ui/base-font
                        :font-size   "14px"
                        :line-height "1.4em"}]]}
   (let [on-select-mutation (-> this fp/props fp/get-computed ::on-select-mutation)]
@@ -610,7 +613,7 @@
               (ex-tree/expandable-tree provides-tree
                 {::ex-tree/root    provides-tree-source
                  ::ex-tree/render  (fn [{:keys [key] ::pc/keys [sym-set]}]
-                                     (dom/div {:classes (ui/ccss this :.links-container)}
+                                     (ui/column {:classes (ui/ccss this :.links-container)}
                                        (attribute-link {::pc/attribute key} computed)
                                        (dom/div {:classes (ui/ccss this :.links-display)}
                                          (for [sym (sort sym-set)]
@@ -874,16 +877,10 @@
                                               (attribute-link {::pc/attribute attribute} computed))))
                                      (::attributes props))))})}
   (ui/column (ui/gc :.flex)
-    (dom/div :$control$has-icons-left$has-icons-right
-      (dom/input :$input$is-small
-        {:type        "text"
-         :value       text
-         :placeholder "Filter"
-         :onChange    (fp/get-state this :search)})
-      (dom/span :$icon$is-small$is-left (dom/i :$fas$fa-search))
-      (if (seq text)
-        (dom/span :$icon$is-small$is-right {:onClick #(fm/set-value! this ::text "")}
-          (dom/a :$delete$is-small))))
+    (ui/text-field {:placeholder  "Filter"
+                    :value        text
+                    :onChange     (fp/get-state this :search)
+                    ::ui/on-clear #(fm/set-value! this ::text "")})
     (ui/column (ui/gc :.flex :.scrollbars)
       (dom/div :.container {:style {:display (if-not (active-search? text) "none")}}
         (if (active-search? text)
