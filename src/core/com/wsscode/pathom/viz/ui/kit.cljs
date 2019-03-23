@@ -151,6 +151,21 @@
 
 (def number-input (fp/factory NumberInput))
 
+(s/def ::active? boolean?)
+
+(fp/defsc ToggleAction
+  [this {::keys [active?] :as p}]
+  {:css [[:.container {:background  "#f5f5f5"
+                       :display     "inline-block"
+                       :cursor      "pointer"
+                       :user-select "none"
+                       :padding     "0 8px"}]
+         [:.active {:background "#e0e0e0"}]]}
+  (dom/div :.container (dom-props {:classes [(if active? :.active)]} p)
+    (fp/children this)))
+
+(def toggle-action (fp/factory ToggleAction))
+
 ; endregion
 
 (fp/defsc UIKit [_ _]
@@ -158,7 +173,7 @@
                  [:.scrollbars {:overflow "auto"}]
                  [:.no-scrollbars {:overflow "hidden"}]
                  [:.nowrap {:white-space "nowrap"}]]
-   :css-include [Panel Column Row CollapsibleBox NumberInput]})
+   :css-include [Panel Column Row CollapsibleBox NumberInput ToggleAction]})
 
 (def ui-css (css/get-classnames UIKit))
 

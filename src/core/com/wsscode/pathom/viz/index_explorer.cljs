@@ -527,31 +527,25 @@
 
       (if show-graph?
         (ui/panel {::ui/panel-title (ui/row {}
-                                      (dom/div "Graph")
                                       (dom/div :$row-center
                                         (dom/label :$label$is-small "Depth")
                                         (ui/number-input {:min      1
                                                           :value    attr-depth
                                                           :onChange #(fm/set-value! this ::attr-depth %2)}))
-                                      (dom/label
-                                        (dom/input {:type     "checkbox" :checked direct-reaches?
-                                                    :onChange #(fm/set-value! this ::direct-reaches? (gobj/getValueByKeys % "target" "checked"))})
+                                      (ui/toggle-action {::ui/active? direct-reaches?
+                                                         :onClick     #(fm/set-value! this ::direct-reaches? (not direct-reaches?))}
                                         "Direct inputs")
-                                      (dom/label
-                                        (dom/input {:type     "checkbox" :checked nested-reaches?
-                                                    :onChange #(fm/set-value! this ::nested-reaches? (gobj/getValueByKeys % "target" "checked"))})
+                                      (ui/toggle-action {::ui/active? nested-reaches?
+                                                         :onClick     #(fm/set-value! this ::nested-reaches? (not nested-reaches?))}
                                         "Nested inputs")
-                                      (dom/label
-                                        (dom/input {:type     "checkbox" :checked direct-provides?
-                                                    :onChange #(fm/set-value! this ::direct-provides? (gobj/getValueByKeys % "target" "checked"))})
+                                      (ui/toggle-action {::ui/active? direct-provides?
+                                                         :onClick     #(fm/set-value! this ::direct-provides? (not direct-provides?))}
                                         "Direct outputs")
-                                      (dom/label
-                                        (dom/input {:type     "checkbox" :checked nested-provides?
-                                                    :onChange #(fm/set-value! this ::nested-provides? (gobj/getValueByKeys % "target" "checked"))})
+                                      (ui/toggle-action {::ui/active? nested-provides?
+                                                         :onClick     #(fm/set-value! this ::nested-provides? (not nested-provides?))}
                                         "Nested outputs")
-                                      (dom/label
-                                        (dom/input {:type     "checkbox" :checked interconnections?
-                                                    :onChange #(fm/set-value! this ::interconnections? (gobj/getValueByKeys % "target" "checked"))})
+                                      (ui/toggle-action {::ui/active? interconnections?
+                                                         :onClick     #(fm/set-value! this ::interconnections? (not interconnections?))}
                                         "Interconnections"))
                    ::ui/scrollbars? false}
           (dom/div :.graph

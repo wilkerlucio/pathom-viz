@@ -42,8 +42,15 @@
     (ct.react/react-card state
       (ui/number-input {:value    @state
                         :onChange (fn [_ n]
-                                    (js/console.log "RESET!" n)
                                     (reset! state n))}))))
+
+(ws/defcard toggle-action-card
+  {::wsm/align {:width "100%"}}
+  (let [state (atom false)]
+    (ct.react/react-card state
+      (ui/toggle-action {::ui/active? @state
+                         :onClick     #(swap! state not)}
+        "Here"))))
 
 #_ #_ #_ #_
 (defn nob-card [{::keys [nobs initial-state]} f]
