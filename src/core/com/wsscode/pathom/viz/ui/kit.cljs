@@ -14,6 +14,13 @@
 
 (def base-font "BlinkMacSystemFont,-apple-system,\"Segoe UI\",Roboto,Oxygen,Ubuntu,Cantarell,\"Fira Sans\",\"Droid Sans\",\"Helvetica Neue\",Helvetica,Arial,sans-serif")
 
+(def no-user-select
+  {:-webkit-touch-callout "none"
+   :-webkit-user-select   "none"
+   :-moz-user-select      "none"
+   :-ms-user-select       "none"
+   :user-select           "none"})
+
 ; endregion
 
 ; region helpers
@@ -125,20 +132,177 @@
 
 (def collapsible-box (fp/factory CollapsibleBox {:keyfn :ui/id}))
 
+(fp/defsc Control
+  [this props]
+  {:css [[:.control {:box-sizing "border-box"
+                     :clear      "both"
+                     :font-size  "1rem"
+                     :position   "relative"
+                     :text-align "left"}
+          [:&.has-icons-left :&.has-icons-right
+           [:.icon
+            {:color          "#dbdbdb"
+             :height         "2.25em"
+             :pointer-events "none"
+             :position       "absolute"
+             :top            "0"
+             :width          "2.25em"
+             :z-index        "4"}]]
+          [:&.has-icons-left
+           [:.icon {:left "0"}]
+           [:.input {:padding-left "2.25em"}]]
+          [:&.has-icons-right
+           [:.icon {:right "0"}]
+           [:.input {:padding-right "2.25em"}]]]]}
+
+  (dom/div :.control (dom-props props)
+    (fp/children this)))
+
+(def control (fp/factory Control))
+
 (fp/defsc TextField
-  [this {:keys  [value] :as props
-         ::keys [on-clear]}]
-  {:css []}
-  (dom/div :$control$has-icons-left$has-icons-right
-    (with-redefs [domc/form-elements? #{}]
-      (dom/input :$input$is-small
+  [this {:keys  [value]
+         ::keys [on-clear left-icon]
+         :as    props}]
+  {:css [[:.control {:box-sizing "border-box"
+                     :clear      "both"
+                     :font-size  "1rem"
+                     :position   "relative"
+                     :text-align "left"}
+          ["*" {:box-sizing "inherit"}]
+
+          [:&.has-icons-left :&.has-icons-right
+           [:.icon
+            {:color          "#dbdbdb"
+             :height         "2.25em"
+             :pointer-events "none"
+             :position       "absolute"
+             :top            "0"
+             :width          "2.25em"
+             :z-index        "4"}]
+
+           [:.input
+            [:&.is-small ["&~" [:&.icon {:font-size ".75rem"}]]]]]
+          [:&.has-icons-left
+           [:.icon [:&.is-left {:left "0"}]]
+           [:.input {:padding-left "2.25em"}]]
+          [:&.has-icons-right
+           [:.icon [:&.is-right {:right "0"}]]
+           [:.input {:padding-right "2.25em"}]]]
+
+         [:.icon {:align-items     "center"
+                  :display         "inline-flex"
+                  :justify-content "center"
+                  :height          "1.5rem"
+                  :width           "1.5rem"}
+          [:&.is-small {:height "1rem"
+                        :width  "1rem"}]]
+
+         [:.input
+          {:-moz-appearance    "none"
+           :-webkit-appearance "none"
+           :align-items        "center"
+           :border             "1px solid transparent"
+           :border-radius      "4px"
+           :box-shadow         "none"
+           :display            "inline-flex"
+           :font-family        base-font
+           :font-size          "1rem"
+           :margin             "0"
+           :height             "2.25em"
+           :justify-content    "flex-start"
+           :line-height        "1.5"
+           :padding-bottom     "calc(.375em - 1px)"
+           :padding-left       "calc(.625em - 1px)"
+           :padding-right      "calc(.625em - 1px)"
+           :padding-top        "calc(.375em - 1px)"
+           :position           "relative"
+           :vertical-align     "top"}
+
+          {:background-color "#fff"
+           :border-color     "#dbdbdb"
+           :color            "#363636"
+           :box-shadow       "inset 0 1px 2px rgba(10,10,10,.1)"
+           :max-width        "100%"
+           :width            "100%"}
+
+          [:&:hover
+           {:border-color "#b5b5b5"}]
+
+          [:&:focus
+           {:border-color "#3273dc"
+            :box-shadow   "0 0 0 0.125em rgba(50,115,220,.25)"
+            :outline      "0"}
+
+           ["&~" [:&.icon {:color "#7a7a7a"}]]]
+
+          ["&::placeholder"
+           {:color "rgba(54,54,54,.3)"}]
+
+          [:&.is-small {:border-radius "2px"
+                        :font-size     ".75rem"}]]
+
+         [:.delete
+          {:-moz-appearance    "none"
+           :-webkit-appearance "none"
+           :background-color   "rgba(10,10,10,.2)"
+           :border             "none"
+           :border-radius      "290486px"
+           :cursor             "pointer"
+           :pointer-events     "auto"
+           :display            "inline-block"
+           :flex-grow          "0"
+           :flex-shrink        "0"
+           :font-size          "0"
+           :height             "20px"
+           :max-height         "20px"
+           :max-width          "20px"
+           :min-height         "20px"
+           :min-width          "20px"
+           :outline            "0"
+           :position           "relative"
+           :vertical-align     "top"
+           :width              "20px"}
+          no-user-select
+
+          ["&::before" "&::after"
+           {:background-color         "#fff"
+            :content                  "\"\""
+            :display                  "block"
+            :left                     "50%"
+            :position                 "absolute"
+            :top                      "50%"
+            :-webkit-transform        "translateX(-50%) translateY(-50%) rotate(45deg)"
+            :transform                "translateX(-50%) translateY(-50%) rotate(45deg)"
+            :-webkit-transform-origin "center center"
+            :transform-origin         "center center"}]
+
+          ["&::before"
+           {:height "2px"
+            :width  "50%"}]
+
+          ["&::after"
+           {:height "50%"
+            :width  "2px"}]
+
+          [:&.is-small {:height     "16px"
+                        :max-height "16px"
+                        :max-width  "16px"
+                        :min-height "16px"
+                        :min-width  "16px"
+                        :width      "16px"}]]]}
+  (dom/div
+    (dom/div :.control {:classes [(if left-icon :.has-icons-left)
+                                  (if on-clear :.has-icons-right)]}
+      (dom/input :.input.is-small
         (dom-props
           {:type "text"}
-          props)))
-    (dom/span :$icon$is-small$is-left (dom/i :$fas$fa-search))
-    (if (and on-clear (seq value))
-      (dom/span :$icon$is-small$is-right {:onClick #(on-clear % this)}
-        (dom/a :$delete$is-small)))))
+          props))
+      (if left-icon
+        (dom/span :.icon.is-small.is-left (dom/i {:classes ["fa" left-icon]})))
+      (if (and on-clear (seq value))
+        (dom/span :.icon.is-small.is-right {:onClick #(on-clear % this)}
+          (dom/a :.delete.is-small))))))
 
 (def text-field (fp/factory TextField))
 
@@ -197,7 +361,7 @@
                  [:.scrollbars {:overflow "auto"}]
                  [:.no-scrollbars {:overflow "hidden"}]
                  [:.nowrap {:white-space "nowrap"}]]
-   :css-include [Panel Column Row CollapsibleBox TextField NumberInput ToggleAction]})
+   :css-include [Panel Column Row CollapsibleBox Control TextField NumberInput ToggleAction]})
 
 (def ui-css (css/get-classnames UIKit))
 

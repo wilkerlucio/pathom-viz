@@ -877,10 +877,11 @@
                                               (attribute-link {::pc/attribute attribute} computed))))
                                      (::attributes props))))})}
   (ui/column (ui/gc :.flex)
-    (ui/text-field {:placeholder  "Filter"
-                    :value        text
-                    :onChange     (fp/get-state this :search)
-                    ::ui/on-clear #(fm/set-value! this ::text "")})
+    (ui/text-field {:placeholder   "Filter"
+                    :value         text
+                    :onChange      (fp/get-state this :search)
+                    ::ui/left-icon :$fa-search
+                    ::ui/on-clear  #(fm/set-value! this ::text "")})
     (ui/column (ui/gc :.flex :.scrollbars)
       (dom/div :.container {:style {:display (if-not (active-search? text) "none")}}
         (if (active-search? text)
