@@ -94,9 +94,9 @@
   [this {::pc/keys [attribute] ::ui/keys [render] :as props}]
   {:css [[:.container {:cursor      "pointer"
                        :color       color-attribute
-                       :font-family ui/base-font
                        :font-size   "14px"
-                       :line-height "1.4em"}]]}
+                       :line-height "1.4em"}
+          ui/text-base]]}
   (dom/div :.container (ui/dom-props (merge (attribute-graph-events this attribute) props))
     (if render (render props) (pr-str attribute))))
 
@@ -108,9 +108,9 @@
   [this {::pc/keys [sym] ::ui/keys [render] :as props}]
   {:css [[:.container {:cursor      "pointer"
                        :color       color-resolver
-                       :font-family ui/base-font
                        :font-size   "14px"
-                       :line-height "1.4em"}]]}
+                       :line-height "1.4em"}
+          ui/text-base]]}
   (dom/div :.container (ui/dom-props (merge (resolver-graph-events this sym) props))
     (if render (render props) (pr-str sym))))
 
@@ -122,9 +122,9 @@
   [this {::pc/keys [sym] ::ui/keys [render] :as props}]
   {:css [[:.container {:cursor      "pointer"
                        :color       color-mutation
-                       :font-family ui/base-font
                        :font-size   "14px"
-                       :line-height "1.4em"}]]}
+                       :line-height "1.4em"}
+          ui/text-base]]}
   (let [on-select-mutation (-> this fp/props fp/get-computed ::on-select-mutation)]
     (dom/div :.container (ui/dom-props (merge {:onClick #(on-select-mutation sym)} props))
       (if render (render props) (pr-str sym)))))
@@ -485,7 +485,9 @@
    :css            [[:.container {:flex           "1"
                                   :flex-direction "column"
                                   :display        "flex"}]
-                    [:.title {:color color-attribute}]
+                    [:.title {:color color-attribute}
+                     ui/css-header
+                     ui/text-base]
                     [:.toolbar {:display               "grid"
                                 :grid-template-columns "repeat(10, max-content)"
                                 :grid-gap              "10px"
@@ -521,7 +523,7 @@
   (let [computed (assoc computed ::graph-comm (fp/get-state this :graph-comm))]
     (dom/div :.container
       (dom/div :.toolbar
-        (dom/h1 :.title$title$is-marginless (pr-str attribute))
+        (dom/h1 :.title (pr-str attribute))
 
         (dom/label
           (dom/input {:type     "checkbox" :checked show-graph?
@@ -654,7 +656,9 @@
    :ident          [::pc/sym ::pc/sym]
    :query          [::pc/sym ::pc/input ::pc/output ::pc/batch?
                     {:ui/output-tree (fp/get-query ex-tree/ExpandableTree)}]
-   :css            [[:.title {:color color-resolver}]
+   :css            [[:.title {:color color-resolver}
+                     ui/css-header
+                     ui/text-base]
                     [:.menu {:white-space   "nowrap"
                              :padding-right "12px"
                              :overflow      "auto"}]]
@@ -669,7 +673,7 @@
   (let [input'   (if (= 1 (count input)) (first input) input)
         computed (assoc computed ::graph-comm (fp/get-state this :graph-comm))]
     (ui/column (ui/gc :.flex)
-      (dom/h1 :.title$title (str sym))
+      (dom/h1 :.title (str sym))
       (ui/row (ui/gc :.flex :.no-scrollbars)
         (dom/div :.menu
           (if batch?
@@ -719,11 +723,13 @@
    :query          [::mutation-sym ::pc/sym ::pc/params ::pc/output
                     {:ui/mutation-params-tree (fp/get-query ex-tree/ExpandableTree)}
                     {:ui/mutation-output-tree (fp/get-query ex-tree/ExpandableTree)}]
-   :css            [[:.title {:color color-mutation}]]
+   :css            [[:.title {:color color-mutation}
+                     ui/css-header
+                     ui/text-base]]
    :initLocalState (fn [] {:render (fn [{:keys [key]}]
                                      (attribute-link {::pc/attribute key} (-> this fp/props fp/get-computed)))})}
   (ui/column (ui/gc :.flex)
-    (dom/h1 :.title$title (str sym))
+    (dom/h1 :.title (str sym))
     (ui/row (ui/gc :.flex :.scrollbars :.nowrap)
       (dom/div (ui/gc :.flex)
         (if params
@@ -926,9 +932,10 @@
    :query     [::id ::attribute-count ::resolver-count ::globals-count ::idents-count
                ::attr-edges-count ::mutation-count
                {::top-connection-hubs [::pc/attribute ::attr-edges-count]}]
-   :css       [[:.container {:padding-right "12px"}]]}
+   :css       [[:.container {:padding-right "12px"}]
+               [:.title ui/text-base]]}
   (dom/div :.container (ui/gc :.flex :.scrollbars)
-    (dom/h1 :$title "Stats")
+    (dom/h1 :.title "Stats")
     (ui/panel {::ui/panel-title "Counters"}
       (dom/div "Attribute count: " attribute-count)
       (dom/div "Resolver count: " resolver-count)

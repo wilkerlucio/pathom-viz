@@ -12,7 +12,16 @@
 
 ; region variables
 
-(def base-font "BlinkMacSystemFont,-apple-system,\"Segoe UI\",Roboto,Oxygen,Ubuntu,Cantarell,\"Fira Sans\",\"Droid Sans\",\"Helvetica Neue\",Helvetica,Arial,sans-serif")
+(def font-base "BlinkMacSystemFont,-apple-system,\"Segoe UI\",Roboto,Oxygen,Ubuntu,Cantarell,\"Fira Sans\",\"Droid Sans\",\"Helvetica Neue\",Helvetica,Arial,sans-serif")
+(def font-code "monospace!important")
+
+(def text-base {:font-family font-base
+                :line-height "1.5"})
+
+(def css-header
+  {:margin "0"
+   :font-size "2rem"
+   :font-weight "600"})
 
 (def no-user-select
   {:-webkit-touch-callout "none"
@@ -90,18 +99,90 @@
 
 ; region components
 
+(fp/defsc Tag
+  [this props]
+  {:css [[:.tag {:align-items      "center"
+                 :background-color "#f5f5f5"
+                 :border-radius    "4px"
+                 :color            "#4a4a4a"
+                 :display          "inline-flex"
+                 :font-size        ".75rem"
+                 :height           "2em"
+                 :justify-content  "center"
+                 :line-height      "1.5"
+                 :padding-left     ".75em"
+                 :padding-right    ".75em"
+                 :white-space      "nowrap"}
+          [:&.is-family-code
+           {:font-family font-code}]
+
+          [:&.is-primary
+           {:background-color "#00d1b2"
+            :color            "#fff"}]
+          [:&.is-link
+           {:background-color "#3273dc"
+            :color "#fff"}]
+          [:&.is-dark
+           {:background-color "#363636"
+            :color            "#f5f5f5"}]]]}
+  (dom/span :.tag (dom-props props) (fp/children this)))
+
+(def tag (fp/factory Tag))
+
 (fp/defsc Panel
   [this {::keys [panel-title panel-tag scrollbars?]
          :or    {scrollbars? true}
          :as    p}]
-  {}
-  (dom/div :$panel (dom-props p)
-    (dom/p :$panel-heading$row-center
+  {:css [[:.panel
+          {:font-size "1rem"}
+
+          ["&:not(:last-child)" {:margin-bottom "1.5rem"}]]
+
+         [:.panel-heading
+          {:border-bottom "1px solid #dbdbdb"
+           :border-left   "1px solid #dbdbdb"
+           :border-right  "1px solid #dbdbdb"}
+
+          {:background-color "#f5f5f5"
+           :border-radius    "4px 4px 0 0"
+           :color            "#363636"
+           :font-size        "1.25em"
+           :font-weight      "300"
+           :line-height      "1.25"
+           :margin           "0"
+           :padding          ".5em .75em"}
+
+          {:display     "flex"
+           :align-items "center"}
+
+          text-base
+
+          [:&:first-child
+           {:border-top "1px solid #dbdbdb"}]
+
+          [:.row-center
+           {}]]
+
+         [:.panel-block
+          {:border-bottom "1px solid #dbdbdb"
+           :border-left   "1px solid #dbdbdb"
+           :border-right  "1px solid #dbdbdb"}
+
+          {:align-items     "center"
+           :color           "#363636"
+           :display         "flex"
+           :line-height     "1.5"
+           :justify-content "flex-start"
+           :padding         ".5em .75em"}
+
+          text-base]]}
+  (dom/div :.panel (dom-props p)
+    (dom/p :.panel-heading
       (dom/span (gc :.flex) panel-title)
-      (if panel-tag (dom/span :$tag$is-dark panel-tag)))
-    (dom/div :$panel-block
+      (if panel-tag (tag {:classes [:.is-dark]} panel-tag)))
+    (dom/div :.panel-block
       (if scrollbars?
-        (dom/div :$scrollbars
+        (dom/div (gc :.scrollbars)
           (fp/children this))
         (fp/children this)))))
 
@@ -116,10 +197,10 @@
          :or    {on-toggle identity}
          :as    p}]
   {:css [[:.container {:cursor "pointer"}]
-         [:.header {:background  "#f3f3f3"
-                    :color       "#717171"
-                    :font-family base-font
-                    :padding     "1px 0"}]
+         [:.header {:background "#f3f3f3"
+                    :color      "#717171"
+                    :padding    "1px 0"}
+          text-base]
          [:.arrow {:padding   "0 4px"
                    :font-size "11px"}]]}
   (dom/div :.container (dom-props p)
@@ -132,38 +213,11 @@
 
 (def collapsible-box (fp/factory CollapsibleBox {:keyfn :ui/id}))
 
-(fp/defsc Control
-  [this props]
-  {:css [[:.control {:box-sizing "border-box"
-                     :clear      "both"
-                     :font-size  "1rem"
-                     :position   "relative"
-                     :text-align "left"}
-          [:&.has-icons-left :&.has-icons-right
-           [:.icon
-            {:color          "#dbdbdb"
-             :height         "2.25em"
-             :pointer-events "none"
-             :position       "absolute"
-             :top            "0"
-             :width          "2.25em"
-             :z-index        "4"}]]
-          [:&.has-icons-left
-           [:.icon {:left "0"}]
-           [:.input {:padding-left "2.25em"}]]
-          [:&.has-icons-right
-           [:.icon {:right "0"}]
-           [:.input {:padding-right "2.25em"}]]]]}
-
-  (dom/div :.control (dom-props props)
-    (fp/children this)))
-
-(def control (fp/factory Control))
-
 (fp/defsc TextField
   [this {:keys  [value]
          ::keys [on-clear left-icon]
          :as    props}]
+  ; region css
   {:css [[:.control {:box-sizing "border-box"
                      :clear      "both"
                      :font-size  "1rem"
@@ -206,7 +260,6 @@
            :border-radius      "4px"
            :box-shadow         "none"
            :display            "inline-flex"
-           :font-family        base-font
            :font-size          "1rem"
            :margin             "0"
            :height             "2.25em"
@@ -218,6 +271,8 @@
            :padding-top        "calc(.375em - 1px)"
            :position           "relative"
            :vertical-align     "top"}
+
+          text-base
 
           {:background-color "#fff"
            :border-color     "#dbdbdb"
@@ -291,6 +346,7 @@
                         :min-height "16px"
                         :min-width  "16px"
                         :width      "16px"}]]]}
+  ; endregion
   (dom/div
     (dom/div :.control {:classes [(if left-icon :.has-icons-left)
                                   (if on-clear :.has-icons-right)]}
@@ -361,7 +417,7 @@
                  [:.scrollbars {:overflow "auto"}]
                  [:.no-scrollbars {:overflow "hidden"}]
                  [:.nowrap {:white-space "nowrap"}]]
-   :css-include [Panel Column Row CollapsibleBox Control TextField NumberInput ToggleAction]})
+   :css-include [Panel Column Row CollapsibleBox Tag TextField NumberInput ToggleAction]})
 
 (def ui-css (css/get-classnames UIKit))
 

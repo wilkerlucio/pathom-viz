@@ -59,18 +59,30 @@
                (vals))]
        (dom/div
          (if (seq services)
-           (dom/div :$panel
-             (dom/p :$panel-heading$row-center
-               (dom/span (ui/gc :.flex) (str "Services"))
-               (dom/span :$tag$is-dark (count services)))
-             (for [{:keys  [abrams.diplomat.api/service]
-                    ::keys [service-in service-out]} (sort-by :abrams.diplomat.api/service services)]
-               (dom/div :$panel-block$row-center$tag-spaced {:key (pr-str service)}
-                 (dom/div (ui/gc :.flex) (name service))
-                 (if service-in
-                   (dom/span :$tag$is-family-code$is-primary {:title "Input"} "I"))
-                 (if service-out
-                   (dom/span :$tag$is-family-code$is-link {:title "Output"} "O")))))))))
+           (fp/fragment
+             (dom/div :$panel
+               (dom/p :$panel-heading$row-center
+                 (dom/span (ui/gc :.flex) (str "Services"))
+                 (dom/span :$tag$is-dark (count services)))
+               (for [{:keys  [abrams.diplomat.api/service]
+                      ::keys [service-in service-out]} (sort-by :abrams.diplomat.api/service services)]
+                 (dom/div :$panel-block$row-center$tag-spaced {:key (pr-str service)}
+                   (dom/div (ui/gc :.flex) (name service))
+                   (if service-in
+                     (dom/span :$tag$is-family-code$is-primary {:title "Input"} "I"))
+                   (if service-out
+                     (dom/span :$tag$is-family-code$is-link {:title "Output"} "O")))))
+
+             (ui/panel {::ui/panel-title "Services"
+                        ::ui/panel-tag   (count services)}
+               (for [{:keys  [abrams.diplomat.api/service]
+                      ::keys [service-in service-out]} (sort-by :abrams.diplomat.api/service services)]
+                 (dom/div :$panel-block$row-center$tag-spaced {:key (pr-str service)}
+                   (dom/div (ui/gc :.flex) (name service))
+                   (if service-in
+                     (ui/tag {:classes [:.is-family-code :.is-primary] :title "Input"} "I"))
+                   (if service-out
+                     (ui/tag {:classes [:.is-family-code :.is-link] :title "Output"} "O"))))))))))
 
    ::iex/plugin-render-to-resolver-menu
    (fn [{:abrams.diplomat.api/keys [service endpoint]}]
