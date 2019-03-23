@@ -1046,9 +1046,7 @@
                               vals
                               (map #(assoc % ::mutation? true ::mutation-sym (::pc/sym %)))
                               (sort-by ::pc/sym)
-                              vec)
-         ;:ui/page     {::pc/attribute :customer/cpf}
-         }
+                              vec)}
         (augment compute-stats))))
 
 ;; Query
@@ -1066,8 +1064,13 @@
   {:ident [::mutation-sym ::mutation-sym]
    :query [::pc/sym ::mutation-sym ::pc/output ::pc/params]})
 
+(def history-size-limit 200)
+
 (defn history-append [{::keys [history history-index] :as x} ref]
-  (let [history' (conj (subvec history 0 (inc history-index)) ref)]
+  (let [index    (inc history-index)
+        history' (conj
+                   (subvec history (if (= index history-size-limit) 1 0) index)
+                   ref)]
     (assoc x
       ::history history'
       ::history-index (dec (count history'))
@@ -1136,9 +1139,7 @@
                                 ::history       [[::id id]]
                                 ::history-index 0
                                 :ui/menu        {::id id}
-                                :ui/page        {::id id}
-                                ;:ui/page {::pc/attribute :account/id}
-                                })
+                                :ui/page        {::id id}})
                              current-normalized
                              (clear-not-found data-tree)
                              (if-let [index (get data-tree ::index)]
