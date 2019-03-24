@@ -8,11 +8,10 @@
             [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.diplomat.http :as p.http]
             [com.wsscode.pathom.diplomat.http.fetch :as p.http.fetch]
-            [com.wsscode.pathom.fulcro.network :as p.network]
             [com.wsscode.pathom.viz.index-explorer :as iex]
             [com.wsscode.pathom.viz.ui.kit :as ui]
+            [com.wsscode.pathom.viz.workspaces :as pws]
             [edn-query-language.core :as eql]
-            [fulcro.client.data-fetch :as df]
             [fulcro.client.localized-dom :as dom]
             [fulcro.client.primitives :as fp]
             [nubank.workspaces.card-types.fulcro :as ct.fulcro]
@@ -22,14 +21,14 @@
 
 (s/def :customer/id uuid?)
 
-(pc/defresolver index-resolver [env _]
-  {::pc/output [::sample-index]}
+(pc/defresolver index-resolver [env {::iex/keys [id]}]
+  {::pc/input  #{::iex/id}
+   ::pc/output [::iex/id ::iex/index]}
   (go-catch
-    (let [{::iex/keys [id]} (-> env :ast :params)
-          index (-> (p.http/request env "index.edn" {::p.http/as ::text})
+    (let [index (-> (p.http/request env "index.edn" {::p.http/as ::text})
                     <? ::p.http/body read-string)]
-      {::sample-index {::iex/id    id
-                       ::iex/index index}})))
+      {::iex/id    id
+       ::iex/index index})))
 
 (def parser
   (p/parallel-parser
@@ -100,23 +99,9 @@
            (dom/div (str "/api/" endpoint))))))})
 
 (ws/defcard index-explorer
-  {::wsm/align ::wsm/stretch-flex}
-  (let [id "singleton"]
-    (ct.fulcro/fulcro-card
-      {::f.portal/root
-       iex/IndexExplorer
-
-       ::f.portal/app
-       {:networking       (-> (p.network/pathom-remote parser)
-                              (p.network/trace-remote))
-        :initial-state    {::id id}
-        :started-callback (fn [app]
-                            (df/load app ::sample-index iex/IndexExplorer
-                              {:params {::iex/id id}
-                               :target [:ui/root]}))}
-
-       ::f.portal/computed
-       {::iex/plugins [abrams-plugin]}})))
+  (pws/index-explorer-card {::p/parser           parser
+                            ::pws/portal-options {::f.portal/computed
+                                                  {::iex/plugins [abrams-plugin]}}}))
 
 (fp/defsc AttributeGraphDemo
   [this {::keys []}]
