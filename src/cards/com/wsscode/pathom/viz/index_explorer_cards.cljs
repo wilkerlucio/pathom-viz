@@ -101,7 +101,7 @@
 
 (ws/defcard index-explorer
   {::wsm/align ::wsm/stretch-flex}
-  (let [id (random-uuid)]
+  (let [id "singleton"]
     (ct.fulcro/fulcro-card
       {::f.portal/root
        iex/IndexExplorer
