@@ -171,7 +171,8 @@
 
 (>defn compute-nodes-links [{::keys [attributes]}]
   [(s/keys :req [::attributes]) => ::attribute-graph]
-  (let [index (h/index-by ::pc/attribute attributes)]
+  (let [attributes (filter ::pc/attribute attributes)
+        index      (h/index-by ::pc/attribute attributes)]
     {:nodes (into [] (map attribute->node) attributes)
      :links (mapcat
               (fn [{::pc/keys [attribute attr-provides]}]
@@ -953,7 +954,27 @@
         (attribute-link {::pc/attribute attribute
                          ::ui/render    #(str "[" attr-edges-count "] " (pr-str attribute))} computed)))))
 
-(def stats-view (fp/factory StatsView {:keyfn ::id}))
+(def stats-view (fp/factory StatsView))
+
+(fp/defsc FullGraphView
+  [this _
+   {::keys [attributes on-select-attribute on-select-resolver]}]
+  {:ident [::graph-view-id ::graph-view-id]
+   :query [::graph-view-id]
+   :css   [[:.container {:padding-right "12px"
+                         :flex          "1"}]
+           [:.title ui/text-base]]}
+  (ui/column {:classes (ui/ccss this :.container)}
+    (dom/h1 :.title "Full Graph")
+    (attribute-graph {::attributes       attributes
+                      ::direct-reaches?  true
+                      ::nested-reaches?  true
+                      ::direct-provides? true
+                      ::nested-provides? true
+                      ::on-show-details  on-select-attribute
+                      ::on-click-edge    #(on-select-resolver (first (::resolvers %)))})))
+
+(def full-graph-view (fp/factory FullGraphView))
 
 (defn prop-presence-ident [props]
   (fn [data]
@@ -961,21 +982,23 @@
                  [% val]) props)
         [:invalid "ident"])))
 
-(def main-view-ident (prop-presence-ident [::id ::mutation-sym ::pc/sym ::pc/attribute]))
+(def main-view-ident (prop-presence-ident [::pc/attribute ::pc/sym ::mutation-sym ::id ::graph-view-id]))
 
 (fp/defsc MainViewUnion
   [this props]
   {:ident (fn [] (main-view-ident props))
    :query (fn []
-            {::pc/attribute (fp/get-query AttributeView)
-             ::pc/sym       (fp/get-query ResolverView)
-             ::mutation-sym (fp/get-query MutationView)
-             ::id           (fp/get-query StatsView)})}
+            {::pc/attribute  (fp/get-query AttributeView)
+             ::pc/sym        (fp/get-query ResolverView)
+             ::mutation-sym  (fp/get-query MutationView)
+             ::id            (fp/get-query StatsView)
+             ::graph-view-id (fp/get-query FullGraphView)})}
   (case (first (fp/get-ident this))
     ::pc/attribute (attribute-view props)
     ::pc/sym (resolver-view props)
     ::mutation-sym (mutation-view props)
     ::id (stats-view props)
+    ::graph-view-id (full-graph-view props)
     (dom/div "Blank page")))
 
 (def main-view-union (fp/computed-factory MainViewUnion {:keyfn #(or (::pc/attribute %) (::pc/sym %))}))
@@ -1095,6 +1118,12 @@
   (action [{:keys [state ref]}]
     (swap! state update-in ref history-append ref)))
 
+(fm/defmutation navigate-graph-view [_]
+  (action [{:keys [state ref]}]
+    (let [id (second ref)]
+      (swap! state fp/merge-component FullGraphView {::graph-view-id id})
+      (swap! state update-in ref history-append [::graph-view-id id]))))
+
 (defn can-go-back? [{::keys [history-index]}]
   (> history-index 0))
 
@@ -1176,7 +1205,8 @@
                            :select-mutation  #(fp/transact! this [`(navigate-to-mutation {::mutation-sym ~%})])
                            :go-back          #(fp/transact! this [`(navigate-backwards)])
                            :go-forward       #(fp/transact! this [`(navigate-forwards)])
-                           :go-stats         #(fp/transact! this [`(navigate-stats)])})}
+                           :go-stats         #(fp/transact! this [`(navigate-stats)])
+                           :go-graph-view    #(fp/transact! this [`(navigate-graph-view)])})}
   (dom/create-element (gobj/get ExtensionContext "Provider") #js {:value extensions}
     (ui/row {:react-key "container" :classes (ui/ccss this :.out-container)}
       (ui/column {:classes (ui/ccss this :.menu)}
@@ -1193,7 +1223,10 @@
             "▶")
           (ui/button {:onClick  (fp/get-state this :go-stats)
                       :disabled (= (main-view-ident page) (fp/get-ident this))
-                      :style    {:marginLeft "12px"}} "Go to stats"))
+                      :style    {:marginLeft "12px"}} "Go to stats")
+          (ui/button {:onClick  (fp/get-state this :go-graph-view)
+                      :disabled (= (first (main-view-ident page)) ::graph-view-id)
+                      :style    {:marginLeft "12px"}} "Full Graph View"))
         (if page
           (main-view-union page (assoc index
                                   ::attributes attributes
