@@ -927,32 +927,68 @@
 
 (def search-everything (fp/computed-factory SearchEverything))
 
+(fp/defsc AttributeMismatchPanel
+  [this {::keys [attr-type-mismatch attr-mismatch-expanded]} computed]
+  {:pre-merge (fn [{:keys [current-normalized data-tree]}]
+                (merge {::attr-mismatch-expanded #{}} current-normalized data-tree))
+   :ident     [::id ::id]
+   :query     [::id ::attr-mismatch-expanded
+               {::attr-type-mismatch [::pc/attribute ::pc/attr-leaf-in ::pc/attr-branch-in]}]
+   :css       [[:.resolver-container {:margin-left "26px"}]]}
+  (ui/panel {::ui/panel-title "Attributes with type mismatch"}
+    (for [{::pc/keys [attribute attr-leaf-in attr-branch-in]} attr-type-mismatch]
+      (ui/raw-collapsible {:react-key      (pr-str attribute)
+                           ::ui/collapsed? (not (contains? attr-mismatch-expanded attribute))
+                           ::ui/on-toggle  #(h/update-value! this ::attr-mismatch-expanded h/toggle-set-item attribute)
+                           ::ui/title      (attribute-link {::pc/attribute attribute} computed)}
+        (dom/div :.resolver-container
+          (for [resolver attr-branch-in]
+            (resolver-link {::pc/sym resolver} computed))
+          (dom/hr)
+          (for [resolver attr-leaf-in]
+            (resolver-link {::pc/sym resolver} computed)))))))
+
+(def attribute-mismatch-panel (fp/computed-factory AttributeMismatchPanel))
+
 (fp/defsc StatsView
   [this {::keys [attribute-count resolver-count mutation-count globals-count idents-count
-                 attr-edges-count top-connection-hubs]}
+                 attr-edges-count top-connection-hubs attr-type-mismatch]
+         :>/keys [attr-type-mismatch-join]}
    computed]
   {:pre-merge (fn [{:keys [current-normalized data-tree]}]
-                (merge {} current-normalized data-tree))
+                (let [id (or (::id data-tree)
+                             (::id current-normalized)
+                             (random-uuid))]
+                  (merge {::id                       id
+                          :>/attr-type-mismatch-join {::id id}} current-normalized data-tree)))
    :ident     [::id ::id]
    :query     [::id ::attribute-count ::resolver-count ::globals-count ::idents-count
-               ::attr-edges-count ::mutation-count
-               {::top-connection-hubs [::pc/attribute ::attr-edges-count]}]
+               ::attr-edges-count ::mutation-count ::attr-type-mismatch
+               {::top-connection-hubs [::pc/attribute ::attr-edges-count]}
+               {:>/attr-type-mismatch-join (fp/get-query AttributeMismatchPanel)}]
    :css       [[:.container {:padding-right "12px"}]
                [:.title ui/text-base]]}
   (dom/div :.container (ui/gc :.flex :.scrollbars)
     (dom/h1 :.title "Stats")
-    (ui/panel {::ui/panel-title "Counters"}
-      (dom/div "Attribute count: " attribute-count)
-      (dom/div "Resolver count: " resolver-count)
-      (dom/div "Mutation count: " mutation-count)
-      (dom/div "Globals count: " globals-count)
-      (dom/div "Idents count: " idents-count)
-      (dom/div "Edges count: " attr-edges-count))
-    (ui/panel {::ui/panel-title "Most Connected Attributes"}
-      (for [{::pc/keys [attribute]
-             ::keys    [attr-edges-count]} top-connection-hubs]
-        (attribute-link {::pc/attribute attribute
-                         ::ui/render    #(str "[" attr-edges-count "] " (pr-str attribute))} computed)))))
+    (ui/row {}
+      (dom/div (ui/gc :.flex)
+        (ui/panel {::ui/panel-title "Counters"}
+          (dom/div "Attribute count: " attribute-count)
+          (dom/div "Resolver count: " resolver-count)
+          (dom/div "Mutation count: " mutation-count)
+          (dom/div "Globals count: " globals-count)
+          (dom/div "Idents count: " idents-count)
+          (dom/div "Edges count: " attr-edges-count))
+        (ui/panel {::ui/panel-title "Most Connected Attributes"}
+          (for [{::pc/keys [attribute]
+                 ::keys    [attr-edges-count]} top-connection-hubs]
+            (attribute-link {::pc/attribute attribute
+                             ::ui/render    #(str "[" attr-edges-count "] " (pr-str attribute))} computed))))
+      (if (seq attr-type-mismatch)
+        (fp/fragment
+          (dom/div {:style {:width "24px"}})
+          (dom/div (ui/gc :.flex)
+            (attribute-mismatch-panel attr-type-mismatch-join computed)))))))
 
 (def stats-view (fp/factory StatsView))
 
@@ -1013,6 +1049,9 @@
    ::globals-count       (count globals)
    ::idents-count        (count idents)
    ::attr-edges-count    (transduce (map ::attr-edges-count) + attributes)
+   ::attr-type-mismatch  (->> attributes
+                              (filterv #(and (contains? % ::pc/attr-leaf-in)
+                                             (contains? % ::pc/attr-branch-in))))
    ::top-connection-hubs (->> attributes
                               (sort-by ::attr-edges-count #(compare %2 %))
                               (take 30)
@@ -1182,6 +1221,7 @@
                     {::globals (fp/get-query AttributeIndex)}
                     {::idents (fp/get-query AttributeIndex)}
                     {::top-connection-hubs (fp/get-query AttributeIndex)}
+                    {::attr-type-mismatch (fp/get-query AttributeIndex)}
                     {::resolvers (fp/get-query ResolverIndex)}
                     {::mutations (fp/get-query MutationIndex)}
                     {:ui/page (fp/get-query MainViewUnion)}]

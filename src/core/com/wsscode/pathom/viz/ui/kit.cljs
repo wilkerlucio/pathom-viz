@@ -229,7 +229,23 @@
     (apply dom/div {:style {:display (if collapsed? "none")}}
       (fp/children this))))
 
-(def collapsible-box (fp/factory CollapsibleBox {:keyfn :ui/id}))
+(def collapsible-box (fp/factory CollapsibleBox))
+
+(fp/defsc RawCollapsible
+  [this {::keys [collapsed? on-toggle title]
+         :or    {on-toggle identity}
+         :as    p}]
+  {:css [[:.arrow {:cursor    "pointer"
+                   :font-size "11px"
+                   :padding   "0 4px"}]]}
+  (dom/div (dom-props p)
+    (row {:classes [:.center]}
+      (dom/div :.arrow {:onClick #(on-toggle (not collapsed?))} (if collapsed? "▶" "▼"))
+      title)
+    (apply dom/div {:style {:display (if collapsed? "none")}}
+      (fp/children this))))
+
+(def raw-collapsible (fp/factory RawCollapsible))
 
 (fp/defsc TextField
   [this {:keys  [value]
@@ -441,6 +457,7 @@
                  NumberInput
                  Panel
                  PanelBlock
+                 RawCollapsible
                  Row
                  Tag
                  TextField
