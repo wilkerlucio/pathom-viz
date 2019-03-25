@@ -15,6 +15,8 @@
                 fulcrologic/fulcro-incubator {:mvn/version "0.0.28"}}}
 
   :dev
-  {:extra-deps {nubank/workspaces          {:mvn/version "1.0.7"}
-                fulcrologic/fulcro-inspect {:mvn/version "2.2.4"}
-                binaryage/devtools         {:mvn/version "0.9.10"}}}}}
+  {:extra-deps {binaryage/devtools                 {:mvn/version "0.9.10"}
+                fulcrologic/fulcro-inspect         {:mvn/version "2.2.4"}
+                nubank/workspaces                  {:mvn/version "1.0.7"}
+                com.wsscode/pathom-connect-youtube {:local/root "/Users/wilker.lucio/Development/pathom-connect-youtube"}
+                com.wsscode/pathom-connect-spacex  {:local/root "/Users/wilker.lucio/Development/pathom-connect-spacex"}}}}}
