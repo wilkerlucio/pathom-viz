@@ -296,7 +296,11 @@
 
 (def attribute-graph (fp/factory AttributeGraph))
 
-(defn pull-attr [{::keys [attr-index interconnections?]} attr]
+(>defn pull-attr
+  "Get attribute from index, remove provides when interconnections is falsy."
+  [{::keys [attr-index interconnections?]} attr]
+  [(s/keys :req [::attr-index] :opt [::interconnections?]) ::pc/attribute
+   => (s/keys)]
   (cond-> (get attr-index attr)
     (false? interconnections?)
     (dissoc ::pc/attr-provides)))
