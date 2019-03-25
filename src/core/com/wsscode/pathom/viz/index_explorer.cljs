@@ -968,9 +968,9 @@
     (dom/h1 :.title "Full Graph")
     (attribute-graph {::attributes       attributes
                       ::direct-reaches?  true
-                      ::nested-reaches?  true
+                      ::nested-reaches?  false
                       ::direct-provides? true
-                      ::nested-provides? true
+                      ::nested-provides? false
                       ::on-show-details  on-select-attribute
                       ::on-click-edge    #(on-select-resolver (first (::resolvers %)))})))
 
@@ -1223,10 +1223,10 @@
             "▶")
           (ui/button {:onClick  (fp/get-state this :go-stats)
                       :disabled (= (main-view-ident page) (fp/get-ident this))
-                      :style    {:marginLeft "12px"}} "Go to stats")
+                      :style    {:marginLeft "12px"}} "Stats")
           (ui/button {:onClick  (fp/get-state this :go-graph-view)
                       :disabled (= (first (main-view-ident page)) ::graph-view-id)
-                      :style    {:marginLeft "12px"}} "Full Graph View"))
+                      :style    {:marginLeft "12px"}} "Full Graph"))
         (if page
           (main-view-union page (assoc index
                                   ::attributes attributes
