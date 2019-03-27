@@ -456,7 +456,7 @@
                (ui/button {:onClick #(fp/set-state! this {:seed (rand)})} (dom/i {:classes ["fa" "fa-sync-alt"]})))}
     (dom/div :.examples
       (try
-        (let [samples (gen/sample (s/gen attribute))
+        (let [samples (distinct (gen/sample (s/gen attribute)))
               samples (try
                         (sort samples)
                         (catch :default _ samples))]
