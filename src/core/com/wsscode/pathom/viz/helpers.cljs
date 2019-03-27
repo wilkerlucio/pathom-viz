@@ -7,7 +7,8 @@
             [fulcro.client.mutations :as fm]
             [goog.object :as gobj]
             [clojure.walk :as walk]
-            [cljs.spec.alpha :as s]))
+            [cljs.spec.alpha :as s]
+            [com.wsscode.pathom.core :as p]))
 
 (s/def ::path (s/coll-of keyword? :kind vector?))
 (s/def ::path-map (s/map-of ::path map?))
@@ -90,6 +91,11 @@
       (not (zero? result)) result
       (nil? value1) 0
       :else (recur rest1 rest2))))
+
+(defn remove-not-found [x]
+  (p/transduce-maps
+    (remove (fn [[_ v]] (contains? #{::p/not-found ::fp/not-found} v)))
+    x))
 
 (>defn path-map->tree
   "Generate a tree structure from a map of maps to data. For example, the given structure:
