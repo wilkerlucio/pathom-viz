@@ -446,6 +446,27 @@
 
 (def attribute-info-mutation-output-in (fp/computed-factory AttributeInfoMutationOutputIn))
 
+(fp/defsc ExamplesPanel
+  [this {::pc/keys [attribute]}]
+  {:css [[:.examples {:font-family ui/font-code}]]}
+  (ui/panel {::ui/panel-title
+             (ui/row {:classes [:.center]}
+               (dom/div "Examples")
+               (dom/div (ui/gc :.flex))
+               (ui/button {:onClick #(fp/set-state! this {:seed (rand)})} (dom/i {:classes ["fa" "fa-sync-alt"]})))}
+    (dom/div :.examples
+      (try
+        (let [samples (gen/sample (s/gen attribute))
+              samples (try
+                        (sort samples)
+                        (catch :default _ samples))]
+          (for [[i example] (map vector (range) samples)]
+            (dom/div {:key (str "example-" i)} (pr-str example))))
+        (catch :default _
+          (dom/div "Error generating samples"))))))
+
+(def examples-panel (fp/computed-factory ExamplesPanel))
+
 (fp/defsc AttributeView
   [this {::pc/keys [attr-combinations attribute attr-reach-via attr-provides
                     attr-input-in attr-output-in
@@ -524,7 +545,7 @@
                       [:.links-display {:display "block"}]]]
                     [:.links-display {:display     "none"
                                       :margin-left "16px"}]]
-   :css-include    [AttributeGraph ui/ToggleAction]
+   :css-include    [AttributeGraph ui/ToggleAction ExamplesPanel]
    :initLocalState (fn [] {:graph-comm      (atom nil)
                            :select-resolver (fn [{::keys [resolvers]}]
                                               (let [{::keys [on-select-resolver]} (fp/get-computed (fp/props this))]
@@ -608,12 +629,7 @@
               (ui/panel {::ui/panel-title "Spec"}
                 (pr-str form))
 
-              (ui/panel {::ui/panel-title "Examples"}
-                (try
-                  (for [example (gen/sample (s/gen attribute))]
-                    (dom/div {:key (pr-str example)} (pr-str example)))
-                  (catch :default _
-                    (dom/div "Error generating samples"))))))
+              (examples-panel {::pc/attribute attribute} computed)))
 
           (render-plugin-extension this ::plugin-render-to-attr-left-menu))
 
