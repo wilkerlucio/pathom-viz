@@ -1038,7 +1038,7 @@
                  [% val]) props)
         [:invalid "ident"])))
 
-(def main-view-ident (prop-presence-ident [::pc/attribute ::pc/sym ::mutation-sym ::id ::graph-view-id]))
+(def main-view-ident (prop-presence-ident [::pc/attribute ::mutation-sym ::pc/sym ::id ::graph-view-id]))
 
 (fp/defsc MainViewUnion
   [this props]
@@ -1208,9 +1208,7 @@
             ::history-index (inc history-index)))))))
 
 (defn clear-not-found [x]
-  (into {}
-        (remove (fn [[_ v]] (= v ::fp/not-found)))
-        x))
+  (p/elide-items (conj p/special-outputs ::fp/not-found) x))
 
 (fp/defsc IndexExplorer
   [this {::keys   [index attributes]
