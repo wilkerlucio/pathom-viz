@@ -71,7 +71,8 @@
 
 (fp/defsc Button
   [this props]
-  {:css [[:.button {:cursor "pointer"}
+  {:css [[:.button {:cursor  "pointer"
+                    :padding "1px 7px 2px"}
           [:&:disabled {:cursor "default"}]]]}
   (dom/button :.button props (fp/children this)))
 
