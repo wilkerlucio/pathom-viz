@@ -1243,7 +1243,8 @@
                     {::resolvers (fp/get-query ResolverIndex)}
                     {::mutations (fp/get-query MutationIndex)}
                     {:ui/page (fp/get-query MainViewUnion)}]
-   :css            [[:.out-container {:width "100%"}]
+   :css            [[:.out-container {:width "100%"
+                                      :flex "1"}]
                     [:.container {:flex     "1"
                                   :overflow "hidden"}]
                     [:.graph {:height  "800px"
