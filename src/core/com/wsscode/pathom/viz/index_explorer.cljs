@@ -448,7 +448,8 @@
 
 (fp/defsc ExamplesPanel
   [this {::pc/keys [attribute]}]
-  {:css [[:.examples {:font-family ui/font-code}]]}
+  {:css [[:.examples {:font-family ui/font-code}]
+         [:.error {:color "#f44336"}]]}
   (ui/panel {::ui/panel-title
              (ui/row {:classes [:.center]}
                (dom/div "Examples")
@@ -456,14 +457,16 @@
                (ui/button {:onClick #(fp/set-state! this {:seed (rand)})} (dom/i {:classes ["fa" "fa-sync-alt"]})))}
     (dom/div :.examples
       (try
-        (let [samples (distinct (gen/sample (s/gen attribute)))
+        (let [samples (vec (distinct (gen/sample (s/gen attribute))))
               samples (try
                         (sort samples)
                         (catch :default _ samples))]
           (for [[i example] (map vector (range) samples)]
             (dom/div {:key (str "example-" i)} (pr-str example))))
-        (catch :default _
-          (dom/div "Error generating samples"))))))
+        (catch :default ex
+          (dom/div
+            "Error generating samples:"
+            (dom/pre :.error (ex-message ex))))))))
 
 (def examples-panel (fp/computed-factory ExamplesPanel))
 
