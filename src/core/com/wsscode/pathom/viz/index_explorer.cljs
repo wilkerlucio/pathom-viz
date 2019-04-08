@@ -1115,7 +1115,8 @@
                             ::ident-attribute? (contains? idents attr))))
                    (sort-by (comp pr-str ::pc/attribute))
                    (vec))]
-    (-> {::attributes    attrs
+    (-> {::idx           index
+         ::attributes    attrs
          ::globals       (filterv ::global-attribute? attrs)
          ::idents        (filterv ::ident-attribute? attrs)
 
@@ -1219,24 +1220,24 @@
          :as      props}
    extensions]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
-                     (let [v
-                           (merge
-                             (let [id (or (::id data-tree)
-                                          (::id current-normalized)
-                                          (random-uuid))]
-                               {::id            id
-                                ::history       [[::id id]]
-                                ::history-index 0
-                                :ui/menu        {::id id}
-                                :ui/page        {::id id}})
-                             current-normalized
-                             (clear-not-found data-tree)
-                             (if-let [index (get data-tree ::index)]
-                               (process-index index)))]
-                       v))
+                     (let [data-tree (clear-not-found data-tree)]
+                       (merge
+                         (let [id (or (::id data-tree)
+                                      (::id current-normalized)
+                                      (random-uuid))]
+                           {::id            id
+                            ::history       [[::id id]]
+                            ::history-index 0
+                            :ui/menu        {::id id}
+                            :ui/page        {::id id}})
+                         current-normalized
+                         data-tree
+                         (if-let [index (get data-tree ::index)]
+                           (process-index index)
+                           {::idx {::no-index? true}}))))
    :initial-state  {}
    :ident          [::id ::id]
-   :query          [::id ::index ::history ::history-index
+   :query          [::id ::index ::idx ::history ::history-index
                     {:ui/menu (fp/get-query SearchEverything)}
                     {::attributes (fp/get-query AttributeIndex)}
                     {::globals (fp/get-query AttributeIndex)}
@@ -1247,7 +1248,7 @@
                     {::mutations (fp/get-query MutationIndex)}
                     {:ui/page (fp/get-query MainViewUnion)}]
    :css            [[:.out-container {:width "100%"
-                                      :flex "1"}]
+                                      :flex  "1"}]
                     [:.container {:flex     "1"
                                   :overflow "hidden"}]
                     [:.graph {:height  "800px"
