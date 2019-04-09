@@ -1,25 +1,12 @@
 (ns com.wsscode.pathom.viz.trace
   (:require ["./d3-trace" :refer [renderPathomTrace updateTraceSize]]
             ["./detect-element-size" :refer [addResizeListener]]
+            [clojure.walk :as walk]
+            [com.wsscode.pathom.viz.helpers :as h]
             [fulcro.client.localized-dom :as dom]
-            [fulcro.client.primitives :as fp]
-            [goog.object :as gobj]
             [fulcro.client.mutations :as fm]
-            [clojure.walk :as walk]))
-
-(defn stringify-keyword-values [x]
-  (walk/prewalk
-    (fn [x]
-      (cond
-        (simple-keyword? x)
-        (name x)
-
-        (keyword x)
-        (str x)
-
-        :else
-        x))
-    x))
+            [fulcro.client.primitives :as fp]
+            [goog.object :as gobj]))
 
 (defn render-trace [this]
   (let [{::keys [trace-data on-show-details]} (-> this fp/props)
@@ -30,7 +17,7 @@
       (renderPathomTrace svg
         (clj->js {:svgWidth    (gobj/get container "clientWidth")
                   :svgHeight   (gobj/get container "clientHeight")
-                  :data        (stringify-keyword-values trace-data)
+                  :data        (h/stringify-keyword-values trace-data)
                   :showDetails (or on-show-details identity)})))))
 
 (defn recompute-trace-size [this]

@@ -1,5 +1,8 @@
 # Change Log
 
+## [1.0.5]
+- Add Index Explorer
+
 ## [1.0.4]
 - Improved fuzzy search algoritm
 - Change style for batch resolver on trace
