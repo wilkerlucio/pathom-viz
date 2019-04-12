@@ -470,29 +470,85 @@
 
 (def examples-panel (fp/computed-factory ExamplesPanel))
 
+(fp/defsc AttributeGraphPanel
+  [this {::pc/keys [attribute]
+         ::keys    [attr-depth direct-reaches? nested-reaches? direct-provides?
+                    nested-provides? interconnections?]}
+   {::keys [on-select-attribute attributes]}]
+  {:pre-merge (fn [{:keys [current-normalized data-tree]}]
+                (merge {::attr-depth        1
+                        ::direct-reaches?   true
+                        ::nested-reaches?   false
+                        ::direct-provides?  true
+                        ::nested-provides?  false
+                        ::interconnections? true} current-normalized data-tree))
+   :ident     [::pc/attribute ::pc/attribute]
+   :query     [::pc/attribute ::attr-depth ::direct-reaches? ::nested-reaches?
+               ::direct-provides? ::nested-provides? ::interconnections? ::show-graph? ::pc/attr-reach-via ::pc/attr-provides]
+   :css       [[:.graph {:height         "400px"
+                         :width          "100%"
+                         :display        "flex"
+                         :align-items    "stretch"
+                         :flex-direction "column"}]]}
+  (ui/panel {::ui/panel-title (ui/row {:classes (ui/ccss this :.graph-options)}
+                                (ui/row {:classes [:.center]}
+                                  (dom/label "Depth")
+                                  (ui/number-input {:min      1
+                                                    :value    attr-depth
+                                                    :onChange #(fm/set-value! this ::attr-depth %2)}))
+                                (ui/toggle-action {::ui/active? direct-reaches?
+                                                   :onClick     #(fm/set-value! this ::direct-reaches? (not direct-reaches?))}
+                                  "Direct inputs")
+                                (ui/toggle-action {::ui/active? nested-reaches?
+                                                   :onClick     #(fm/set-value! this ::nested-reaches? (not nested-reaches?))}
+                                  "Nested inputs")
+                                (ui/toggle-action {::ui/active? direct-provides?
+                                                   :onClick     #(fm/set-value! this ::direct-provides? (not direct-provides?))}
+                                  "Direct outputs")
+                                (ui/toggle-action {::ui/active? nested-provides?
+                                                   :onClick     #(fm/set-value! this ::nested-provides? (not nested-provides?))}
+                                  "Nested outputs")
+                                #_
+                                (ui/toggle-action {::ui/active? interconnections?
+                                                   :onClick     #(fm/set-value! this ::interconnections? (not interconnections?))}
+                                  "Interconnections"))
+             ::ui/scrollbars? false}
+    (dom/div :.graph
+      (let [shared-options {::direct-reaches?   direct-reaches?
+                            ::nested-reaches?   nested-reaches?
+                            ::direct-provides?  direct-provides?
+                            ::nested-provides?  nested-provides?
+                            ::interconnections? interconnections?}]
+        (attribute-graph
+          (merge {::attributes      (attribute-network
+                                      (merge {::attr-depth attr-depth
+                                              ::attr-index (h/index-by ::pc/attribute attributes)
+                                              ::attributes attributes}
+                                        shared-options)
+                                      attribute)
+                  ::on-show-details on-select-attribute
+                  ::on-click-edge   (fp/get-state this :select-resolver)
+                  ::graph-comm      (fp/get-state this :graph-comm)}
+            shared-options))))))
+
+(def attribute-graph-panel (fp/computed-factory AttributeGraphPanel))
+
 (fp/defsc AttributeView
   [this {::pc/keys [attr-combinations attribute attr-reach-via attr-provides
                     attr-input-in attr-output-in
                     attr-mutation-param-in attr-mutation-output-in]
-         ::keys    [attr-depth direct-reaches? nested-reaches? direct-provides?
-                    nested-provides? interconnections? show-graph?]
-         :>/keys   [reach-via mutation-param-in mutation-output-in]
+         ::keys    [show-graph?]
+         :>/keys   [reach-via mutation-param-in mutation-output-in graph-panel]
          :ui/keys  [provides-tree provides-tree-source]}
-   {::keys [on-select-attribute attributes]
-    :as    computed}]
+   computed]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
                      (let [attr          (or (::pc/attribute data-tree)
                                              (::pc/attribute current-normalized))
                            attr-provides (or (::pc/attr-provides data-tree)
                                              (::pc/attr-provides current-normalized))]
                        (merge
-                         {::attr-depth          1
-                          ::direct-reaches?     true
-                          ::nested-reaches?     false
-                          ::direct-provides?    true
-                          ::nested-provides?    false
-                          ::interconnections?   true
-                          ::show-graph?         false
+                         {::show-graph?         false
+                          :>/graph-panel        {::pc/attribute attr}
                           :>/reach-via          {::pc/attribute attr}
                           :>/mutation-param-in  {::pc/attribute attr}
                           :>/mutation-output-in {::pc/attribute attr}
@@ -502,10 +558,11 @@
                          (if attr-provides
                            {:ui/provides-tree-source (attr-provides->tree attr-provides)}))))
    :ident          [::pc/attribute ::pc/attribute]
-   :query          [::pc/attribute ::attr-depth ::direct-reaches? ::nested-reaches?
-                    ::pc/attr-combinations ::pc/attr-input-in ::pc/attr-output-in
-                    ::pc/attr-mutation-param-in ::pc/attr-mutation-output-in
-                    ::direct-provides? ::nested-provides? ::interconnections? ::show-graph? ::pc/attr-reach-via ::pc/attr-provides
+   :query          [::pc/attribute ::pc/attr-combinations ::pc/attr-input-in
+                    ::pc/attr-output-in ::pc/attr-mutation-param-in
+                    ::pc/attr-mutation-output-in
+                    ::show-graph? ::pc/attr-reach-via ::pc/attr-provides
+                    {:>/graph-panel (fp/get-query AttributeGraphPanel)}
                     {:>/reach-via (fp/get-query AttributeInfoReachVia)}
                     {:>/mutation-param-in (fp/get-query AttributeInfoMutationParamIn)}
                     {:>/mutation-output-in (fp/get-query AttributeInfoMutationOutputIn)}
@@ -564,6 +621,8 @@
           "Graph View"))
 
       (if show-graph?
+        (attribute-graph-panel graph-panel computed)
+        #_
         (ui/panel {::ui/panel-title (ui/row {:classes (ui/ccss this :.graph-options)}
                                       (ui/row {:classes [:.center]}
                                         (dom/label "Depth")
@@ -582,6 +641,7 @@
                                       (ui/toggle-action {::ui/active? nested-provides?
                                                          :onClick     #(fm/set-value! this ::nested-provides? (not nested-provides?))}
                                         "Nested outputs")
+                                      #_
                                       (ui/toggle-action {::ui/active? interconnections?
                                                          :onClick     #(fm/set-value! this ::interconnections? (not interconnections?))}
                                         "Interconnections"))
@@ -974,8 +1034,8 @@
 (def attribute-mismatch-panel (fp/computed-factory AttributeMismatchPanel))
 
 (fp/defsc StatsView
-  [this {::keys [attribute-count resolver-count mutation-count globals-count idents-count
-                 attr-edges-count top-connection-hubs attr-type-mismatch]
+  [this {::keys  [attribute-count resolver-count mutation-count globals-count idents-count
+                  attr-edges-count top-connection-hubs attr-type-mismatch]
          :>/keys [attr-type-mismatch-join]}
    computed]
   {:pre-merge (fn [{:keys [current-normalized data-tree]}]
