@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.0.6]
+- Remove interconnections toggle from graph view
+- Fix attribute network depth from groups
+
 ## [1.0.5]
 - Add Index Explorer
 

@@ -330,14 +330,13 @@
           (fn [out input]
             (if (or (and direct-reaches? (direct-input? input))
                     (and nested-reaches? (nested? input)))
-              (if-let [attr (single-input input)]
+              (let [attr (or (single-input input)
+                             (if (vector? input) (first input) input))]
                 (if (> attr-depth 1)
                   (attribute-network*
                     (assoc options' ::sub-index out)
                     attr)
-                  (update out attr merge (pull-attr options' attr)))
-                (let [input (if (vector? input) (first input) input)]
-                  (update out input merge (pull-attr options' input))))
+                  (update out attr merge (pull-attr options' attr))))
               out))
           <>
           (keys attr-reach-via))

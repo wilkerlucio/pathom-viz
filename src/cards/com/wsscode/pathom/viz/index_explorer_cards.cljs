@@ -122,8 +122,59 @@
   (-> out
       (update :nodes #(mapv (fn [x] (select-keys x [:attribute])) %))))
 
+(defn prepare-attributes [registry]
+  (as-> (pc/register {} (mapv #(assoc % ::pc/resolve (fn [_ _])) registry)) <>
+    (iex/process-index <>)
+    (::iex/attributes <>)))
+
+(defn attribute-network [registry options center]
+  (->> (iex/attribute-network
+         (merge
+           {::iex/attr-depth       1
+            ::iex/attributes       (prepare-attributes registry)
+            ::iex/direct-reaches?  true
+            ::iex/nested-reaches?  false
+            ::iex/direct-provides? true
+            ::iex/nested-provides? false}
+           options)
+         center)
+       (into #{} (map #(select-keys % [::pc/attribute])))))
+
 (ws/deftest test-attribute-network
-  (is (= (-> (iex/attribute-network {::iex/attributes [{}]} :movie/name)))))
+  (is (= (iex/attribute-network {::iex/attributes [{}]} :movie/name)
+         [{:com.wsscode.pathom.viz.index-explorer/center? true}]))
+  (is (= (attribute-network
+           [{::pc/sym    'movie-by-id
+             ::pc/input  #{:movie/id}
+             ::pc/output [:movie/name
+                          :movie/release-date]}]
+           {}
+           :movie/name)
+         #{{:com.wsscode.pathom.connect/attribute :movie/name}
+           {:com.wsscode.pathom.connect/attribute :movie/id}}))
+  (is (= (attribute-network
+           [{::pc/sym    'movie-by-id
+             ::pc/input  #{:movie/id}
+             ::pc/output [:movie/name
+                          :movie/release-date]}]
+           {::iex/attr-depth 2}
+           :movie/name)
+         #{{:com.wsscode.pathom.connect/attribute :movie/name}
+           {:com.wsscode.pathom.connect/attribute :movie/id}
+           {:com.wsscode.pathom.connect/attribute :movie/release-date}}))
+  (is (= (attribute-network
+           [{::pc/sym    'user-by-id
+             ::pc/input  #{:github.repository/name :github.repository/owner}
+             ::pc/output [:github.repository/id
+                          :github.repository/url
+                          :github.repository/name-with-owner]}]
+           {::iex/attr-depth 2}
+           :github.repository/url)
+         #{{:com.wsscode.pathom.connect/attribute :github.repository/url}
+           {:com.wsscode.pathom.connect/attribute :github.repository/id}
+           {:com.wsscode.pathom.connect/attribute :github.repository/name-with-owner}
+           {:com.wsscode.pathom.connect/attribute #{:github.repository/owner
+                                                    :github.repository/name}}})))
 
 (ws/deftest test-attr-provides->tree
   (is (= (iex/attr-provides->tree {})
