@@ -473,7 +473,7 @@
   [this {::pc/keys [attribute]
          ::keys    [attr-depth direct-reaches? nested-reaches? direct-provides?
                     nested-provides? interconnections?]}
-   {::keys [on-select-attribute attributes]}]
+   {::keys [on-select-attribute attributes graph-comm]}]
   {:pre-merge (fn [{:keys [current-normalized data-tree]}]
                 (merge {::attr-depth        1
                         ::direct-reaches?   true
@@ -527,7 +527,7 @@
                                       attribute)
                   ::on-show-details on-select-attribute
                   ::on-click-edge   (fp/get-state this :select-resolver)
-                  ::graph-comm      (fp/get-state this :graph-comm)}
+                  ::graph-comm      graph-comm}
             shared-options))))))
 
 (def attribute-graph-panel (fp/computed-factory AttributeGraphPanel))
