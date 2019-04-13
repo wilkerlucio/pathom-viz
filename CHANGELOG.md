@@ -1,5 +1,8 @@
 # Change Log
 
+## [1.0.7]
+- Fix graph comm in attribute graph panel
+
 ## [1.0.6]
 - Remove interconnections toggle from graph view
 - Fix attribute network depth from groups
