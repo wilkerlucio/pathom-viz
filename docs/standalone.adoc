@@ -38,7 +38,7 @@ You can modify the `default-url` var, if you want to use a different path:
 
 If you want to test the standalone app, you will need a Pathom server. In case you don't have one, you can use the
 link:https://github.com/jlesquembre/pathom-pedestal[pathom-pedestal project].
-It offers a test application, clone the project and lunch it:
+It offers a test application, clone the project and launch it:
 
 [source,bash]
 ----
