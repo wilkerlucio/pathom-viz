@@ -1,0 +1,66 @@
+= Stand alone app
+
+It is possible to mount the query editor as a stand alone application in any dom node.
+In this case, the query editor expects to connect to a web server responding to pathom queries.
+Check the link:https://github.com/wilkerlucio/pathom-viz/blob/master/src/core/com/wsscode/pathom/viz/standalone.cljs[source code]
+to see how is done.
+
+For convenience, a link:http://shadow-cljs.org/[Shadow CLJS] task, called `standalone`, is provided:
+
+[source,bash]
+----
+# Development
+shadow-cljs watch standalone
+
+# Production
+shadow-cljs release standalone
+----
+
+
+== Connect to Pathom server
+
+By default, the app assumes that the pathom server will listen for requests on
+the same URL that is serving the app itself. For example, if you are serving
+the app from `http://localhost:8890/pathom` (`GET` method), the app will do
+`POST` requests with the pathom queries to the same URL:
+`http://localhost:8890/pathom`
+
+There is one exception to this rule, if the app is served from the root URL
+(e.g.: `http://localhost:8087/`), the app will assume that the pathom server is
+on `http://localhost:8087/pathom`.
+
+You can modify the `default-url` var, if you want to use a different path:
+
+[source,clojure]
+----
+(def default-url "/pathom")
+----
+
+If you want to test the standalone app, you will need a Pathom server. In case you don't have one, you can use the
+link:https://github.com/jlesquembre/pathom-pedestal[pathom-pedestal project].
+It offers a test application, clone the project and launch it:
+
+[source,bash]
+----
+clj -A:dev
+----
+
+== Development
+
+When working on pathom-viz itself, usually your pathom server will be hosted by
+other application, listening on a different port (or domain). Luckily, Shadow
+CLJS has an option,
+link:https://shadow-cljs.github.io/docs/UsersGuide.html#dev-http-proxy[proxy-url],
+to help us:
+
+[source,clojure]
+----
+:standalone {:target       :browser
+             :output-dir   "standalone/assets/js"
+             :asset-path   "/js"
+             :modules    {:main {:init-fn com.wsscode.pathom.viz.standalone/init}}
+             :devtools   {:preloads  [devtools.preload fulcro.inspect.preload]
+                          :http-root "standalone/assets"
+                          :http-port 8087
+                          :proxy-url "http://localhost:8890"}}}}
+----
