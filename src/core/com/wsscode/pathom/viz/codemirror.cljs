@@ -177,13 +177,14 @@
         (recur indexes (js-obj "state" (js-obj "mode" (gobj/get prev "mode") "pathStack" prev)))))))
 
 (defn ^:export completions [index token reg]
-  (let [ctx (token-context index token)]
-    (when reg
-      (case (:type ctx)
-        :attribute (->> (pc/discover-attrs (assoc index ::pc/cache pathom-cache)
-                          (->> ctx :context (remove (comp #{">"} namespace)))))
-        :ident (into {} (map #(hash-map % {})) (-> index ::pc/idents))
-        {}))))
+  (if (map? (::pc/index-io index))
+    (let [ctx (token-context index token)]
+      (when reg
+        (case (:type ctx)
+          :attribute (->> (pc/discover-attrs (assoc index ::pc/cache pathom-cache)
+                            (->> ctx :context (remove (comp #{">"} namespace)))))
+          :ident (into {} (map #(hash-map % {})) (-> index ::pc/idents))
+          {})))))
 
 (gobj/set js/window "cljsDeref" deref)
 
