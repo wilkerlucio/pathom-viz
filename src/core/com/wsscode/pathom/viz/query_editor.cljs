@@ -108,8 +108,10 @@
     :ui/keys                 [query-running?]
     :com.wsscode.pathom/keys [trace]
     ::pc/keys                [indexes]}
-   {::keys [default-trace-size editor-props]
-    :or    {default-trace-size 400}} css]
+   {::keys [default-trace-size editor-props
+            enable-trace?]
+    :or    {default-trace-size 400
+            enable-trace?      true}} css]
   {:initial-state     (fn [_]
                         {::id             (random-uuid)
                          ::request-trace? true
@@ -171,20 +173,22 @@
                           100))
    :initLocalState    (fn []
                         {:run-query (fn []
-                                      (let [{:ui/keys [query-running?] :as props} (fp/props this)]
+                                      (let [{:ui/keys [query-running?] :as props} (fp/props this)
+                                            {::keys [enable-trace?]} (fp/get-computed props)]
                                         (if-not query-running?
-                                          (fp/ptransact! this [`(fm/set-props {:ui/query-running? true})
-                                                               `(run-query ~props)
-                                                               `(fm/set-props {:ui/query-running? false})]))))})}
+                                          (let [props (update props ::request-trace? #(and enable-trace? %))]
+                                            (fp/ptransact! this [`(fm/set-props {:ui/query-running? true})
+                                                                 `(run-query ~props)
+                                                                 `(fm/set-props {:ui/query-running? false})])))))})}
   (let [run-query (fp/get-state this :run-query)]
     (dom/div :.container
-
       (dom/div :.toolbar
-        (dom/label
-          (dom/input {:type     "checkbox"
-                      :checked  request-trace?
-                      :onChange #(fm/toggle! this ::request-trace?)})
-          "Request trace")
+        (if enable-trace?
+          (dom/label
+            (dom/input {:type     "checkbox"
+                        :checked  request-trace?
+                        :onChange #(fm/toggle! this ::request-trace?)})
+            "Request trace"))
         (dom/div :.flex)
         (button {:onClick #(load-indexes (fp/get-reconciler this))
                  :style   {:marginRight "6px"}}
