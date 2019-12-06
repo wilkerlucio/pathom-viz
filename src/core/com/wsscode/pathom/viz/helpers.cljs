@@ -1,6 +1,6 @@
 (ns com.wsscode.pathom.viz.helpers
   (:require ["react-draggable" :refer [DraggableCore]]
-            [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ?]]
+            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [clojure.pprint]
             [fulcro.client.dom :as dom]
             [fulcro.client.primitives :as fp]

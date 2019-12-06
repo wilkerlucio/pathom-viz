@@ -18,7 +18,7 @@
             [fulcro.client.localized-dom :as dom]
             [fulcro.client.mutations :as fm]
             [fulcro.client.primitives :as fp]
-            [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ?]]
+            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [goog.object :as gobj]))
 
 ; region specs

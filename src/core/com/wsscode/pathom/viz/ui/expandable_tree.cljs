@@ -3,7 +3,7 @@
             [com.wsscode.pathom.viz.helpers :as h]
             [fulcro.client.localized-dom :as dom]
             [fulcro.client.primitives :as fp]
-            [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ?]]))
+            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]))
 
 (s/def ::path (s/coll-of any? :kind vector?))
 (s/def ::expanded (s/coll-of ::path :kind set?))

@@ -4,7 +4,7 @@
             [fulcro-css.css :as css]
             [goog.object :as gobj]
             [goog.string :as gstr]
-            [ghostwheel.core :as g :refer [>defn >defn- >fdef => | <- ?]]
+            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [cljs.spec.alpha :as s]
             [fulcro.client.dom :as domc]))
 
