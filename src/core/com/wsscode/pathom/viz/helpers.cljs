@@ -1,14 +1,14 @@
 (ns com.wsscode.pathom.viz.helpers
   (:require ["react-draggable" :refer [DraggableCore]]
-            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
-            [clojure.pprint]
-            [fulcro.client.dom :as dom]
-            [fulcro.client.primitives :as fp]
-            [fulcro.client.mutations :as fm]
-            [goog.object :as gobj]
-            [clojure.walk :as walk]
             [cljs.spec.alpha :as s]
-            [com.wsscode.pathom.core :as p]))
+            [clojure.pprint]
+            [clojure.walk :as walk]
+            [com.fulcrologic.fulcro-css.localized-dom :as dom]
+            [com.fulcrologic.fulcro.components :as fp]
+            [com.fulcrologic.fulcro.mutations :as fm]
+            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
+            [com.wsscode.pathom.core :as p]
+            [goog.object :as gobj]))
 
 (s/def ::path (s/coll-of keyword? :kind vector?))
 (s/def ::path-map (s/map-of ::path map?))

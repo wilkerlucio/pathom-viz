@@ -1,10 +1,8 @@
 (ns com.wsscode.pathom.viz.trace-cards
   (:require [com.wsscode.pathom.viz.trace :as trace]
-            [nubank.workspaces.card-types.fulcro :as ct.fulcro]
-            [nubank.workspaces.card-types.react :as ct.react]
+            [nubank.workspaces.card-types.fulcro3 :as ct.fulcro]
             [nubank.workspaces.core :as ws]
             [nubank.workspaces.model :as wsm]
-            [nubank.workspaces.lib.fulcro-portal :as f.portal]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.common.async-cljs :refer [<? go-catch]]
             [cljs.core.async :as async]
@@ -114,206 +112,205 @@
                                    p/trace-plugin]}))
 
 (def sample-trace
-  '{:start    0,
-    :path     [],
-    :duration 366,
-    :details  [{:event "process-pending", :duration 0, :start 366, :provides #{[:dev.playground/id 1]}, :merge-result? true}],
-    :children [{:start    1,
-                :path     [[:dev.playground/id 1]],
-                :duration 365,
-                :details  [{:event "compute-plan", :duration 0, :start 1}
-                           {:event "call-read", :duration 0, :start 1}
-                           {:event "async-return", :duration 0, :start 1}
-                           {:event         "process-pending",
-                            :duration      0,
-                            :start         109,
-                            :provides      #{:dev.playground/size :dev.playground/weight},
+  '{:start    0
+    :path     []
+    :duration 366
+    :details  [{:event "process-pending" :duration 0 :start 366 :provides #{[:dev.playground/id 1]} :merge-result? true}]
+    :children [{:start    1
+                :path     [[:dev.playground/id 1]]
+                :duration 365
+                :details  [{:event "compute-plan" :duration 0 :start 1}
+                           {:event "call-read" :duration 0 :start 1}
+                           {:event "async-return" :duration 0 :start 1}
+                           {:event         "process-pending"
+                            :duration      0
+                            :start         109
+                            :provides      #{:dev.playground/size :dev.playground/weight}
                             :merge-result? false}
-                           {:event     "reset-loop",
-                            :duration  0,
-                            :start     110,
+                           {:event     "reset-loop"
+                            :duration  0
+                            :start     110
                             :loop-keys [:dev.playground/size :dev.playground/weight]}
-                           {:event         "process-pending",
-                            :duration      0,
-                            :start         305,
-                            :provides      #{:dev.playground/color},
+                           {:event         "process-pending"
+                            :duration      0
+                            :start         305
+                            :provides      #{:dev.playground/color}
                             :merge-result? false}
-                           {:event "reset-loop", :duration 0, :start 305, :loop-keys [:dev.playground/color]}
-                           {:event         "process-pending",
-                            :duration      0,
-                            :start         330,
-                            :provides      #{:dev.playground/color-darken},
+                           {:event "reset-loop" :duration 0 :start 305 :loop-keys [:dev.playground/color]}
+                           {:event         "process-pending"
+                            :duration      0
+                            :start         330
+                            :provides      #{:dev.playground/color-darken}
                             :merge-result? false}
-                           {:event "reset-loop", :duration 0, :start 330, :loop-keys [:dev.playground/color-darken]}
-                           {:event         "process-pending",
-                            :duration      0,
-                            :start         362,
-                            :provides      #{:dev.playground/color-lighter},
+                           {:event "reset-loop" :duration 0 :start 330 :loop-keys [:dev.playground/color-darken]}
+                           {:event         "process-pending"
+                            :duration      0
+                            :start         362
+                            :provides      #{:dev.playground/color-lighter}
                             :merge-result? false}
-                           {:event "reset-loop", :duration 0, :start 362, :loop-keys [:dev.playground/color-lighter]}
-                           {:event "merge-result", :duration 0, :start 366}],
-                :name     "[:dev.playground/id 1]",
-                :children [{:start    1,
-                            :path     [[:dev.playground/id 1] :dev.playground/color-lighter],
-                            :duration 364,
-                            :details  [{:event    "compute-plan",
-                                        :duration 0,
-                                        :start    1,
+                           {:event "reset-loop" :duration 0 :start 362 :loop-keys [:dev.playground/color-lighter]}
+                           {:event "merge-result" :duration 0 :start 366}]
+                :name     "[:dev.playground/id 1]"
+                :children [{:start    1
+                            :path     [[:dev.playground/id 1] :dev.playground/color-lighter]
+                            :duration 364
+                            :details  [{:event    "compute-plan"
+                                        :duration 0
+                                        :start    1
                                         :plan     (([:dev.playground/color dev.playground/color]
-                                                     [:dev.playground/color-lighter dev.playground/lighter-color]))}
-                                       {:event      "call-resolver-with-cache",
-                                        :duration   0,
-                                        :start      1,
-                                        :input-data #:dev.playground{:id 1},
-                                        :sym        dev.playground/color,
+                                                    [:dev.playground/color-lighter dev.playground/lighter-color]))}
+                                       {:event      "call-resolver-with-cache"
+                                        :duration   0
+                                        :start      1
+                                        :input-data #:dev.playground{:id 1}
+                                        :sym        dev.playground/color
                                         :key        :dev.playground/color-lighter}
-                                       {:event "call-read", :duration 0, :start 1}
-                                       {:event      "schedule-resolver",
-                                        :duration   0,
-                                        :start      2,
-                                        :input-data #:dev.playground{:id 1},
-                                        :sym        dev.playground/color,
+                                       {:event "call-read" :duration 0 :start 1}
+                                       {:event      "schedule-resolver"
+                                        :duration   0
+                                        :start      2
+                                        :input-data #:dev.playground{:id 1}
+                                        :sym        dev.playground/color
                                         :key        :dev.playground/color-lighter}
-                                       {:event      "call-resolver",
-                                        :duration   303,
-                                        :start      2,
-                                        :input-data #:dev.playground{:id 1},
-                                        :sym        dev.playground/color,
+                                       {:event      "call-resolver"
+                                        :duration   303
+                                        :start      2
+                                        :input-data #:dev.playground{:id 1}
+                                        :sym        dev.playground/color
                                         :key        :dev.playground/color-lighter}
-                                       {:event    "merge-resolver-response",
-                                        :duration 0,
-                                        :start    305,
-                                        :sym      dev.playground/color,
+                                       {:event    "merge-resolver-response"
+                                        :duration 0
+                                        :start    305
+                                        :sym      dev.playground/color
                                         :key      :dev.playground/color-lighter}
-                                       {:event      "call-resolver-with-cache",
-                                        :duration   0,
-                                        :start      305,
-                                        :input-data #:dev.playground{:color "red"},
-                                        :sym        dev.playground/lighter-color,
+                                       {:event      "call-resolver-with-cache"
+                                        :duration   0
+                                        :start      305
+                                        :input-data #:dev.playground{:color "red"}
+                                        :sym        dev.playground/lighter-color
                                         :key        :dev.playground/color-lighter}
-                                       {:event      "schedule-resolver",
-                                        :duration   0,
-                                        :start      308,
-                                        :input-data #:dev.playground{:color "red"},
-                                        :sym        dev.playground/lighter-color,
+                                       {:event      "schedule-resolver"
+                                        :duration   0
+                                        :start      308
+                                        :input-data #:dev.playground{:color "red"}
+                                        :sym        dev.playground/lighter-color
                                         :key        :dev.playground/color-lighter}
-                                       {:event      "call-resolver",
-                                        :duration   53,
-                                        :start      308,
-                                        :input-data #:dev.playground{:color "red"},
-                                        :sym        dev.playground/lighter-color,
+                                       {:event      "call-resolver"
+                                        :duration   53
+                                        :start      308
+                                        :input-data #:dev.playground{:color "red"}
+                                        :sym        dev.playground/lighter-color
                                         :key        :dev.playground/color-lighter}
-                                       {:event    "merge-resolver-response",
-                                        :duration 0,
-                                        :start    362,
-                                        :sym      dev.playground/lighter-color,
+                                       {:event    "merge-resolver-response"
+                                        :duration 0
+                                        :start    362
+                                        :sym      dev.playground/lighter-color
                                         :key      :dev.playground/color-lighter}
-                                       {:event "call-read", :duration 0, :start 362}
-                                       {:event "value-return", :duration 0, :start 365}],
+                                       {:event "call-read" :duration 0 :start 362}
+                                       {:event "value-return" :duration 0 :start 365}]
                             :name     ":dev.playground/color-lighter"}
-                           {:start    3,
-                            :path     [[:dev.playground/id 1] :dev.playground/color],
-                            :duration 303,
-                            :details  [{:event "skip-wait-key", :duration 0, :start 3}
-                                       {:event "call-read", :duration 0, :start 305}
-                                       {:event "value-return", :duration 0, :start 306}],
+                           {:start    3
+                            :path     [[:dev.playground/id 1] :dev.playground/color]
+                            :duration 303
+                            :details  [{:event "skip-wait-key" :duration 0 :start 3}
+                                       {:event "call-read" :duration 0 :start 305}
+                                       {:event "value-return" :duration 0 :start 306}]
                             :name     ":dev.playground/color"}
-                           {:start    3,
-                            :path     [[:dev.playground/id 1] :dev.playground/weight],
-                            :duration 107,
-                            :details  [{:event    "compute-plan",
-                                        :duration 0,
-                                        :start    4,
+                           {:start    3
+                            :path     [[:dev.playground/id 1] :dev.playground/weight]
+                            :duration 107
+                            :details  [{:event    "compute-plan"
+                                        :duration 0
+                                        :start    4
                                         :plan     (([:dev.playground/weight dev.playground/weight]))}
-                                       {:event      "call-resolver-with-cache",
-                                        :duration   0,
-                                        :start      4,
-                                        :input-data #:dev.playground{:id 1},
-                                        :sym        dev.playground/weight,
+                                       {:event      "call-resolver-with-cache"
+                                        :duration   0
+                                        :start      4
+                                        :input-data #:dev.playground{:id 1}
+                                        :sym        dev.playground/weight
                                         :key        :dev.playground/weight}
-                                       {:event "call-read", :duration 0, :start 4}
-                                       {:event      "schedule-resolver",
-                                        :duration   0,
-                                        :start      6,
-                                        :input-data #:dev.playground{:id 1},
-                                        :sym        dev.playground/weight,
+                                       {:event "call-read" :duration 0 :start 4}
+                                       {:event      "schedule-resolver"
+                                        :duration   0
+                                        :start      6
+                                        :input-data #:dev.playground{:id 1}
+                                        :sym        dev.playground/weight
                                         :key        :dev.playground/weight}
-                                       {:event      "call-resolver",
-                                        :duration   103,
-                                        :start      6,
-                                        :input-data #:dev.playground{:id 1},
-                                        :sym        dev.playground/weight,
+                                       {:event      "call-resolver"
+                                        :duration   103
+                                        :start      6
+                                        :input-data #:dev.playground{:id 1}
+                                        :sym        dev.playground/weight
                                         :key        :dev.playground/weight}
-                                       {:event    "merge-resolver-response",
-                                        :duration 0,
-                                        :start    109,
-                                        :sym      dev.playground/weight,
+                                       {:event    "merge-resolver-response"
+                                        :duration 0
+                                        :start    109
+                                        :sym      dev.playground/weight
                                         :key      :dev.playground/weight}
-                                       {:event "call-read", :duration 0, :start 110}
-                                       {:event "value-return", :duration 0, :start 110}],
+                                       {:event "call-read" :duration 0 :start 110}
+                                       {:event "value-return" :duration 0 :start 110}]
                             :name     ":dev.playground/weight"}
-                           {:start    6,
-                            :path     [[:dev.playground/id 1] :dev.playground/color-darken],
-                            :duration 325,
-                            :details  [{:event    "compute-plan",
-                                        :duration 1,
-                                        :start    6,
+                           {:start    6
+                            :path     [[:dev.playground/id 1] :dev.playground/color-darken]
+                            :duration 325
+                            :details  [{:event    "compute-plan"
+                                        :duration 1
+                                        :start    6
                                         :plan     (([:dev.playground/color dev.playground/color]
-                                                     [:dev.playground/color-darken dev.playground/darken-color]))}
-                                       {:event "call-read", :duration 0, :start 6}
-                                       {:event       "waiting-resolver",
-                                        :duration    0,
-                                        :start       7,
-                                        :waiting-key :dev.playground/color,
-                                        :input-data  #:dev.playground{:id 1},
-                                        :sym         dev.playground/color,
+                                                    [:dev.playground/color-darken dev.playground/darken-color]))}
+                                       {:event "call-read" :duration 0 :start 6}
+                                       {:event       "waiting-resolver"
+                                        :duration    0
+                                        :start       7
+                                        :waiting-key :dev.playground/color
+                                        :input-data  #:dev.playground{:id 1}
+                                        :sym         dev.playground/color
                                         :key         :dev.playground/color-darken}
-                                       {:event      "call-resolver-with-cache",
-                                        :duration   0,
-                                        :start      305,
-                                        :input-data #:dev.playground{:color "red"},
-                                        :sym        dev.playground/darken-color,
+                                       {:event      "call-resolver-with-cache"
+                                        :duration   0
+                                        :start      305
+                                        :input-data #:dev.playground{:color "red"}
+                                        :sym        dev.playground/darken-color
                                         :key        :dev.playground/color-darken}
-                                       {:event      "schedule-resolver",
-                                        :duration   0,
-                                        :start      306,
-                                        :input-data #:dev.playground{:color "red"},
-                                        :sym        dev.playground/darken-color,
+                                       {:event      "schedule-resolver"
+                                        :duration   0
+                                        :start      306
+                                        :input-data #:dev.playground{:color "red"}
+                                        :sym        dev.playground/darken-color
                                         :key        :dev.playground/color-darken}
-                                       {:event      "call-resolver",
-                                        :duration   24,
-                                        :start      306,
-                                        :input-data #:dev.playground{:color "red"},
-                                        :sym        dev.playground/darken-color,
+                                       {:event      "call-resolver"
+                                        :duration   24
+                                        :start      306
+                                        :input-data #:dev.playground{:color "red"}
+                                        :sym        dev.playground/darken-color
                                         :key        :dev.playground/color-darken}
-                                       {:event    "merge-resolver-response",
-                                        :duration 0,
-                                        :start    330,
-                                        :sym      dev.playground/darken-color,
+                                       {:event    "merge-resolver-response"
+                                        :duration 0
+                                        :start    330
+                                        :sym      dev.playground/darken-color
                                         :key      :dev.playground/color-darken}
-                                       {:event "call-read", :duration 0, :start 330}
-                                       {:event "value-return", :duration 0, :start 331}],
+                                       {:event "call-read" :duration 0 :start 330}
+                                       {:event "value-return" :duration 0 :start 331}]
                             :name     ":dev.playground/color-darken"}
-                           {:start    9,
-                            :path     [[:dev.playground/id 1] :dev.playground/size],
-                            :duration 101,
-                            :details  [{:event "skip-wait-key", :duration 0, :start 9}
-                                       {:event "call-read", :duration 0, :start 110}
-                                       {:event "value-return", :duration 0, :start 110}],
+                           {:start    9
+                            :path     [[:dev.playground/id 1] :dev.playground/size]
+                            :duration 101
+                            :details  [{:event "skip-wait-key" :duration 0 :start 9}
+                                       {:event "call-read" :duration 0 :start 110}
+                                       {:event "value-return" :duration 0 :start 110}]
                             :name     ":dev.playground/size"}]}
-               {:start    1,
-                :path     [:com.wsscode.pathom/trace],
-                :duration 0,
-                :details  [{:event "compute-plan", :duration 0, :start 1}
-                           {:event "call-read", :duration 0, :start 1}
-                           {:event "value-return", :duration 0, :start 1}],
-                :name     ":com.wsscode.pathom/trace"}],
+               {:start    1
+                :path     [:com.wsscode.pathom/trace]
+                :duration 0
+                :details  [{:event "compute-plan" :duration 0 :start 1}
+                           {:event "call-read" :duration 0 :start 1}
+                           {:event "value-return" :duration 0 :start 1}]
+                :name     ":com.wsscode.pathom/trace"}]
     :hint     "Query"})
 
-#_
 (ws/defcard trace-view-card
   {::wsm/align {:flex 1}}
   (ct.fulcro/fulcro-card
-    {::f.portal/root          trace/D3Trace
-     ::f.portal/initial-state (fn [_]
-                                {:trace-data sample-trace})}))
+    {::ct.fulcro/root          trace/D3Trace
+     ::ct.fulcro/initial-state (fn [_]
+                                 {:trace-data sample-trace})}))

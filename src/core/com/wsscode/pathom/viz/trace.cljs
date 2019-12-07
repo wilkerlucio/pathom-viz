@@ -3,13 +3,13 @@
             ["./detect-element-size" :refer [addResizeListener]]
             [clojure.walk :as walk]
             [com.wsscode.pathom.viz.helpers :as h]
-            [fulcro.client.localized-dom :as dom]
-            [fulcro.client.mutations :as fm]
-            [fulcro.client.primitives :as fp]
+            [com.fulcrologic.fulcro-css.localized-dom :as dom]
+            [com.fulcrologic.fulcro.mutations :as fm]
+            [com.fulcrologic.fulcro.components :as fc]
             [goog.object :as gobj]))
 
 (defn render-trace [this]
-  (let [{::keys [trace-data on-show-details]} (-> this fp/props)
+  (let [{::keys [trace-data on-show-details]} (-> this fc/props)
         container (gobj/get this "svgContainer")
         svg (gobj/get this "svg")]
     (gobj/set svg "innerHTML" "")
@@ -27,7 +27,7 @@
         (gobj/set "svgWidth" (gobj/get container "clientWidth"))
         (gobj/set "svgHeight" (gobj/get container "clientHeight"))))))
 
-(fp/defsc D3Trace [this _]
+(fc/defsc D3Trace [this _]
   {:css
    [[:.container {:flex      1
                   :max-width "100%"}]
@@ -126,24 +126,24 @@
       :transform   "translate(-8px, 13px)"}]]
 
    :componentDidMount
-   (fn []
+   (fn [this]
      (render-trace this)
      (addResizeListener (gobj/get this "svgContainer") #(recompute-trace-size this)))
 
    :componentDidUpdate
-   (fn [prev-props _]
+   (fn [this prev-props _]
      (if (= (-> prev-props ::trace-data)
-            (-> this fp/props ::trace-data))
+            (-> this fc/props ::trace-data))
        (recompute-trace-size this)
        (render-trace this)))
 
    :componentDidCatch
-   (fn [error info]
-     (fp/set-state! this {::error-catch? true}))}
+   (fn [this error info]
+     (fc/set-state! this {::error-catch? true}))}
 
   (dom/div :.container {:ref #(gobj/set this "svgContainer" %)}
-    (if (fp/get-state this ::error-catch?)
+    (if (fc/get-state this ::error-catch?)
       (dom/div "Error rendering trace, check console for details")
       (dom/svg {:ref #(gobj/set this "svg" %)}))))
 
-(def d3-trace (fp/factory D3Trace))
+(def d3-trace (fc/factory D3Trace))

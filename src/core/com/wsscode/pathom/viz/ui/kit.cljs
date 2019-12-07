@@ -1,12 +1,12 @@
 (ns com.wsscode.pathom.viz.ui.kit
-  (:require [fulcro.client.primitives :as fp]
-            [fulcro.client.localized-dom :as dom]
-            [fulcro-css.css :as css]
-            [goog.object :as gobj]
-            [goog.string :as gstr]
+  (:require [cljs.spec.alpha :as s]
+            [com.fulcrologic.fulcro-css.css :as css]
+            [com.fulcrologic.fulcro-css.localized-dom :as dom]
+            [com.fulcrologic.fulcro.components :as fc]
+            [com.fulcrologic.fulcro.dom :as domc]
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
-            [cljs.spec.alpha :as s]
-            [fulcro.client.dom :as domc]))
+            [goog.object :as gobj]
+            [goog.string :as gstr]))
 
 (declare gc css ccss)
 
@@ -69,39 +69,39 @@
 
 ; region basics
 
-(fp/defsc Button
+(fc/defsc Button
   [this props]
   {:css [[:.button {:cursor  "pointer"
                     :padding "1px 7px 2px"}
           [:&:disabled {:cursor "default"}]]]}
-  (dom/button :.button props (fp/children this)))
+  (dom/button :.button props (fc/children this)))
 
-(def button (fp/factory Button))
+(def button (fc/factory Button))
 
-(fp/defsc Column
+(fc/defsc Column
   [this props]
   {:css [[:.container {:display        "flex"
                        :flex-direction "column"
                        :max-height     "100%"}]]}
   (dom/div :.container props
-    (fp/children this)))
+    (fc/children this)))
 
-(def column (fp/factory Column))
+(def column (fc/factory Column))
 
-(fp/defsc Row
+(fc/defsc Row
   [this props]
   {:css [[:.container {:display   "flex"
                        :max-width "100%"}]
          [:.center {:align-items "center"}]]}
-  (dom/div :.container props (fp/children this)))
+  (dom/div :.container props (fc/children this)))
 
-(def row (fp/factory Row))
+(def row (fc/factory Row))
 
 ; endregion
 
 ; region components
 
-(fp/defsc Tag
+(fc/defsc Tag
   [this props]
   {:css [[:.tag {:align-items      "center"
                  :background-color "#f5f5f5"
@@ -124,15 +124,15 @@
             :color            "#fff"}]
           [:&.is-link
            {:background-color "#3273dc"
-            :color "#fff"}]
+            :color            "#fff"}]
           [:&.is-dark
            {:background-color "#363636"
             :color            "#f5f5f5"}]]]}
-  (dom/span :.tag (dom-props props) (fp/children this)))
+  (dom/span :.tag (dom-props props) (fc/children this)))
 
-(def tag (fp/factory Tag))
+(def tag (fc/factory Tag))
 
-(fp/defsc PanelBlock
+(fc/defsc PanelBlock
   [this {::keys [scrollbars?]
          :or    {scrollbars? false}
          :as    props}]
@@ -152,17 +152,17 @@
   (dom/div :.panel-block (dom-props props)
     (if scrollbars?
       (dom/div (gc :.scrollbars)
-        (fp/children this))
-      (fp/children this))))
+        (fc/children this))
+      (fc/children this))))
 
-(def panel-block (fp/factory PanelBlock))
+(def panel-block (fc/factory PanelBlock))
 
 (s/def ::panel-title string?)
 (s/def ::panel-tag (s/or :string string? :number number?))
 (s/def ::scrollbars? boolean?)
 (s/def ::block-wrap? boolean?)
 
-(fp/defsc Panel
+(fc/defsc Panel
   [this {::keys [panel-title panel-tag scrollbars? block-wrap?]
          :or    {scrollbars? true
                  block-wrap? true}
@@ -201,17 +201,17 @@
       (panel-block props
         (if scrollbars?
           (dom/div (gc :.scrollbars)
-            (fp/children this))
-          (fp/children this)))
-      (fp/children this))))
+            (fc/children this))
+          (fc/children this)))
+      (fc/children this))))
 
-(def panel (fp/factory Panel))
+(def panel (fc/factory Panel))
 
 (s/def ::title string?)
 (s/def ::collapsed? boolean?)
 (s/def ::on-toggle (s/fspec :args (s/cat :active? boolean?)))
 
-(fp/defsc CollapsibleBox
+(fc/defsc CollapsibleBox
   [this {::keys [collapsed? on-toggle title]
          :or    {on-toggle identity}
          :as    p}]
@@ -228,11 +228,11 @@
       (dom/div :.arrow (if collapsed? "▶" "▼"))
       (dom/div (gc :.flex) title))
     (apply dom/div {:style {:display (if collapsed? "none")}}
-      (fp/children this))))
+      (fc/children this))))
 
-(def collapsible-box (fp/factory CollapsibleBox))
+(def collapsible-box (fc/factory CollapsibleBox))
 
-(fp/defsc RawCollapsible
+(fc/defsc RawCollapsible
   [this {::keys [collapsed? on-toggle title]
          :or    {on-toggle identity}
          :as    p}]
@@ -244,11 +244,11 @@
       (dom/div :.arrow {:onClick #(on-toggle (not collapsed?))} (if collapsed? "▶" "▼"))
       title)
     (apply dom/div {:style {:display (if collapsed? "none")}}
-      (fp/children this))))
+      (fc/children this))))
 
-(def raw-collapsible (fp/factory RawCollapsible))
+(def raw-collapsible (fc/factory RawCollapsible))
 
-(fp/defsc TextField
+(fc/defsc TextField
   [this {:keys  [value]
          ::keys [on-clear left-icon]
          :as    props}]
@@ -395,9 +395,9 @@
         (dom/span :.icon.is-small.is-right {:onClick #(on-clear % this)}
           (dom/a :.delete.is-small))))))
 
-(def text-field (fp/factory TextField))
+(def text-field (fc/factory TextField))
 
-(fp/defsc NumberInput
+(fc/defsc NumberInput
   [this p]
   {:css            [[:.container {:display     "inline-flex"
                                   :align-items "center"
@@ -413,26 +413,27 @@
                               :width      "20px"}
                      ["&::-webkit-inner-spin-button" {:-webkit-appearance "none"}]]]
 
-   :initLocalState (fn [] {:decrease #(let [{:keys [min value onChange]} (fp/props this)]
-                                        (onChange (js/Event. "") (cond-> value (> value (or min (- js/Infinity))) dec)))
-                           :increase #(let [{:keys [max value onChange]} (fp/props this)]
-                                        (onChange (js/Event. "") (cond-> value (< value (or max js/Infinity)) inc)))})}
+   :initLocalState (fn [this]
+                     {:decrease #(let [{:keys [min value onChange]} (fc/props this)]
+                                   (onChange (js/Event. "") (cond-> value (> value (or min (- js/Infinity))) dec)))
+                      :increase #(let [{:keys [max value onChange]} (fc/props this)]
+                                   (onChange (js/Event. "") (cond-> value (< value (or max js/Infinity)) inc)))})}
   (let [p (update p :onChange
             (fn [onChange]
               (if onChange
                 (fn [e]
                   (onChange e (-> e event-value gstr/parseInt))))))]
     (dom/div :.container
-      (dom/div :.arrow {:onClick (fp/get-state this :decrease)} "<")
+      (dom/div :.arrow {:onClick (fc/get-state this :decrease)} "<")
       (with-redefs [domc/form-elements? #{}]
         (dom/input :.input (merge {:type "number"} (dom-props p))))
-      (dom/div :.arrow {:onClick (fp/get-state this :increase)} ">"))))
+      (dom/div :.arrow {:onClick (fc/get-state this :increase)} ">"))))
 
-(def number-input (fp/factory NumberInput))
+(def number-input (fc/factory NumberInput))
 
 (s/def ::active? boolean?)
 
-(fp/defsc ToggleAction
+(fc/defsc ToggleAction
   [this {::keys [active?] :as p}]
   {:css [[:.container {:background  "#f5f5f5"
                        :display     "inline-block"
@@ -441,13 +442,13 @@
                        :padding     "0 8px"}]
          [:.active {:background "#e0e0e0"}]]}
   (dom/div :.container (dom-props {:classes [(if active? :.active)]} p)
-    (fp/children this)))
+    (fc/children this)))
 
-(def toggle-action (fp/factory ToggleAction))
+(def toggle-action (fc/factory ToggleAction))
 
 ; endregion
 
-(fp/defsc UIKit [_ _]
+(fc/defsc UIKit [_ _]
   {:css         [[:.flex {:flex "1"}]
                  [:.scrollbars {:overflow "auto"}]
                  [:.no-scrollbars {:overflow "hidden"}]
@@ -487,7 +488,7 @@
 
 (defn ccss [component & k]
   (if-let [css-map (try
-                     (some-> component (gobj/get "constructor") css/get-classnames)
+                     (some-> component fc/react-type css/get-classnames)
                      (catch :default _ nil))]
     (into [] (map (partial get-css css-map)) k)
     []))

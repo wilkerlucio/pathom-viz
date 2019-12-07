@@ -7,7 +7,7 @@
                                 :output-dir       "workspaces/assets/js"
                                 :asset-path       "/js"
                                 :compiler-options {:external-config {:ghostwheel {:ghostwheel.core/outstrument true}}}
-                                :devtools         {:preloads  [devtools.preload fulcro.inspect.preload]
+                                :devtools         {:preloads  [devtools.preload com.fulcrologic.fulcro.inspect.preload]
                                                    :http-root "workspaces/assets"
                                                    :http-port 8086}}
 

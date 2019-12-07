@@ -1,13 +1,15 @@
 (ns com.wsscode.pathom.viz.workspaces
   (:require [cljs.core.async :refer [go <!]]
             [cljs.reader :refer [read-string]]
+            [com.fulcrologic.fulcro.algorithms.tx-processing :as txn]
+            [com.fulcrologic.fulcro.data-fetch :as df]
+            [com.wsscode.common.async-cljs :refer [<?maybe]]
             [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.fulcro.network :as p.network]
             [com.wsscode.pathom.viz.index-explorer :as iex]
             [com.wsscode.pathom.viz.query-editor :as pv.query-editor]
-            [fulcro.client.data-fetch :as df]
-            [nubank.workspaces.card-types.fulcro :as ct.fulcro]
-            [nubank.workspaces.lib.fulcro-portal :as f.portal]
+            [edn-query-language.core :as eql]
+            [nubank.workspaces.card-types.fulcro3 :as ct.fulcro]
             [nubank.workspaces.model :as wsm]))
 
 (defn pathom-card-init
@@ -19,19 +21,19 @@
          :as              fulcro-card}
         (ct.fulcro/fulcro-card-init
           card
-          {::f.portal/root pv.query-editor/QueryEditor
-           ::f.portal/app  {:started-callback
-                            (fn [app]
-                              (if started-callback
-                                (started-callback app))
+          {::ct.fulcro/root pv.query-editor/QueryEditor
+           ::ct.fulcro/app  {:started-callback
+                             (fn [app]
+                               (if started-callback
+                                 (started-callback app))
 
-                              (if load-index-at-start?
-                                (pv.query-editor/load-indexes app)))
+                               (if load-index-at-start?
+                                 (pv.query-editor/load-indexes app)))
 
-                            :networking
-                            {pv.query-editor/remote-key
-                             (p.network/pathom-remote
-                               (pv.query-editor/client-card-parser parser))}}})]
+                             :networking
+                             {pv.query-editor/remote-key
+                              (p.network/pathom-remote
+                                (pv.query-editor/client-card-parser parser))}}})]
     (assoc fulcro-card
       ::wsm/refresh
       (fn [node]
@@ -45,18 +47,37 @@
    ::wsm/card-width  7
    ::wsm/card-height 18})
 
+(defn pathom-remote [parser]
+  {:transmit! (fn transmit! [_ {::txn/keys [ast result-handler]}]
+                (let [edn           (eql/ast->query ast)
+                      ok-handler    (fn [result]
+                                      (try
+                                        (result-handler (assoc result :status-code 200))
+                                        (catch :default e
+                                          (js/console.error e "Result handler for remote failed with an exception."))))
+                      error-handler (fn [error-result]
+                                      (try
+                                        (result-handler (merge error-result {:status-code 500}))
+                                        (catch :default e
+                                          (js/console.error e "Error handler for remote failed with an exception."))))]
+                  (go
+                    (try
+                      (ok-handler {:transaction edn :body (<?maybe (parser {} edn))})
+                      (catch :default e
+                        (js/console.error "Pathom Remote error:" e)
+                        (error-handler {:body e}))))))})
+
 (defn index-explorer-card-init [card {::p/keys [parser]
                                       ::keys   [portal-options]}]
   (let [id "singleton"]
     (ct.fulcro/fulcro-card-init card
       (merge
-        {::f.portal/root
+        {::ct.fulcro/root
          iex/IndexExplorer
 
-         ::f.portal/app
-         {:networking       (-> (p.network/pathom-remote parser)
-                                (p.network/trace-remote))
-          :started-callback (fn [app]
+         ::ct.fulcro/app
+         {:remotes          {:remote (pathom-remote parser)}
+          :client-did-mount (fn [app]
                               (df/load app [::iex/id id] iex/IndexExplorer
                                 {:target [:ui/root]}))}}
         portal-options))))

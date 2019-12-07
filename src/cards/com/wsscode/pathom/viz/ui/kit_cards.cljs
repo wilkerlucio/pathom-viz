@@ -5,7 +5,7 @@
             [nubank.workspaces.core :as ws]
             [nubank.workspaces.model :as wsm]
             [com.wsscode.pathom.viz.ui.kit :as ui]
-            [fulcro.client.localized-dom :as dom]
+            [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [cljs.test :refer-macros [is are run-tests async testing]]
             [cljs.spec.alpha :as s]))
 

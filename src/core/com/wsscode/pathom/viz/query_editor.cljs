@@ -171,7 +171,7 @@
                         (js/setTimeout
                           #(fp/set-state! this {:render? true})
                           100))
-   :initLocalState    (fn []
+   :initLocalState    (fn [this]
                         {:run-query (fn []
                                       (let [{:ui/keys [query-running?] :as props} (fp/props this)
                                             {::keys [enable-trace?]} (fp/get-computed props)]
