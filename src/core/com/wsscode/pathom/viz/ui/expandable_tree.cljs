@@ -1,8 +1,8 @@
 (ns com.wsscode.pathom.viz.ui.expandable-tree
   (:require [cljs.spec.alpha :as s]
             [com.wsscode.pathom.viz.helpers :as h]
-            [fulcro.client.localized-dom :as dom]
-            [fulcro.client.primitives :as fp]
+            [com.fulcrologic.fulcro-css.localized-dom :as dom]
+            [com.fulcrologic.fulcro.components :as fc]
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]))
 
 (s/def ::path (s/coll-of any? :kind vector?))
@@ -17,7 +17,7 @@
 
 (declare tree-item)
 
-(fp/defsc TreeItem
+(fc/defsc TreeItem
   [this {:keys  [key children]
          ::keys [expanded expanded? path toggle-expanded render sort-by] :as node}]
   {:css [[:.item {:display     "flex"
@@ -51,9 +51,9 @@
                         ::sort-by sort-by
                         ::expanded? (contains? expanded path))))))))
 
-(def tree-item (fp/factory TreeItem {:keyfn #(pr-str (:key %))}))
+(def tree-item (fc/factory TreeItem {:keyfn #(pr-str (:key %))}))
 
-(fp/defsc ExpandableTree
+(fc/defsc ExpandableTree
   [this
    {::keys [expanded]}
    {::keys [render root sort-by]}]
@@ -66,14 +66,15 @@
    :ident          [:ui/id :ui/id]
    :query          [:ui/id ::expanded]
    :css-include    [TreeItem]
-   :initLocalState (fn [] {:toggle-expanded (fn [path]
-                                              (h/update-value! this ::expanded h/toggle-set-item path))})}
+   :initLocalState (fn [this]
+                     {:toggle-expanded (fn [path]
+                                         (h/update-value! this ::expanded h/toggle-set-item path))})}
   (dom/div
     (tree-item
       (assoc root ::path []
                   ::expanded expanded
                   ::render render
                   ::sort-by sort-by
-                  ::toggle-expanded (fp/get-state this :toggle-expanded)))))
+                  ::toggle-expanded (fc/get-state this :toggle-expanded)))))
 
-(def expandable-tree (fp/computed-factory ExpandableTree))
+(def expandable-tree (fc/computed-factory ExpandableTree))
