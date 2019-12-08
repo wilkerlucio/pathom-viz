@@ -1300,7 +1300,7 @@
                            (process-index index)
                            {::idx {::no-index? true}}))))
    :initial-state  {}
-   :ident          [::id ::id]
+   :ident          ::id
    :query          [::id ::index ::idx ::history ::history-index
                     {:ui/menu (fc/get-query SearchEverything)}
                     {::attributes (fc/get-query AttributeIndex)}

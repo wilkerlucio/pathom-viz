@@ -1,5 +1,6 @@
 (ns com.wsscode.pathom.viz.helpers
   (:require ["react-draggable" :refer [DraggableCore]]
+            [cljs.core.async :refer [go <!]]
             [cljs.spec.alpha :as s]
             [clojure.pprint]
             [clojure.walk :as walk]
@@ -7,7 +8,9 @@
             [com.fulcrologic.fulcro.components :as fp]
             [com.fulcrologic.fulcro.mutations :as fm]
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
+            [com.wsscode.common.async-cljs :refer [<?maybe]]
             [com.wsscode.pathom.core :as p]
+            [edn-query-language.core :as eql]
             [goog.object :as gobj]))
 
 (s/def ::path (s/coll-of keyword? :kind vector?))
@@ -127,3 +130,23 @@
                (keys)
                (sort #(vector-compare %2 %))))]
     {:children items}))
+
+(defn pathom-remote [parser]
+  {:transmit! (fn transmit! [_ {::txn/keys [ast result-handler]}]
+                (let [edn           (eql/ast->query ast)
+                      ok-handler    (fn [result]
+                                      (try
+                                        (result-handler (assoc result :status-code 200))
+                                        (catch :default e
+                                          (js/console.error e "Result handler for remote failed with an exception."))))
+                      error-handler (fn [error-result]
+                                      (try
+                                        (result-handler (merge error-result {:status-code 500}))
+                                        (catch :default e
+                                          (js/console.error e "Error handler for remote failed with an exception."))))]
+                  (go
+                    (try
+                      (ok-handler {:transaction edn :body (<?maybe (parser {} edn))})
+                      (catch :default e
+                        (js/console.error "Pathom Remote error:" e)
+                        (error-handler {:body e}))))))})

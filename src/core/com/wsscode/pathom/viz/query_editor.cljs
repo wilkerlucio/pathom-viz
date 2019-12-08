@@ -31,7 +31,7 @@
 
 (pc/defmutation run-query-server [{::keys [client-parser]} {::keys [id query request-trace?]}]
   {::pc/sym    `run-query
-   ::pc/params [::query]
+   ::pc/params [::id ::query ::request-trace?]
    ::pc/output [::id ::result]}
   (go
     (let [pull-keys [:com.wsscode.pathom/trace]
@@ -63,7 +63,7 @@
 
 (fm/defmutation run-query [_]
   (action [_] nil)
-  (pathom-query-editor-remote [env]
+  (remote [env]
     (fm/returning env TransactionResponse)))
 
 (defn load-indexes
