@@ -206,6 +206,7 @@
         svg             (gobj/get this "svg")]
     (if current ((gobj/get current "dispose")))
     (gobj/set svg "innerHTML" "")
+    (js/console.log "NODES LINKS" (compute-nodes-links props))
     (let [render-settings (d3attr/render svg
                             (clj->js {:svgWidth    (gobj/get container "clientWidth")
                                       :svgHeight   (gobj/get container "clientHeight")

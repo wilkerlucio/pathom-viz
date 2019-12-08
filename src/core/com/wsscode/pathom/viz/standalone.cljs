@@ -27,7 +27,6 @@
                                  ::p.http/form-params  (transit-write tx)}))]
         (transit-read body)))))
 
-
 (fp/defsc Root
   [this {:keys [ui/root]}]
   {:query [{:ui/root (fp/get-query pv.query-editor/QueryEditor)}]

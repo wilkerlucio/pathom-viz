@@ -21,6 +21,8 @@ export function render(element, data) {
 
   const {nodes, links} = settings.data
 
+  console.log("NODES", nodes, links);
+
   const container = svg.append("g")
 
   const zoom = d3.zoom().on("zoom",
@@ -43,14 +45,16 @@ export function render(element, data) {
     .attr("markerHeight", 6)
     .attr("markerUnits", 'userSpaceOnUse')
     .attr("orient", "auto")
-    .attr('class', d => 'pathom-viz-index-explorer-' + d)
+    .attr('class', d => 'pathom-viz-planner-' + d)
     .append("svg:path")
     .attr("d", "M0,-5L10,0L0,5");
 
   const simulation = d3.forceSimulation(nodes)
-    .force("link", d3.forceLink(links).id(d => d.attribute).distance(90).strength(0.1))
+    .force("link", d3.forceLink(links).id(d => d["node-id"]).distance(90).strength(0.1))
     .force("charge", d3.forceManyBody().strength(-60))
-    .force('collision', d3.forceCollide().radius(d => d.radius * 1.6))
+    .force('collision', d3.forceCollide().radius(d => {
+      return d.radius * 1.6;
+    }))
     .force("center", d3.forceCenter(svgWidth / 2, svgHeight / 2))
 
   settings.simulation = simulation
@@ -60,7 +64,7 @@ export function render(element, data) {
   const highlightEdge = function (resolvers) {
     if (linksIndex[resolvers]) {
       linksIndex[resolvers].forEach(line => {
-        line.classed("pathom-viz-index-explorer-attr-link-focus-highlight", true)
+        line.classed("pathom-viz-planner-attr-link-focus-highlight", true)
       });
 
       label.html(resolvers)
@@ -70,7 +74,7 @@ export function render(element, data) {
   const unhighlightEdge = function (resolvers) {
     if (linksIndex[resolvers]) {
       linksIndex[resolvers].forEach(line => {
-        line.classed("pathom-viz-index-explorer-attr-link-focus-highlight", false)
+        line.classed("pathom-viz-planner-attr-link-focus-highlight", false)
       });
 
       label.html('')
@@ -84,23 +88,14 @@ export function render(element, data) {
     .selectAll("line")
     .data(links)
     .join("svg:path")
-    .attr('class', 'pathom-viz-index-explorer-attr-link')
+    .attr('class', 'pathom-viz-planner-attr-link')
     .attr("marker-end", "url(#arrow-provides)")
-    .classed('pathom-viz-index-explorer-attr-link-deep', d => d.deep)
+    .classed('pathom-viz-planner-attr-link-branch', d => d["branch?"])
     .each(function (d) {
       d.ownerLine = d3.select(this)
       const lines = linksIndex[d.resolvers] || [];
       lines.push(d.ownerLine);
       linksIndex[d.resolvers] = lines;
-    })
-    .on('click', function({resolvers}) {
-      onClickEdge({resolvers});
-    })
-    .on('mouseenter', function(d) {
-      highlightEdge(d.resolvers)
-    })
-    .on('mouseleave', function(d) {
-      unhighlightEdge(d.resolvers)
     });
 
   const drag = simulation => {
@@ -130,28 +125,28 @@ export function render(element, data) {
   let label
 
   const highlight = function (d) {
-    d.nodeElement.classed('pathom-viz-index-explorer-attr-node-highlight', true)
+    d.nodeElement.classed('pathom-viz-planner-attr-node-highlight', true)
 
     d.lineTargets.forEach(line => {
-      line.ownerLine.classed("pathom-viz-index-explorer-attr-link-target-highlight", true)
+      line.ownerLine.classed("pathom-viz-planner-attr-link-target-highlight", true)
     })
 
     d.lineSources.forEach(line => {
-      line.ownerLine.classed("pathom-viz-index-explorer-attr-link-source-highlight", true)
+      line.ownerLine.classed("pathom-viz-planner-attr-link-source-highlight", true)
     })
 
     return label.html(d.attribute)
   }
 
   const unhighlight = function (d) {
-    d.nodeElement.classed('pathom-viz-index-explorer-attr-node-highlight', false)
+    d.nodeElement.classed('pathom-viz-planner-attr-node-highlight', false)
 
     d.lineTargets.forEach(line => {
-      line.ownerLine.classed("pathom-viz-index-explorer-attr-link-target-highlight", false)
+      line.ownerLine.classed("pathom-viz-planner-attr-link-target-highlight", false)
     })
 
     d.lineSources.forEach(line => {
-      line.ownerLine.classed("pathom-viz-index-explorer-attr-link-source-highlight", false)
+      line.ownerLine.classed("pathom-viz-planner-attr-link-source-highlight", false)
     })
 
     return label.html('')
@@ -169,28 +164,15 @@ export function render(element, data) {
     if (d) unhighlight(d)
   }
 
-  const extractNs = function(str) {
-    if (str.startsWith("#")) return null;
-
-    const parts = str.split("/");
-
-    if (parts.length > 1) {
-      return parts[0].substr(1);
-    }
-
-    return null;
-  }
-
   const node = container.append("g")
     .selectAll("circle")
     .data(nodes)
     .join("circle")
-    .attr('class', 'pathom-viz-index-explorer-attr-node')
-    .classed('pathom-viz-index-explorer-attr-node-multi', d => d.multiNode)
-    .classed('pathom-viz-index-explorer-attr-node-main', d => d.mainNode)
-    .attr("stroke-width", d => Math.sqrt(d.reach || 1) + 1)
-    .attr("r", d => Math.sqrt(d.weight || 1) + 2)
-    .attr("stroke", d => d.multiNode ? null : colorScale(extractNs(d.attribute)))
+    .attr('class', 'pathom-viz-planner-attr-node')
+    .classed('pathom-viz-planner-node-branch-and', d => d["run-and"])
+    .classed('pathom-viz-planner-node-branch-or', d => d["run-or"])
+    .attr("stroke-width", d => 1)
+    .attr("r", d => d.radius)
     .each(function(d) {
       d.nodeElement = d3.select(this)
 
@@ -202,7 +184,7 @@ export function render(element, data) {
       });
     })
     .on('click', function(d) {
-      showDetails(d.attribute, d, this)
+      console.log(d);
     })
     .on('mouseenter', function(d) {
       return highlight(d)
