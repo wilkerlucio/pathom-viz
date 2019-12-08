@@ -7,10 +7,12 @@
             [com.wsscode.pathom.viz.codemirror :as cm]
             [com.wsscode.pathom.viz.helpers :as pvh]
             [com.wsscode.pathom.viz.trace :as pvt]
-            [fulcro.client.data-fetch :as df]
-            [fulcro.client.localized-dom :as dom]
-            [fulcro.client.mutations :as fm]
-            [fulcro.client.primitives :as fp]))
+            [com.fulcrologic.fulcro.data-fetch :as df]
+            [com.fulcrologic.fulcro-css.localized-dom :as dom]
+            [com.fulcrologic.fulcro.mutations :as fm]
+            [com.fulcrologic.fulcro.components :as fc]
+            [com.fulcrologic.fulcro.application :as fa]
+            [com.fulcrologic.fulcro-css.css :as css]))
 
 (declare QueryEditor TransactionResponse)
 
@@ -27,8 +29,9 @@
   {::pc/output [::pc/indexes]}
   (client-parser {} [{::pc/indexes [::pc/idents ::pc/index-io ::pc/autocomplete-ignore]}]))
 
-(pc/defmutation run-query [{::keys [client-parser]} {::keys [id query request-trace?]}]
-  {::pc/params [::query]
+(pc/defmutation run-query-server [{::keys [client-parser]} {::keys [id query request-trace?]}]
+  {::pc/sym    `run-query
+   ::pc/params [::query]
    ::pc/output [::id ::result]}
   (go
     (let [pull-keys [:com.wsscode.pathom/trace]
@@ -46,37 +49,38 @@
   ([client-parser] (client-card-parser client-parser {}))
   ([client-parser {::keys [wrap-run-query]}]
    (let [card-parser
-         (p/parallel-parser {::p/env     {::p/reader [p/map-reader pc/parallel-reader pc/open-ident-reader]}
-                             ::p/mutate  pc/mutate-async
-                             ::p/plugins [p/error-handler-plugin
-                                          p/request-cache-plugin
-                                          (-> (pc/connect-plugin {::pc/register [indexes (cond-> run-query
-                                                                                           wrap-run-query
-                                                                                           (update ::pc/mutate wrap-run-query))]})
-                                              (dissoc ::pc/register))
-                                          p/trace-plugin]})]
+         (p/async-parser {::p/env     {::p/reader [p/map-reader pc/async-reader2 pc/open-ident-reader]}
+                          ::p/mutate  pc/mutate-async
+                          ::p/plugins [p/error-handler-plugin
+                                       p/request-cache-plugin
+                                       (-> (pc/connect-plugin {::pc/register [indexes (cond-> run-query-server
+                                                                                        wrap-run-query
+                                                                                        (update ::pc/mutate wrap-run-query))]})
+                                           (dissoc ::pc/register))
+                                       p/trace-plugin]})]
      (fn [env tx]
        (card-parser (assoc env ::client-parser client-parser) tx)))))
 
 (fm/defmutation run-query [_]
-  (pathom-query-editor-remote [{:keys [ast state]}]
-    (fm/returning ast state TransactionResponse)))
+  (action [_] nil)
+  (pathom-query-editor-remote [env]
+    (fm/returning env TransactionResponse)))
 
 (defn load-indexes
   [app-or-reconciler]
-  (let [reconciler (or (:reconciler app-or-reconciler) app-or-reconciler)
-        root-ident (-> reconciler fp/app-state deref :ui/root)]
-    (df/load reconciler root-ident QueryEditor
+  (let [app        (or (:app app-or-reconciler) app-or-reconciler)
+        root-ident (-> app fa/current-state :ui/root)]
+    (df/load app root-ident QueryEditor
       {:focus  [::pc/indexes]
        :remote remote-key})))
 
 ;; UI
 
-(fp/defsc TransactionResponse [_ _]
+(fc/defsc TransactionResponse [_ _]
   {:ident [::id ::id]
    :query [::id ::result :com.wsscode.pathom/trace]})
 
-(fp/defsc Button
+(fc/defsc Button
   [this props]
   {:css [[:.container
           {:font-size   "11px"
@@ -98,11 +102,11 @@
            :outline          "none"}
           [:&:disabled {:background "#b0c1d6"
                         :color      "#eaeaea"}]]]}
-  (dom/button :.container props (fp/children this)))
+  (dom/button :.container props (fc/children this)))
 
-(def button (fp/factory Button))
+(def button (fc/factory Button))
 
-(fp/defsc QueryEditor
+(fc/defsc QueryEditor
   [this
    {::keys                   [query result request-trace?]
     :ui/keys                 [query-running?]
@@ -111,7 +115,7 @@
    {::keys [default-trace-size editor-props
             enable-trace?]
     :or    {default-trace-size 400
-            enable-trace?      true}} css]
+            enable-trace?      true}}]
   {:initial-state     (fn [_]
                         {::id             (random-uuid)
                          ::request-trace? true
@@ -167,20 +171,21 @@
                        [:.trace {:display     "flex"
                                  :padding-top "18px"}]]
    :css-include       [pvt/D3Trace Button]
-   :componentDidMount (fn []
+   :componentDidMount (fn [this]
                         (js/setTimeout
-                          #(fp/set-state! this {:render? true})
+                          #(fc/set-state! this {:render? true})
                           100))
    :initLocalState    (fn [this]
                         {:run-query (fn []
-                                      (let [{:ui/keys [query-running?] :as props} (fp/props this)
-                                            {::keys [enable-trace?]} (fp/get-computed props)]
+                                      (let [{:ui/keys [query-running?] :as props} (fc/props this)
+                                            {::keys [enable-trace?]} (fc/get-computed props)]
                                         (if-not query-running?
                                           (let [props (update props ::request-trace? #(and enable-trace? %))]
-                                            (fp/ptransact! this [`(fm/set-props {:ui/query-running? true})
+                                            (fc/ptransact! this [`(fm/set-props {:ui/query-running? true})
                                                                  `(run-query ~props)
                                                                  `(fm/set-props {:ui/query-running? false})])))))})}
-  (let [run-query (fp/get-state this :run-query)]
+  (let [run-query (fc/get-state this :run-query)
+        css (css/get-classnames QueryEditor)]
     (dom/div :.container
       (dom/div :.toolbar
         (if enable-trace?
@@ -190,7 +195,7 @@
                         :onChange #(fm/toggle! this ::request-trace?)})
             "Request trace"))
         (dom/div :.flex)
-        (button {:onClick #(load-indexes (fp/get-reconciler this))
+        (button {:onClick #(load-indexes (fc/any->app this))
                  :style   {:marginRight "6px"}}
           "Refresh index")
         (button {:onClick  run-query
@@ -198,10 +203,10 @@
           "Run query"))
 
       (dom/div :.query-row
-        (when (fp/get-state this :render?)
+        (when (fc/get-state this :render?)
           (cm/pathom
             (merge {:className   (:editor css)
-                    :style       {:width (str (or (fp/get-state this :query-width) 400) "px")}
+                    :style       {:width (str (or (fc/get-state this :query-width) 400) "px")}
                     :value       (or (str query) "")
                     ::pc/indexes (if (map? indexes) (p/elide-not-found indexes))
                     ::cm/options {::cm/extraKeys
@@ -217,7 +222,7 @@
                                :default   400
                                :props     {:className (:divisor-v css)}}
           (dom/div))
-        (if (fp/get-state this :render?)
+        (if (fc/get-state this :render?)
           (cm/clojure
             (merge {:className   (:result css)
                     :value       result
@@ -230,8 +235,8 @@
                                :props     {:className (:divisor-h css)}}
           (dom/div)))
       (if trace
-        (dom/div :.trace {:style {:height (str (or (fp/get-state this :trace-height) default-trace-size) "px")}}
+        (dom/div :.trace {:style {:height (str (or (fc/get-state this :trace-height) default-trace-size) "px")}}
           (pvt/d3-trace {::pvt/trace-data      trace
                          ::pvt/on-show-details #(js/console.log %)}))))))
 
-(def query-editor (fp/computed-factory QueryEditor))
+(def query-editor (fc/computed-factory QueryEditor))

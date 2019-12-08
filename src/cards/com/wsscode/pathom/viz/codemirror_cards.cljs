@@ -1,22 +1,39 @@
 (ns com.wsscode.pathom.viz.codemirror-cards
-  (:require [cljs.core.async :as async]
-            [com.wsscode.common.async-cljs :refer [<? go-catch]]
+  (:require [com.fulcrologic.fulcro.components :as fc]
             [com.wsscode.pathom.viz.codemirror :as cm]
+            [com.wsscode.pathom.viz.ui.kit :as ui]
             [nubank.workspaces.card-types.fulcro3 :as ct.fulcro]
             [nubank.workspaces.core :as ws]
-            [com.fulcrologic.fulcro.components :as fc]
-            [com.fulcrologic.fulcro-css.localized-dom :as dom]
-            [com.fulcrologic.fulcro.mutations :as fm]))
+            [nubank.workspaces.model :as wsm]))
 
-(fc/defsc FulcroDemo
-  [this {:keys [counter]}]
-  {:initial-state (fn [_] {:counter 0})
-   :ident         (fn [] [::id "singleton"])
-   :query         [:counter]}
-  (dom/div
-    (str "Fulcro counter demo [" counter "]")
-    (dom/button {:onClick #(fm/set-value! this :counter (inc counter))} "+")))
+(fc/defsc ClojureCodeMirrorWrapper
+  [this {::keys []}]
+  {:pre-merge (fn [{:keys [current-normalized data-tree]}]
+                (merge {::id (random-uuid)} current-normalized data-tree))
+   :ident     ::id
+   :query     [::id]
+   :css       [[:.container {:position "relative"
+                             :flex     1}]]}
+  (cm/clojure {:value     ""
+               :className (ui/ccss this :.container)}))
 
-(ws/defcard fulcro-demo-card
+(ws/defcard codemirror-clojure-card
+  {::wsm/align ::wsm/stretch-flex}
   (ct.fulcro/fulcro-card
-    {::ct.fulcro/root FulcroDemo}))
+    {::ct.fulcro/root ClojureCodeMirrorWrapper}))
+
+(fc/defsc PathomCodeMirrorWrapper
+  [this {::keys []}]
+  {:pre-merge (fn [{:keys [current-normalized data-tree]}]
+                (merge {::id (random-uuid)} current-normalized data-tree))
+   :ident     ::id
+   :query     [::id]
+   :css       [[:.container {:position "relative"
+                             :flex     1}]]}
+  (cm/pathom {:value     ""
+              :className (ui/ccss this :.container)}))
+
+(ws/defcard codemirror-pathom-card
+  {::wsm/align ::wsm/stretch-flex}
+  (ct.fulcro/fulcro-card
+    {::ct.fulcro/root PathomCodeMirrorWrapper}))
