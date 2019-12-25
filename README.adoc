@@ -12,6 +12,22 @@
 Pathom viz is a set of vizualization tools to support the development and inspection of
 Graph API's built with the https://github.com/wilkerlucio/pathom[Pathom] library.
 
+== Standalone App
+
+The standalone app is the easiest way to use Pathom Viz.
+
+=== Building the app
+
+If you wanna develop the app:
+
+[source]
+----
+shadow-cljs watch electron-background electron-renderer
+cd shells/electron
+npm install
+npx electron .
+----
+
 == Available tools
 
 === Workspaces Pathom card
