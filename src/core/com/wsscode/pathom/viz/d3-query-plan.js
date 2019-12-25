@@ -169,6 +169,7 @@ export function render(element, data) {
     .data(nodes)
     .join("circle")
     .attr('class', 'pathom-viz-planner-attr-node')
+    .classed('pathom-viz-planner-node-root', d => d["root?"])
     .classed('pathom-viz-planner-node-branch-and', d => d["run-and"])
     .classed('pathom-viz-planner-node-branch-or', d => d["run-or"])
     .attr("stroke-width", d => 1)
@@ -186,12 +187,12 @@ export function render(element, data) {
     .on('click', function(d) {
       console.log(d);
     })
-    .on('mouseenter', function(d) {
-      return highlight(d)
-    })
-    .on('mouseleave', function(d) {
-      return unhighlight(d)
-    })
+    // .on('mouseenter', function(d) {
+    //   return highlight(d)
+    // })
+    // .on('mouseleave', function(d) {
+    //   return unhighlight(d)
+    // })
     .call(drag(simulation))
 
   label = svg.append('text')

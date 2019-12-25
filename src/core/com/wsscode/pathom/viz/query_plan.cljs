@@ -7,7 +7,7 @@
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.connect.planner :as pcp]))
 
-(defn render-d3-graph-viz [{::pcp/keys [nodes]}]
+(defn render-d3-graph-viz [{::pcp/keys [nodes root]}]
   (let [links (into []
                     (mapcat
                       (fn [{::pcp/keys [run-next node-id] :as node}]
@@ -21,7 +21,13 @@
                             run-next
                             (conj {:source node-id :target run-next})))))
                     (vals nodes))]
-    {:nodes (into [] (map #(assoc % :radius 20)) (vals nodes))
+    {:nodes (into [] (map #(-> %
+                               (assoc :radius (+ 10
+                                                (if (pcp/branch-node? %)
+                                                  0
+                                                  (or (some-> % ::pcp/requires count) 1))))
+                               (cond-> (= root (::pcp/node-id %))
+                                       (assoc :root? true)))) (vals nodes))
      :links links}))
 
 (defn render-attribute-graph [this]
@@ -56,7 +62,11 @@
        {:fill "#f9e943e3"}]
 
       [:&$pathom-viz-planner-node-branch-or
-       {:fill "#de2b34"}]]
+       {:fill "#7ad1e8"}]
+
+      [:&$pathom-viz-planner-node-root
+       {:stroke       "#2596d6"
+        :stroke-width "6px"}]]
 
      [:$pathom-viz-planner-arrow-provides
       [:path
@@ -68,7 +78,7 @@
      [:$pathom-viz-planner-attr-link
       {:stroke         "#999"
        :stroke-opacity "0.6"
-       :stroke-width   "2px"
+       :stroke-width   "1.5px"
        :fill           "none"}
 
       [:&$pathom-viz-planner-attr-link-focus-highlight
@@ -87,8 +97,7 @@
         :z-index      "10"}]
 
       [:&$pathom-viz-planner-attr-link-branch
-       {:stroke       "orange"
-        :stroke-width "1px"}]
+       {:stroke "orange"}]
 
       [:&$pathom-viz-planner-attr-link-reach
        {}]
@@ -121,3 +130,15 @@
       (dom/svg {:ref #(gobj/set this "svg" %)}))))
 
 (def query-plan-viz (fc/factory QueryPlanViz))
+
+(fc/defsc QueryPlanViz2
+  [this {::pcp/keys [graph]}]
+  (let [node     (pcp/get-root-node graph)
+        children (->> (pcp/node-branches node)
+                      (mapv #(pcp/get-node graph %))
+                      (sort-by pcp/node->label))]
+    (dom/div
+      (for [node children]
+        (dom/div {:key (::pcp/node-id node)} (pcp/node->label node))))))
+
+(def query-plan-viz-2 (fc/factory QueryPlanViz2 {:keyfn ::id}))
