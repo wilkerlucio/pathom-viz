@@ -14,10 +14,10 @@
             [edn-query-language.core :as eql]
             [goog.object :as gobj]))
 
-(s/def ::path (s/coll-of keyword? :kind vector?))
-(s/def ::path-map (s/map-of ::path map?))
-(s/def ::node (s/keys :opt-un [::children]))
-(s/def ::children (s/coll-of ::node))
+(>def ::path (s/coll-of keyword? :kind vector?))
+(>def ::path-map "The tree of maps" (s/map-of ::path map?))
+(>def ::node (s/keys :opt-un [::children]))
+(>def ::children (s/coll-of ::node))
 
 (defn pd [f]
   (fn [e]

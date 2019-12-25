@@ -5,6 +5,7 @@
             [cljs.spec.alpha :as s]
             [clojure.string :as str]
             [clojure.test.check.generators :as gen]
+            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [com.fulcrologic.fulcro-css.css :as css]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [com.fulcrologic.fulcro.algorithms.merge :as merge]
@@ -25,18 +26,18 @@
 
 ; region specs
 
-(s/def ::weight nat-int?)
-(s/def ::reach nat-int?)
-(s/def ::resolvers ::pc/attributes-set)
+(>def ::weight nat-int?)
+(>def ::reach nat-int?)
+(>def ::resolvers ::pc/attributes-set)
 
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-node/attribute string?)
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-node/multiNode boolean?)
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-node/mainNode boolean?)
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-node/weight ::weight)
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-node/reach ::reach)
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-node/radius (s/and double? pos?))
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-node/attribute string?)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-node/multiNode boolean?)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-node/mainNode boolean?)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-node/weight ::weight)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-node/reach ::reach)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-node/radius (s/and double? pos?))
 
-(s/def ::attribute-node
+(>def ::attribute-node
   (s/keys :req-un [:com.wsscode.pathom.viz.index-explorer.attribute-node/attribute
                    :com.wsscode.pathom.viz.index-explorer.attribute-node/multiNode
                    :com.wsscode.pathom.viz.index-explorer.attribute-node/mainNode
@@ -44,27 +45,27 @@
                    :com.wsscode.pathom.viz.index-explorer.attribute-node/reach
                    :com.wsscode.pathom.viz.index-explorer.attribute-node/radius]))
 
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-link/source string?)
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-link/weight ::weight)
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-link/resolvers string?)
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-link/target string?)
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-link/deep boolean?)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-link/source string?)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-link/weight ::weight)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-link/resolvers string?)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-link/target string?)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-link/deep boolean?)
 
-(s/def ::attribute-link
+(>def ::attribute-link
   (s/keys :req-un [:com.wsscode.pathom.viz.index-explorer.attribute-link/source
                    :com.wsscode.pathom.viz.index-explorer.attribute-link/weight
                    :com.wsscode.pathom.viz.index-explorer.attribute-link/resolvers
                    :com.wsscode.pathom.viz.index-explorer.attribute-link/target
                    :com.wsscode.pathom.viz.index-explorer.attribute-link/deep]))
 
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-graph/nodes (s/coll-of ::attribute-node))
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-graph/links (s/coll-of ::attribute-link))
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-graph/nodes (s/coll-of ::attribute-node))
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-graph/links (s/coll-of ::attribute-link))
 
-(s/def ::attribute-graph
+(>def ::attribute-graph
   (s/keys :req-un [:com.wsscode.pathom.viz.index-explorer.attribute-graph/nodes
                    :com.wsscode.pathom.viz.index-explorer.attribute-graph/links]))
 
-(s/def ::maybe-nested-input (s/or :direct set? :nested vector?))
+(>def ::maybe-nested-input (s/or :direct set? :nested vector?))
 
 ; endregion
 
