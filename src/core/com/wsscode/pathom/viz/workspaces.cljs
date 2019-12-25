@@ -5,7 +5,6 @@
             [com.fulcrologic.fulcro.data-fetch :as df]
             [com.wsscode.common.async-cljs :refer [<?maybe]]
             [com.wsscode.pathom.core :as p]
-            [com.wsscode.pathom.fulcro.network :as p.network]
             [com.wsscode.pathom.viz.index-explorer :as iex]
             [com.wsscode.pathom.viz.query-editor :as pv.query-editor]
             [edn-query-language.core :as eql]
@@ -27,7 +26,7 @@
                                           (js/console.error e "Error handler for remote failed with an exception."))))]
                   (go
                     (try
-                      (ok-handler {:transaction edn :body (<?maybe (parser {} edn))})
+                      (ok-handler {:body (<?maybe (parser {} edn))})
                       (catch :default e
                         (js/console.error "Pathom Remote error:" e)
                         (error-handler {:body e}))))))})
