@@ -1,6 +1,7 @@
 (ns com.wsscode.pathom.viz.query-editor
   (:require [cljs.core.async :refer [go <!]]
             [cljs.reader :refer [read-string]]
+            [com.wsscode.async.async-cljs :refer [go-promise <?maybe]]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.fulcro.network :as pfn]
@@ -30,10 +31,10 @@
 (pc/defmutation run-query [{::keys [client-parser]} {::keys [id query request-trace?]}]
   {::pc/params [::query]
    ::pc/output [::id ::result]}
-  (go
+  (go-promise
     (let [pull-keys [:com.wsscode.pathom/trace]
           query     (cond-> (safe-read query) request-trace? (conj :com.wsscode.pathom/trace))
-          response  (<! (client-parser {} query))]
+          response  (<?maybe (client-parser {} query))]
       (merge
         {::id                      id
          ::result                  (pvh/pprint (apply dissoc response pull-keys))
