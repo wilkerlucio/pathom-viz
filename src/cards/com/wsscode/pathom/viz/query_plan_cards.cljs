@@ -5,15 +5,22 @@
             [com.fulcrologic.fulcro.data-fetch :as df]
             [com.fulcrologic.fulcro.mutations :as fm]
             [com.wsscode.common.async-cljs :refer [go-catch <!p]]
-            [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.connect.planner :as pcp]
+            [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.sugar :as ps]
             [com.wsscode.pathom.viz.helpers :as h]
             [com.wsscode.pathom.viz.query-plan :as plan-view]
+            [goog.object :as gobj]
             [nubank.workspaces.card-types.fulcro3 :as ct.fulcro]
             [nubank.workspaces.core :as ws]
             [nubank.workspaces.model :as wsm]))
+
+(pc/defresolver expand-thing-compound [env {:keys [thing-compound]}]
+  {::pc/input  #{:thing-compound}
+   ::pc/output [:thing/piece-a :thing/other-piece]}
+  {:thing/piece-a (first thing-compound)
+   :thing/other-piece (second thing-compound)})
 
 (fc/defsc QueryPlanWrapper
   [this {::keys   [examples]
@@ -69,3 +76,23 @@
                          (js/console.log "MOUNTED")
                          (df/load! app [::id "singleton"] QueryPlanWrapper
                            {:target [:ui/root]}))}}))
+
+(defn make-2d-grid [rows cells]
+  (map vector
+    (range)
+    (cycle (mapcat #(repeat cells %) (range rows)))
+    (cycle (range cells))))
+
+(defn graph-planner-layout [graph]
+  (-> graph
+      pcp/compute-all-node-depths))
+
+(comment
+  (let [data  (clj->js (repeat 20 {}))
+        rows  (js/Math.ceil (js/Math.sqrt (count data)))
+        cells rows]
+    (doseq [[i r c] (->> (make-2d-grid rows cells)
+                         (take (count data)))]
+      (gobj/extend (aget data i)
+        #js {"x" c "y" r}))
+    data))

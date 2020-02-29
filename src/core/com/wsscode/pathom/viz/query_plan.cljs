@@ -1,11 +1,43 @@
 (ns com.wsscode.pathom.viz.query-plan
   (:require ["./d3-query-plan" :as d3qp]
             ["./detect-element-size" :refer [addResizeListener]]
+            [tangle.core :as tangle]
             [goog.object :as gobj]
             [com.fulcrologic.fulcro.components :as fc]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [com.wsscode.pathom.connect :as pc]
-            [com.wsscode.pathom.connect.planner :as pcp]))
+            [com.wsscode.pathom.connect.planner :as pcp]
+            [com.wsscode.pathom.misc :as p.misc]
+            [fulcro.client.primitives :as fp]))
+
+(def node-size 30)
+(def node-half-size (/ node-size 2))
+(def node-space 60)
+(def node-half-space (/ node-space 2))
+
+(defn branches-count [{::pcp/keys [run-next] :as node}]
+  (cond-> (count (pcp/node-branches node))
+    run-next inc))
+
+(defn layout-graph [graph]
+  (let [graph'    (pcp/compute-all-node-depths graph)
+        positions (->> graph'
+                       ::pcp/nodes
+                       vals
+                       (group-by ::pcp/node-depth))]
+    (reduce-kv
+      (fn [g k v]
+        (reduce
+          (fn [g [{::pcp/keys [node-id] :as n} i]]
+            (-> g
+                (pcp/assoc-node node-id ::x (+ (if (zero? (mod k 2)) (+ node-half-size node-half-space) 0) (* (+ node-size node-space) i)))
+                (pcp/assoc-node node-id ::y (* (+ node-size node-space) k))
+                (pcp/assoc-node node-id ::width node-size)
+                (pcp/assoc-node node-id ::height node-size)))
+          g
+          (map vector (sort-by branches-count #(compare %2 %) v) (range))))
+      graph'
+      positions)))
 
 (defn render-d3-graph-viz [{::pcp/keys [nodes root]}]
   (let [links (into []
@@ -45,8 +77,24 @@
                                       :data      data}))]
       (gobj/set this "renderedData" render-settings))))
 
+(defn pos->coord [{::keys [x y]}]
+  (str x "," y))
+
+(defn create-path-line
+  [pos-a pos-b]
+  (str "M " (pos->coord pos-a) " L " (pos->coord pos-b)))
+
+(defn create-path-curve
+  [{xa ::x ya ::y :as pos-a} {xb ::x yb ::y :as pos-b}]
+  (let [center     (+ ya (/ (- yb ya) 2))
+        smoothness (/ (- xb xa) 8)]
+    (str "M " (pos->coord pos-a) " C "
+      (+ xa smoothness) "," center " "
+      (- xb smoothness) "," center " "
+      (pos->coord pos-b))))
+
 (fc/defsc QueryPlanViz
-  [this {::keys []}]
+  [this {::pcp/keys [graph]}]
   {:css
    [[:.container {:flex      1
                   :max-width "100%"}
@@ -104,15 +152,29 @@
       [:&$pathom-viz-planner-attr-link-deep
        {:stroke-dasharray "3px"}]]
 
-     [:text {:font "bold 18px Verdana, Helvetica, Arial, sans-serif"}]]]
+     [:text {:font "bold 18px Verdana, Helvetica, Arial, sans-serif"}]
+
+     [:.node {:fill "#ddd"}
+      [:&.node-and {:fill "#cc0"}]
+      [:&.node-or {:fill "#00c"}]]
+
+     [:.line {:stroke       "#ef9d0e6b"
+              :stroke-width "2px"
+              :fill         "none"}]
+
+     [:.line-next {:stroke       "#0000006b"
+                   :stroke-width "2px"
+                   :fill         "none"}]]]
 
    :componentDidMount
    (fn [this]
+     #_
      (render-attribute-graph this)
      #_(addResizeListener (gobj/get this "svgContainer") #(recompute-trace-size this)))
 
    :componentDidUpdate
    (fn [this prev-props _]
+     #_
      (when (not= prev-props (-> this fc/props))
        (render-attribute-graph this)))
 
@@ -125,9 +187,33 @@
    (fn [this error info]
      (fc/set-state! this {::error-catch? true}))}
   (dom/div :.container {:ref #(gobj/set this "svgContainer" %)}
-    (if (fc/get-state this ::error-catch?)
-      (dom/div "Error rendering trace, check console for details")
-      (dom/svg {:ref #(gobj/set this "svg" %)}))))
+    (let [graph' (layout-graph graph)]
+      (dom/svg {:width "5000" :height "5000"}
+        (for [{::keys     [x y width height]
+               ::pcp/keys [node-id run-next]
+               :as        node} (vals (::pcp/nodes graph'))]
+          (let [start {::x (+ x (/ width 2)) ::y (+ y height)}]
+            (fp/fragment
+              (dom/circle :.node {:key     (str node-id)
+                                  :classes [(cond
+                                              (::pcp/run-and node)
+                                              :.node-and
+                                              (::pcp/run-or node)
+                                              :.node-or)]
+                                  :cx      (+ x node-half-size)
+                                  :cy      (+ y node-half-size)
+                                  :r       node-half-size
+                                  :onClick #(js/console.log node)})
+              (for [next-node (map #(pcp/get-node graph' %) (pcp/node-branches node))]
+                (dom/path :.line {:d   (create-path-curve start {::x (+ (::x next-node) (/ (::width next-node) 2)) ::y (::y next-node)})
+                                  :key (str node-id "->" (::pcp/node-id next-node))}))
+
+              (if-let [next-node (pcp/get-node graph' run-next)]
+                (dom/path :.line-next {:d   (create-path-curve start {::x (+ (::x next-node) (/ (::width next-node) 2)) ::y (::y next-node)})
+                                       :key (str node-id "->" (::pcp/node-id next-node))})))))))
+    #_(if (fc/get-state this ::error-catch?)
+        (dom/div "Error rendering trace, check console for details")
+        (dom/svg {:ref #(gobj/set this "svg" %)}))))
 
 (def query-plan-viz (fc/factory QueryPlanViz))
 
