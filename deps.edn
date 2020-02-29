@@ -3,7 +3,7 @@
 
  :deps
  {com.wsscode/fuzzy          {:mvn/version "1.0.0"}
-  com.fulcrologic/guardrails {:mvn/version "0.0.9"}}
+  com.fulcrologic/guardrails {:mvn/version "0.0.12"}}
 
  :aliases
  {:provided
