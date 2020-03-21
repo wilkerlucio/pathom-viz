@@ -20,24 +20,24 @@
     run-next inc))
 
 (defn layout-graph [graph]
-  (let [graph'    (pcp/compute-all-node-depths graph)
-        positions (->> graph'
-                       ::pcp/nodes
-                       vals
-                       (group-by ::pcp/node-depth))]
+  (let [graph' (pcp/compute-all-node-depths graph)
+        depths (->> graph'
+                    ::pcp/nodes
+                    vals
+                    (group-by ::pcp/node-depth))]
     (reduce-kv
       (fn [g k v]
         (reduce
-          (fn [g [{::pcp/keys [node-id] :as n} i]]
+          (fn [g [{::pcp/keys [node-id]} i]]
             (-> g
-                (pcp/assoc-node node-id ::x (+ (if (zero? (mod k 2)) (+ node-half-size node-half-space) 0) (* (+ node-size node-space) i)))
+                (pcp/assoc-node node-id ::x (+ node-size (if (zero? (mod k 2)) (+ node-half-size node-half-space) 0) (* (+ node-size node-space) i)))
                 (pcp/assoc-node node-id ::y (* (+ node-size node-space) k))
                 (pcp/assoc-node node-id ::width node-size)
                 (pcp/assoc-node node-id ::height node-size)))
           g
           (map vector (sort-by branches-count #(compare %2 %) v) (range))))
       graph'
-      positions)))
+      depths)))
 
 (defn render-d3-graph-viz [{::pcp/keys [nodes root]}]
   (let [links (into []
@@ -160,71 +160,61 @@
 
      [:.line {:stroke       "#ef9d0e6b"
               :stroke-width "2px"
-              :fill         "none"}]
+              :fill         "none"}
+      [:&.line-focus {:stroke "#ef9d0eff"}]]
 
      [:.line-next {:stroke       "#0000006b"
                    :stroke-width "2px"
-                   :fill         "none"}]]]
+                   :fill         "none"}
+      [:&.line-focus {:stroke "#000"}]]
 
-   :componentDidMount
-   (fn [this]
-     #_
-     (render-attribute-graph this)
-     #_(addResizeListener (gobj/get this "svgContainer") #(recompute-trace-size this)))
+     [:.line-focus {:stroke-width "3px"}]
 
-   :componentDidUpdate
-   (fn [this prev-props _]
-     #_
-     (when (not= prev-props (-> this fc/props))
-       (render-attribute-graph this)))
-
-   :componentWillUnmount
-   (fn [this]
-     (if-let [settings (gobj/get this "renderedData")]
-       ((gobj/get settings "dispose"))))
-
-   :componentDidCatch
-   (fn [this error info]
-     (fc/set-state! this {::error-catch? true}))}
-  (dom/div :.container {:ref #(gobj/set this "svgContainer" %)}
-    (let [graph' (layout-graph graph)]
+     [:.label {:font-size   "11px"
+               :text-align  "center"
+               :margin "0"
+               :padding-top "6px"}]]]}
+  (dom/div :.container
+    (let [graph' (layout-graph graph)
+          focus  (fc/get-state this ::focus-node)]
       (dom/svg {:width "5000" :height "5000"}
         (for [{::keys     [x y width height]
+               ::pc/keys  [sym]
                ::pcp/keys [node-id run-next]
                :as        node} (vals (::pcp/nodes graph'))]
-          (let [start {::x (+ x (/ width 2)) ::y (+ y height)}]
-            (fp/fragment
-              (dom/circle :.node {:key     (str node-id)
-                                  :classes [(cond
-                                              (::pcp/run-and node)
-                                              :.node-and
-                                              (::pcp/run-or node)
-                                              :.node-or)]
-                                  :cx      (+ x node-half-size)
-                                  :cy      (+ y node-half-size)
-                                  :r       node-half-size
-                                  :onClick #(js/console.log node)})
-              (for [next-node (map #(pcp/get-node graph' %) (pcp/node-branches node))]
-                (dom/path :.line {:d   (create-path-curve start {::x (+ (::x next-node) (/ (::width next-node) 2)) ::y (::y next-node)})
-                                  :key (str node-id "->" (::pcp/node-id next-node))}))
+          (let [start {::x (+ x (/ width 2)) ::y (+ y height)}
+                cx    (+ x node-half-size)
+                cy    (+ y node-half-size)]
+            (fp/fragment {:key (str node-id)}
+              (dom/circle :.node {:classes     [(cond
+                                                  (::pcp/run-and node)
+                                                  :.node-and
+                                                  (::pcp/run-or node)
+                                                  :.node-or)]
+                                  :cx          cx
+                                  :cy          cy
+                                  :r           node-half-size
+                                  :onClick     #(js/console.log node)
+                                  :onMouseOver #(fc/set-state! this {::focus-node node-id})
+                                  :onMouseOut  #(fc/set-state! this {::focus-node nil})})
+              (dom/foreignObject {:x      (- x node-size)
+                                  :y      (+ y node-size)
+                                  :width  (* node-size 3)
+                                  :height node-space}
+                (dom/p :.label {:xmlns "http://www.w3.org/1999/xhtml"} (some-> sym name str)))
+              #_(dom/text :.label {:x          cx
+                                   :y          (+ cy node-size)
+                                   :textLength 3}
+                  (str sym))
+
+              (for [next-node (mapv #(pcp/get-node graph' %) (pcp/node-branches node))]
+                (dom/path :.line {:classes [(if (contains? #{node-id (::pcp/node-id next-node)} focus) :.line-focus)]
+                                  :d       (create-path-curve start {::x (+ (::x next-node) (/ (::width next-node) 2)) ::y (::y next-node)})
+                                  :key     (str node-id "->" (::pcp/node-id next-node))}))
 
               (if-let [next-node (pcp/get-node graph' run-next)]
-                (dom/path :.line-next {:d   (create-path-curve start {::x (+ (::x next-node) (/ (::width next-node) 2)) ::y (::y next-node)})
-                                       :key (str node-id "->" (::pcp/node-id next-node))})))))))
-    #_(if (fc/get-state this ::error-catch?)
-        (dom/div "Error rendering trace, check console for details")
-        (dom/svg {:ref #(gobj/set this "svg" %)}))))
+                (dom/path :.line-next {:classes [(if (contains? #{node-id (::pcp/node-id next-node)} focus) :.line-focus)]
+                                       :d       (create-path-curve start {::x (+ (::x next-node) (/ (::width next-node) 2)) ::y (::y next-node)})
+                                       :key     (str node-id "->" (::pcp/node-id next-node))})))))))))
 
 (def query-plan-viz (fc/factory QueryPlanViz))
-
-(fc/defsc QueryPlanViz2
-  [this {::pcp/keys [graph]}]
-  (let [node     (pcp/get-root-node graph)
-        children (->> (pcp/node-branches node)
-                      (mapv #(pcp/get-node graph %))
-                      (sort-by pcp/node->label))]
-    (dom/div
-      (for [node children]
-        (dom/div {:key (::pcp/node-id node)} (pcp/node->label node))))))
-
-(def query-plan-viz-2 (fc/factory QueryPlanViz2 {:keyfn ::id}))

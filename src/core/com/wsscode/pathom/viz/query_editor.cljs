@@ -1,6 +1,6 @@
 (ns com.wsscode.pathom.viz.query-editor
-  (:require [cljs.core.async :refer [go <!]]
-            [cljs.reader :refer [read-string]]
+  (:require [cljs.reader :refer [read-string]]
+            [com.wsscode.async.async-cljs :refer [<?maybe go-promise <!]]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.fulcro.network :as pfn]
@@ -33,10 +33,10 @@
   {::pc/sym    `run-query
    ::pc/params [::id ::query ::request-trace?]
    ::pc/output [::id ::result]}
-  (go
+  (go-promise
     (let [pull-keys [:com.wsscode.pathom/trace]
           query     (cond-> (safe-read query) request-trace? (conj :com.wsscode.pathom/trace))
-          response  (<! (client-parser {} query))]
+          response  (<?maybe (client-parser {} query))]
       (merge
         {::id                      id
          ::result                  (pvh/pprint (apply dissoc response pull-keys))
@@ -121,6 +121,13 @@
                          ::request-trace? true
                          ::query          "[]"
                          ::result         ""})
+   :pre-merge         (fn [{:keys [current-normalized data-tree]}]
+                        (merge {::id             (random-uuid)
+                                ::request-trace? true
+                                ::query          "[]"
+                                ::result         ""}
+                          current-normalized data-tree))
+
    :ident             [::id ::id]
    :query             [::id ::request-trace? ::query ::result :ui/query-running?
                        ::pc/indexes :com.wsscode.pathom/trace]

@@ -4,52 +4,25 @@
             [com.fulcrologic.fulcro.components :as fc]
             [com.fulcrologic.fulcro.data-fetch :as df]
             [com.fulcrologic.fulcro.mutations :as fm]
+            [com.wsscode.async.async-cljs :refer [<?maybe go go-promise <!]]
             [com.wsscode.common.async-cljs :refer [go-catch <!p]]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.connect.planner :as pcp]
             [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.sugar :as ps]
+            [com.wsscode.pathom.viz.codemirror :as cm]
             [com.wsscode.pathom.viz.helpers :as h]
             [com.wsscode.pathom.viz.query-plan :as plan-view]
             [goog.object :as gobj]
             [nubank.workspaces.card-types.fulcro3 :as ct.fulcro]
             [nubank.workspaces.core :as ws]
-            [nubank.workspaces.model :as wsm]))
+            [nubank.workspaces.model :as wsm]
+            [com.wsscode.pathom.trace :as pt]))
 
-(pc/defresolver expand-thing-compound [env {:keys [thing-compound]}]
-  {::pc/input  #{:thing-compound}
-   ::pc/output [:thing/piece-a :thing/other-piece]}
-  {:thing/piece-a (first thing-compound)
-   :thing/other-piece (second thing-compound)})
-
-(fc/defsc QueryPlanWrapper
-  [this {::keys   [examples]
-         :ui/keys [selected-example]}]
-  {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
-                  (merge {::id                 (random-uuid)
-                          :ui/selected-example ""} current-normalized data-tree))
-   :ident       ::id
-   :query       [::id
-                 :ui/selected-example
-                 ::examples]
-   :css         [[:.container {:flex           1
-                               :display        "flex"
-                               :flex-direction "column"}]]
-   :css-include [plan-view/QueryPlanViz]}
-  (dom/div :.container
-    (dom/div
-      (dom/select {:value    selected-example
-                   :onChange #(fm/set-string! this :ui/selected-example :event %)}
-        (dom/option "Select example")
-        (for [[title _] examples]
-          (dom/option {:key title} title)))
-
-      (dom/select {}
-        (dom/option "Select renderer")))
-
-    (if-let [graph (get examples selected-example)]
-      (plan-view/query-plan-viz
-        {::pcp/graph graph}))))
+(defn safe-read [s]
+  (try
+    (read-string s)
+    (catch :default _ nil)))
 
 (pc/defresolver query-planner-examples [_ _]
   {::pc/output [{::examples [::title ::pcp/graph]}]}
@@ -61,7 +34,66 @@
 
 (def parser
   (ps/connect-async-parser
-    [query-planner-examples]))
+    {::ps/connect-reader pc/reader3}
+    [query-planner-examples
+     (pc/constantly-resolver :answer 42)
+     (pc/constantly-resolver :pi js/Math.PI)
+     (pc/single-attr-resolver :pi :tao #(/ % 2))]))
+
+(comment
+  (go-promise
+    (let [query [:foo]
+          res   (<?maybe (parser {} (conj query :com.wsscode.pathom/trace)))]
+      (js/console.log "TRACE" res))))
+
+(fc/defsc QueryPlanWrapper
+  [this {::keys   [examples]
+         :ui/keys [selected-example query]}]
+  {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
+                  (merge {::id                 (random-uuid)
+                          :ui/selected-example nil
+                          :ui/query            "[:com.wsscode.pathom.viz.query-plan-cards/examples]"}
+                    current-normalized
+                    data-tree))
+   :ident       ::id
+   :query       [::id
+                 :ui/selected-example
+                 ::examples
+                 :ui/query]
+   :css         [[:.container {:flex           1
+                               :display        "flex"
+                               :flex-direction "column"}]
+                 [:.editor {:height "300px"}]]
+   :css-include [plan-view/QueryPlanViz]}
+  (let [run-query (fn []
+                    (go
+                      (let [query (-> this fc/props :ui/query safe-read)
+                            t*    (atom [])
+                            _     (<?maybe (parser {:com.wsscode.pathom.trace/trace* t*} (conj query :com.wsscode.pathom/trace)))
+                            trace (pt/compute-durations @t*)
+                            plans (filter (comp #{::pc/compute-plan} ::pt/event) trace)]
+                        (fm/set-value! this :ui/selected-example (-> plans first ::pc/plan))
+                        (js/console.log "PLANS" plans))))]
+    (dom/div :.container
+      #_(dom/div
+          (dom/select {:value    selected-example
+                       :onChange #(fm/set-string! this :ui/selected-example :event %)}
+            (dom/option "Select example")
+            (for [[title _] examples]
+              (dom/option {:key title} title))))
+
+      (dom/div :.editor
+        (cm/pathom
+          {:value       (or (str query) "")
+           ::cm/options {::cm/extraKeys
+                         {"Cmd-Enter"   run-query
+                          "Ctrl-Enter"  run-query
+                          "Shift-Enter" run-query}}
+           :onChange    #(fm/set-value! this :ui/query %)}))
+
+      (if-let [graph selected-example]
+        (plan-view/query-plan-viz
+          {::pcp/graph graph})))))
 
 (ws/defcard query-plan-card
   {::wsm/align ::wsm/stretch-flex}
