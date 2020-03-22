@@ -8,12 +8,36 @@
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.connect.planner :as pcp]
             [com.wsscode.pathom.misc :as p.misc]
+            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [fulcro.client.primitives :as fp]))
+
+(>def ::on-click-node fn?)
 
 (def node-size 30)
 (def node-half-size (/ node-size 2))
 (def node-space 60)
 (def node-half-space (/ node-space 2))
+
+(fc/defsc NodeDetails
+  [this {::pcp/keys [node-id]
+         ::pc/keys  [sym]
+         :as        node}]
+  {:pre-merge (fn [{:keys [current-normalized data-tree]}]
+                (merge {::pcp/node-id (random-uuid)} current-normalized data-tree))
+   :ident     ::pcp/node-id
+   :query     [::pcp/node-id
+               ::pcp/run-and
+               ::pcp/run-or
+               ::pcp/source-for-attrs
+               ::pcp/run-next
+               ::pcp/requires
+               ::pcp/input
+               ::pc/sym]}
+  (dom/div
+    (dom/div "Node Type")
+    (dom/div "Resolver" (str sym))))
+
+(def node-details (fc/factory NodeDetails {:keyfn ::pcp/node-id}))
 
 (defn branches-count [{::pcp/keys [run-next] :as node}]
   (cond-> (count (pcp/node-branches node))
@@ -39,44 +63,6 @@
       graph'
       depths)))
 
-(defn render-d3-graph-viz [{::pcp/keys [nodes root]}]
-  (let [links (into []
-                    (mapcat
-                      (fn [{::pcp/keys [run-next node-id] :as node}]
-                        (let [branches (pcp/node-branches node)]
-                          (cond-> (into []
-                                        (map #(hash-map
-                                                :source node-id
-                                                :target %
-                                                :branch? true))
-                                        branches)
-                            run-next
-                            (conj {:source node-id :target run-next})))))
-                    (vals nodes))]
-    {:nodes (into [] (map #(-> %
-                               (assoc :radius (+ 10
-                                                (if (pcp/branch-node? %)
-                                                  0
-                                                  (or (some-> % ::pcp/requires count) 1))))
-                               (cond-> (= root (::pcp/node-id %))
-                                       (assoc :root? true)))) (vals nodes))
-     :links links}))
-
-(defn render-attribute-graph [this]
-  (let [{::pcp/keys [graph]} (-> this fc/props)
-        current   (gobj/get this "renderedData")
-        container (gobj/get this "svgContainer")
-        svg       (gobj/get this "svg")
-        data      (clj->js (render-d3-graph-viz graph))]
-    (if current ((gobj/get current "dispose")))
-    (gobj/set svg "innerHTML" "")
-    (js/console.log "RENDER DATA" (render-d3-graph-viz graph))
-    (let [render-settings (d3qp/render svg
-                            (clj->js {:svgWidth  (gobj/get container "clientWidth")
-                                      :svgHeight (gobj/get container "clientHeight")
-                                      :data      data}))]
-      (gobj/set this "renderedData" render-settings))))
-
 (defn pos->coord [{::keys [x y]}]
   (str x "," y))
 
@@ -94,7 +80,7 @@
       (pos->coord pos-b))))
 
 (fc/defsc QueryPlanViz
-  [this {::pcp/keys [graph]}]
+  [this {::pcp/keys [graph]} {::keys [on-click-node]}]
   {:css
    [[:.container {:flex      1
                   :max-width "100%"}
@@ -194,7 +180,7 @@
                                   :cx          cx
                                   :cy          cy
                                   :r           node-half-size
-                                  :onClick     #(js/console.log node)
+                                  :onClick     #(on-click-node % node)
                                   :onMouseOver #(fc/set-state! this {::focus-node node-id})
                                   :onMouseOut  #(fc/set-state! this {::focus-node nil})})
               (dom/foreignObject {:x      (- x node-size)
@@ -217,4 +203,4 @@
                                        :d       (create-path-curve start {::x (+ (::x next-node) (/ (::width next-node) 2)) ::y (::y next-node)})
                                        :key     (str node-id "->" (::pcp/node-id next-node))})))))))))
 
-(def query-plan-viz (fc/factory QueryPlanViz))
+(def query-plan-viz (fc/computed-factory QueryPlanViz))

@@ -17,7 +17,8 @@
             [nubank.workspaces.card-types.fulcro3 :as ct.fulcro]
             [nubank.workspaces.core :as ws]
             [nubank.workspaces.model :as wsm]
-            [com.wsscode.pathom.trace :as pt]))
+            [com.wsscode.pathom.trace :as pt]
+            [com.fulcrologic.fulcro.algorithms.merge :as merge]))
 
 (defn safe-read [s]
   (try
@@ -48,7 +49,7 @@
 
 (fc/defsc QueryPlanWrapper
   [this {::keys   [examples]
-         :ui/keys [selected-example query]}]
+         :ui/keys [selected-example query node-details]}]
   {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
                   (merge {::id                 (random-uuid)
                           :ui/selected-example nil
@@ -58,6 +59,7 @@
    :ident       ::id
    :query       [::id
                  :ui/selected-example
+                 {:ui/node-details (fc/get-query plan-view/NodeDetails)}
                  ::examples
                  :ui/query]
    :css         [[:.container {:flex           1
@@ -91,9 +93,15 @@
                           "Shift-Enter" run-query}}
            :onChange    #(fm/set-value! this :ui/query %)}))
 
+      (dom/div
+        (plan-view/node-details node-details))
+
       (if-let [graph selected-example]
         (plan-view/query-plan-viz
-          {::pcp/graph graph})))))
+          {::pcp/graph graph}
+          {::plan-view/on-click-node
+           (fn [e node] (merge/merge-component! (fc/any->app this) plan-view/NodeDetails node
+                          :replace (conj (fc/get-ident this) :ui/node-details)))})))))
 
 (ws/defcard query-plan-card
   {::wsm/align ::wsm/stretch-flex}
