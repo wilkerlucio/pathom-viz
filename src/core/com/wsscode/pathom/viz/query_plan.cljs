@@ -12,6 +12,8 @@
             [fulcro.client.primitives :as fp]))
 
 (>def ::on-click-node fn?)
+(>def ::on-mouse-over-node fn?)
+(>def ::on-mouse-out-node fn?)
 
 (def node-size 30)
 (def node-half-size (/ node-size 2))
@@ -79,8 +81,24 @@
       (- xb smoothness) "," center " "
       (pos->coord pos-b))))
 
+(def kind-encoders
+  {::pc/sym #(some-> % ::pc/sym name str)})
+
+(defn render-node-value [{::keys [label-kind]
+                          :or    {label-kind ::pc/sym}} node]
+  (if-let [encoder (get kind-encoders label-kind)]
+    (encoder node)
+    (str (get node label-kind))))
+
 (fc/defsc QueryPlanViz
-  [this {::pcp/keys [graph]} {::keys [on-click-node]}]
+  [this {::pcp/keys [graph]
+         ::keys     [on-click-node
+                     on-mouse-over-node
+                     on-mouse-out-node]
+         :or        {on-click-node      identity
+                     on-mouse-over-node identity
+                     on-mouse-out-node  identity}
+         :as        props}]
   {:css
    [[:.container {:flex      1
                   :max-width "100%"}
@@ -181,13 +199,18 @@
                                   :cy          cy
                                   :r           node-half-size
                                   :onClick     #(on-click-node % node)
-                                  :onMouseOver #(fc/set-state! this {::focus-node node-id})
-                                  :onMouseOut  #(fc/set-state! this {::focus-node nil})})
+                                  :onMouseOver #(do
+                                                  (on-mouse-over-node % node)
+                                                  (fc/set-state! this {::focus-node node-id}))
+                                  :onMouseOut  #(do
+                                                  (on-mouse-out-node % node)
+                                                  (fc/set-state! this {::focus-node nil}))})
               (dom/foreignObject {:x      (- x node-size)
                                   :y      (+ y node-size)
                                   :width  (* node-size 3)
                                   :height node-space}
-                (dom/p :.label {:xmlns "http://www.w3.org/1999/xhtml"} (some-> sym name str)))
+                (dom/p :.label
+                  (render-node-value props node)))
               #_(dom/text :.label {:x          cx
                                    :y          (+ cy node-size)
                                    :textLength 3}

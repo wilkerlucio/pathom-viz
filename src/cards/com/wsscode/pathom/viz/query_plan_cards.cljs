@@ -116,15 +116,26 @@
           (dom-option {:value ::pc/sym} "Node name")
           (dom-option {:value ::pcp/source-for-attrs} "Attribute source")))
 
-      (dom/div
-        (plan-view/node-details node-details))
-
       (if-let [graph selected-example]
         (plan-view/query-plan-viz
-          {::pcp/graph graph}
-          {::plan-view/on-click-node
-           (fn [e node] (merge/merge-component! (fc/any->app this) plan-view/NodeDetails node
-                          :replace (conj (fc/get-ident this) :ui/node-details)))})))))
+          {::pcp/graph
+           graph
+
+           ::plan-view/label-kind
+           label-kind
+
+           ::plan-view/on-mouse-over-node
+           (fn [e node]
+             (merge/merge-component! (fc/any->app this) plan-view/NodeDetails node
+               :replace (conj (fc/get-ident this) :ui/node-details)))
+
+           ::plan-view/on-mouse-out-node
+           (fn [e node]
+             (fm/set-value! this :ui/node-details nil))}))
+
+      (if node-details
+        (dom/div
+          (plan-view/node-details node-details))))))
 
 (ws/defcard query-plan-card
   {::wsm/align ::wsm/stretch-flex}
