@@ -39,6 +39,7 @@
     [query-planner-examples
      (pc/constantly-resolver :answer 42)
      (pc/constantly-resolver :pi js/Math.PI)
+     (pc/constantly-resolver :tao (/ js/Math.PI 2))
      (pc/single-attr-resolver :pi :tao #(/ % 2))]))
 
 (comment
@@ -78,12 +79,14 @@
                  :ui/selected-example
                  :ui/label-kind
                  :ui/query
-                 {:ui/node-details (fc/get-query plan-view/NodeDetails)}]
+                 :ui/node-details]
    :css         [[:.container {:flex           1
                                :display        "flex"
                                :flex-direction "column"}]
-                 [:.editor {:height "300px"}]]
-   :css-include [plan-view/QueryPlanViz]}
+                 [:.editor {:height "90px"
+                            :overflow "hidden"}]
+                 [:.node-details {:width "500px"}]]
+   :css-include [plan-view/QueryPlanViz plan-view/NodeDetails]}
   (let [run-query (fn []
                     (go
                       (let [query (-> this fc/props :ui/query safe-read)
@@ -110,31 +113,30 @@
                           "Shift-Enter" run-query}}
            :onChange    #(fm/set-value! this :ui/query %)}))
 
-      (dom/div
+      (dom/div {:style {:marginBottom "10px"}}
         (dom-select {:value    label-kind
                      :onChange #(fm/set-value! this :ui/label-kind %2)}
           (dom-option {:value ::pc/sym} "Node name")
-          (dom-option {:value ::pcp/source-for-attrs} "Attribute source")))
+          (dom-option {:value ::pcp/source-for-attrs} "Attribute source")
+          (dom-option {:value ::pcp/requires} "Requires")))
 
       (if-let [graph selected-example]
         (plan-view/query-plan-viz
           {::pcp/graph
            graph
 
+           ::plan-view/selected-node-id
+           (::pcp/node-id node-details)
+
            ::plan-view/label-kind
            label-kind
 
-           ::plan-view/on-mouse-over-node
+           ::plan-view/on-click-node
            (fn [e node]
-             (merge/merge-component! (fc/any->app this) plan-view/NodeDetails node
-               :replace (conj (fc/get-ident this) :ui/node-details)))
-
-           ::plan-view/on-mouse-out-node
-           (fn [e node]
-             (fm/set-value! this :ui/node-details nil))}))
+             (fm/set-value! this :ui/node-details node))}))
 
       (if node-details
-        (dom/div
+        (dom/div :.node-details
           (plan-view/node-details node-details))))))
 
 (ws/defcard query-plan-card

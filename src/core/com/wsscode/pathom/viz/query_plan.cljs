@@ -14,14 +14,20 @@
 (>def ::on-click-node fn?)
 (>def ::on-mouse-over-node fn?)
 (>def ::on-mouse-out-node fn?)
+(>def ::selected-node-id ::pcp/node-id)
 
 (def node-size 30)
 (def node-half-size (/ node-size 2))
 (def node-space 60)
 (def node-half-space (/ node-space 2))
 
+(defn detail-info [title content]
+  (dom/div
+    (dom/div :.label title)
+    (dom/div content)))
+
 (fc/defsc NodeDetails
-  [this {::pcp/keys [node-id]
+  [this {::pcp/keys [node-id source-for-attrs requires input]
          ::pc/keys  [sym]
          :as        node}]
   {:pre-merge (fn [{:keys [current-normalized data-tree]}]
@@ -34,10 +40,42 @@
                ::pcp/run-next
                ::pcp/requires
                ::pcp/input
-               ::pc/sym]}
-  (dom/div
-    (dom/div "Node Type")
-    (dom/div "Resolver" (str sym))))
+               ::pc/sym]
+   :css       [[:.container {:border  "1px solid #ccc"
+                             :padding "14px"}]
+               [:.title {:text-align "center"}]
+               [:.label {:font-weight "bold"}]]}
+  (dom/div :.container
+    (case (pcp/node-kind node)
+      ::pcp/node-resolver
+      (dom/div :.title.title-resolver "Resolver")
+
+      ::pcp/node-and
+      (dom/div :.title.title-and "And")
+
+      ::pcp/node-or
+      (dom/div :.title.title-or "Or")
+
+      ::pcp/node-unknown
+      "UNKNOWN")
+
+    (if node-id
+      (detail-info "Node ID" (str node-id)))
+
+    (if sym
+      (detail-info "Resolver" (str sym)))
+
+    (if-let [branches (pcp/node-branches node)]
+      (detail-info "Branches" (pr-str branches)))
+
+    (if source-for-attrs
+      (detail-info "Source for attributes" (pr-str source-for-attrs)))
+
+    (if requires
+      (detail-info "Requires" (pr-str requires)))
+
+    (if (seq input)
+      (detail-info "Input" (pr-str input)))))
 
 (def node-details (fc/factory NodeDetails {:keyfn ::pcp/node-id}))
 
@@ -93,6 +131,7 @@
 (fc/defsc QueryPlanViz
   [this {::pcp/keys [graph]
          ::keys     [on-click-node
+                     selected-node-id
                      on-mouse-over-node
                      on-mouse-out-node]
          :or        {on-click-node      identity
@@ -101,7 +140,8 @@
          :as        props}]
   {:css
    [[:.container {:flex      1
-                  :max-width "100%"}
+                  :max-width "100%"
+                  :overflow  "hidden"}
      [:$pathom-viz-planner-attr-node
       {:fill "#000A"}
 
@@ -160,7 +200,9 @@
 
      [:.node {:fill "#ddd"}
       [:&.node-and {:fill "#cc0"}]
-      [:&.node-or {:fill "#00c"}]]
+      [:&.node-or {:fill "#00c"}]
+      [:&.node-selected {:stroke "#c00"
+                         :stroke-width "2px"}]]
 
      [:.line {:stroke       "#ef9d0e6b"
               :stroke-width "2px"
@@ -194,7 +236,10 @@
                                                   (::pcp/run-and node)
                                                   :.node-and
                                                   (::pcp/run-or node)
-                                                  :.node-or)]
+                                                  :.node-or)
+
+                                                (if (= selected-node-id node-id)
+                                                  :.node-selected)]
                                   :cx          cx
                                   :cy          cy
                                   :r           node-half-size
