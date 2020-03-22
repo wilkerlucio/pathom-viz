@@ -133,7 +133,10 @@
 
            ::plan-view/on-click-node
            (fn [e node]
-             (fm/set-value! this :ui/node-details node))}))
+             (fm/set-value! this :ui/node-details
+               (if (= node-details node)
+                 nil
+                 node)))}))
 
       (if node-details
         (dom/div :.node-details
