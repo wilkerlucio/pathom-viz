@@ -47,21 +47,38 @@
           res   (<?maybe (parser {} (conj query :com.wsscode.pathom/trace)))]
       (js/console.log "TRACE" res))))
 
+(defn dom-select [props & children]
+  (apply dom/select
+    (-> props
+        (update :value pr-str)
+        (update :onChange (fn [f]
+                            (fn [e]
+                              (f e (safe-read (.. e -target -value)))))))
+    children))
+
+(defn dom-option [props & children]
+  (apply dom/option
+    (-> props
+        (update :value pr-str))
+    children))
+
 (fc/defsc QueryPlanWrapper
   [this {::keys   [examples]
-         :ui/keys [selected-example query node-details]}]
+         :ui/keys [selected-example query node-details label-kind]}]
   {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
                   (merge {::id                 (random-uuid)
                           :ui/selected-example nil
+                          :ui/label-kind       ::pc/sym
                           :ui/query            "[:com.wsscode.pathom.viz.query-plan-cards/examples]"}
                     current-normalized
                     data-tree))
    :ident       ::id
    :query       [::id
-                 :ui/selected-example
-                 {:ui/node-details (fc/get-query plan-view/NodeDetails)}
                  ::examples
-                 :ui/query]
+                 :ui/selected-example
+                 :ui/label-kind
+                 :ui/query
+                 {:ui/node-details (fc/get-query plan-view/NodeDetails)}]
    :css         [[:.container {:flex           1
                                :display        "flex"
                                :flex-direction "column"}]
@@ -92,6 +109,12 @@
                           "Ctrl-Enter"  run-query
                           "Shift-Enter" run-query}}
            :onChange    #(fm/set-value! this :ui/query %)}))
+
+      (dom/div
+        (dom-select {:value    label-kind
+                     :onChange #(fm/set-value! this :ui/label-kind %2)}
+          (dom-option {:value ::pc/sym} "Node name")
+          (dom-option {:value ::pcp/source-for-attrs} "Attribute source")))
 
       (dom/div
         (plan-view/node-details node-details))
