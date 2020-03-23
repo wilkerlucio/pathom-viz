@@ -35,12 +35,16 @@
 
 (def parser
   (ps/connect-async-parser
-    {::ps/connect-reader pc/reader3}
+    {::ps/connect-reader  pc/reader3
+     ::ps/foreign-parsers [(ps/connect-serial-parser
+                             [(pc/constantly-resolver :foreign "value")
+                              (pc/constantly-resolver :foreign2 "second value")])]}
     [query-planner-examples
      (pc/constantly-resolver :answer 42)
      (pc/constantly-resolver :pi js/Math.PI)
      (pc/constantly-resolver :tao (/ js/Math.PI 2))
-     (pc/single-attr-resolver :pi :tao #(/ % 2))]))
+     (pc/single-attr-resolver :pi :tao #(/ % 2))
+     (pc/alias-resolver :foreign :foreign->local)]))
 
 (comment
   (go-promise
@@ -95,6 +99,7 @@
                             trace (pt/compute-durations @t*)
                             plans (filter (comp #{::pc/compute-plan} ::pt/event) trace)]
                         (fm/set-value! this :ui/selected-example (-> plans first ::pc/plan))
+                        (fm/set-value! this :ui/node-details nil)
                         (js/console.log "PLANS" plans))))]
     (dom/div :.container
       #_(dom/div
@@ -133,6 +138,7 @@
 
            ::plan-view/on-click-node
            (fn [e node]
+             (js/console.log "NODE" node)
              (fm/set-value! this :ui/node-details
                (if (= node-details node)
                  nil

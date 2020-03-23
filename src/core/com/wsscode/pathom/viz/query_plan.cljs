@@ -9,7 +9,8 @@
             [com.wsscode.pathom.connect.planner :as pcp]
             [com.wsscode.pathom.misc :as p.misc]
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
-            [fulcro.client.primitives :as fp]))
+            [fulcro.client.primitives :as fp]
+            [edn-query-language.core :as eql]))
 
 (>def ::on-click-node fn?)
 (>def ::on-mouse-over-node fn?)
@@ -27,7 +28,7 @@
     (dom/div content)))
 
 (fc/defsc NodeDetails
-  [this {::pcp/keys [node-id source-for-attrs requires input]
+  [this {::pcp/keys [node-id source-for-attrs requires input foreign-ast]
          ::pc/keys  [sym]
          :as        node}]
   {:pre-merge (fn [{:keys [current-normalized data-tree]}]
@@ -40,6 +41,7 @@
                ::pcp/run-next
                ::pcp/requires
                ::pcp/input
+               ::pcp/foreign-ast
                ::pc/sym]
    :css       [[:.container {:border  "1px solid #ccc"
                              :padding "14px"}]
@@ -75,7 +77,10 @@
       (detail-info "Requires" (pr-str requires)))
 
     (if (seq input)
-      (detail-info "Input" (pr-str input)))))
+      (detail-info "Input" (pr-str input)))
+
+    (if foreign-ast
+      (detail-info "Foreign Query" (pr-str (eql/ast->query foreign-ast))))))
 
 (def node-details (fc/factory NodeDetails {:keyfn ::pcp/node-id}))
 
@@ -201,6 +206,7 @@
      [:.node {:fill "#ddd" :cursor "pointer"}
       [:&.node-and {:fill "#e8e840"}]
       [:&.node-or {:fill "#b3b3f5"}]
+      [:&.node-dynamic {:fill "#828282"}]
       [:&.node-selected {:stroke       "#c00"
                          :stroke-width "2px"}]]
 
@@ -231,7 +237,7 @@
       (dom/svg {:width "5000" :height "5000"}
         (for [{::keys     [x y width height]
                ::pc/keys  [sym]
-               ::pcp/keys [node-id run-next]
+               ::pcp/keys [node-id run-next foreign-ast]
                :as        node} (vals (::pcp/nodes graph'))]
           (let [start {::x (+ x (/ width 2)) ::y (+ y height)}
                 cx    (+ x node-half-size)
@@ -242,6 +248,8 @@
                                                   :.node-and
                                                   (::pcp/run-or node)
                                                   :.node-or)
+
+                                                (if foreign-ast :.node-dynamic)
 
                                                 (if (= selected-node-id node-id)
                                                   :.node-selected)]
