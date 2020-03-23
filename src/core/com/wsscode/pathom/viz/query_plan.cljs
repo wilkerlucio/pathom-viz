@@ -95,7 +95,7 @@
           (fn [g [{::pcp/keys [node-id]} i]]
             (-> g
                 (pcp/assoc-node node-id ::x (+ node-size (if (zero? (mod k 2)) (+ node-half-size node-half-space) 0) (* (+ node-size node-space) i)))
-                (pcp/assoc-node node-id ::y (* (+ node-size node-space) k))
+                (pcp/assoc-node node-id ::y (+ node-half-size (* (+ node-size node-space) k)))
                 (pcp/assoc-node node-id ::width node-size)
                 (pcp/assoc-node node-id ::height node-size)))
           g
@@ -198,10 +198,10 @@
 
      [:text {:font "bold 18px Verdana, Helvetica, Arial, sans-serif"}]
 
-     [:.node {:fill "#ddd"}
-      [:&.node-and {:fill "#cc0"}]
-      [:&.node-or {:fill "#00c"}]
-      [:&.node-selected {:stroke "#c00"
+     [:.node {:fill "#ddd" :cursor "pointer"}
+      [:&.node-and {:fill "#e8e840"}]
+      [:&.node-or {:fill "#b3b3f5"}]
+      [:&.node-selected {:stroke       "#c00"
                          :stroke-width "2px"}]]
 
      [:.line {:stroke       "#ef9d0e6b"
@@ -216,9 +216,14 @@
 
      [:.line-focus {:stroke-width "3px"}]
 
+     [:.node-id {:text-anchor       "middle"
+                 :dominant-baseline "central"
+                 :font-size         "12px"
+                 :pointer-events    "none"}]
+
      [:.label {:font-size   "11px"
                :text-align  "center"
-               :margin "0"
+               :margin      "0"
                :padding-top "6px"}]]]}
   (dom/div :.container
     (let [graph' (layout-graph graph)
@@ -260,6 +265,12 @@
                                    :y          (+ cy node-size)
                                    :textLength 3}
                   (str sym))
+
+              (dom/text :.node-id {:x      cx
+                                   :y      cy
+                                   :width  node-size
+                                   :height node-size}
+                (str node-id))
 
               (for [next-node (mapv #(pcp/get-node graph' %) (pcp/node-branches node))]
                 (dom/path :.line {:classes [(if (contains? #{node-id (::pcp/node-id next-node)} focus) :.line-focus)]
