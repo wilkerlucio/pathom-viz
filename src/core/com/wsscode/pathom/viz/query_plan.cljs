@@ -242,7 +242,7 @@
           (let [start {::x (+ x (/ width 2)) ::y (+ y height)}
                 cx    (+ x node-half-size)
                 cy    (+ y node-half-size)]
-            (fp/fragment {:key (str node-id)}
+            (dom/g {:key (str node-id)}
               (dom/circle :.node {:classes     [(cond
                                                   (::pcp/run-and node)
                                                   :.node-and
@@ -269,10 +269,6 @@
                                   :height node-space}
                 (dom/p :.label
                   (render-node-value props node)))
-              #_(dom/text :.label {:x          cx
-                                   :y          (+ cy node-size)
-                                   :textLength 3}
-                  (str sym))
 
               (dom/text :.node-id {:x      cx
                                    :y      cy

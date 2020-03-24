@@ -95,7 +95,7 @@
                     (go
                       (let [query (-> this fc/props :ui/query safe-read)
                             t*    (atom [])
-                            _     (<?maybe (parser {:com.wsscode.pathom.trace/trace* t*} (conj query :com.wsscode.pathom/trace)))
+                            _     (<?maybe (parser {:com.wsscode.pathom.trace/trace* t*} query))
                             trace (pt/compute-durations @t*)
                             plans (filter (comp #{::pc/compute-plan} ::pt/event) trace)]
                         (fm/set-value! this :ui/selected-example (-> plans first ::pc/plan))
