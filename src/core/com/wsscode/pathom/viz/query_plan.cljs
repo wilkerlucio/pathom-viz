@@ -1,16 +1,14 @@
 (ns com.wsscode.pathom.viz.query-plan
   (:require ["./d3-query-plan" :as d3qp]
             ["./detect-element-size" :refer [addResizeListener]]
-            [tangle.core :as tangle]
-            [goog.object :as gobj]
-            [com.fulcrologic.fulcro.components :as fc]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
+            [com.fulcrologic.fulcro.components :as fc]
+            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.connect.planner :as pcp]
             [com.wsscode.pathom.misc :as p.misc]
-            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
-            [fulcro.client.primitives :as fp]
-            [edn-query-language.core :as eql]))
+            [edn-query-language.core :as eql]
+            [goog.object :as gobj]))
 
 (>def ::on-click-node fn?)
 (>def ::on-mouse-over-node fn?)

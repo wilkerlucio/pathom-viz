@@ -8,17 +8,15 @@
             [com.wsscode.common.async-cljs :refer [go-catch <!p]]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.connect.planner :as pcp]
-            [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.sugar :as ps]
+            [com.wsscode.pathom.trace :as pt]
             [com.wsscode.pathom.viz.codemirror :as cm]
             [com.wsscode.pathom.viz.helpers :as h]
             [com.wsscode.pathom.viz.query-plan :as plan-view]
             [goog.object :as gobj]
             [nubank.workspaces.card-types.fulcro3 :as ct.fulcro]
             [nubank.workspaces.core :as ws]
-            [nubank.workspaces.model :as wsm]
-            [com.wsscode.pathom.trace :as pt]
-            [com.fulcrologic.fulcro.algorithms.merge :as merge]))
+            [nubank.workspaces.model :as wsm]))
 
 (defn safe-read [s]
   (try
