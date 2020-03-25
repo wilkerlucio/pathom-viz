@@ -30,7 +30,8 @@
 (fc/defsc D3Trace [this _]
   {:css
    [[:.container {:flex      1
-                  :max-width "100%"}]
+                  :max-width "100%"
+                  :height    "100%"}]
 
     [:$pathom-attribute
      {:fill    "#d4d4d4"
