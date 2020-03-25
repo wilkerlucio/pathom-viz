@@ -85,7 +85,9 @@
    :css         [[:.container {:flex           1
                                :display        "flex"
                                :flex-direction "column"}]
-                 [:.editor {:height "90px"
+                 [:.row {:display "flex"}]
+                 [:.flex {:flex "1"}]
+                 [:.editor {:height   "90px"
                             :overflow "hidden"}]
                  [:.node-details {:width "500px"}]]
    :css-include [plan-view/QueryPlanViz plan-view/NodeDetails]}
@@ -95,7 +97,9 @@
                             t*    (atom [])
                             _     (<?maybe (parser {:com.wsscode.pathom.trace/trace* t*} query))
                             trace (pt/compute-durations @t*)
-                            plans (filter (comp #{::pc/compute-plan} ::pt/event) trace)]
+                            plans (->> trace
+                                       (filter (comp #{::pc/compute-plan} ::pt/event))
+                                       (filter (comp seq ::pcp/nodes ::pc/plan)))]
                         (fm/set-value! this :ui/selected-example (-> plans first ::pc/plan))
                         (fm/set-value! this :ui/node-details nil)
                         (js/console.log "PLANS" plans))))]
@@ -123,28 +127,29 @@
           (dom-option {:value ::pcp/source-for-attrs} "Attribute source")
           (dom-option {:value ::pcp/requires} "Requires")))
 
-      (if-let [graph selected-example]
-        (plan-view/query-plan-viz
-          {::pcp/graph
-           graph
+      (dom/div :.row
+        (dom/div :.flex
+          (if-let [graph selected-example]
+            (plan-view/query-plan-viz
+              {::pcp/graph
+               graph
 
-           ::plan-view/selected-node-id
-           (::pcp/node-id node-details)
+               ::plan-view/selected-node-id
+               (::pcp/node-id node-details)
 
-           ::plan-view/label-kind
-           label-kind
+               ::plan-view/label-kind
+               label-kind
 
-           ::plan-view/on-click-node
-           (fn [e node]
-             (js/console.log "NODE" node)
-             (fm/set-value! this :ui/node-details
-               (if (= node-details node)
-                 nil
-                 node)))}))
-
-      (if node-details
-        (dom/div :.node-details
-          (plan-view/node-details node-details))))))
+               ::plan-view/on-click-node
+               (fn [e node]
+                 (js/console.log "NODE" node)
+                 (fm/set-value! this :ui/node-details
+                   (if (= node-details node)
+                     nil
+                     node)))})))
+        (if node-details
+          (dom/div :.node-details
+            (plan-view/node-details node-details)))))))
 
 (ws/defcard query-plan-card
   {::wsm/align ::wsm/stretch-flex}

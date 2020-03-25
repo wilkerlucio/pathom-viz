@@ -232,7 +232,7 @@
   (dom/div :.container
     (let [graph' (layout-graph graph)
           focus  (fc/get-state this ::focus-node)]
-      (dom/svg {:width "5000" :height "5000"}
+      (dom/svg {:width "100%" :height "400"}
         (for [{::keys     [x y width height]
                ::pc/keys  [sym]
                ::pcp/keys [node-id run-next foreign-ast]
