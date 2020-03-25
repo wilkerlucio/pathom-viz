@@ -8,6 +8,14 @@
             [com.fulcrologic.fulcro.components :as fc]
             [goog.object :as gobj]))
 
+(defn add-edn-backup [trace]
+  (walk/postwalk
+    (fn [x]
+      (if (and (map? x) (contains? x :event))
+        (assoc x :edn-original (pr-str x))
+        x))
+    trace))
+
 (defn render-trace [this]
   (let [{::keys [trace-data on-show-details]} (-> this fc/props)
         container (gobj/get this "svgContainer")
@@ -17,7 +25,7 @@
       (renderPathomTrace svg
         (clj->js {:svgWidth    (gobj/get container "clientWidth")
                   :svgHeight   (gobj/get container "clientHeight")
-                  :data        (h/stringify-keyword-values trace-data)
+                  :data        (-> trace-data add-edn-backup (h/stringify-keyword-values))
                   :showDetails (or on-show-details identity)})))))
 
 (defn recompute-trace-size [this]

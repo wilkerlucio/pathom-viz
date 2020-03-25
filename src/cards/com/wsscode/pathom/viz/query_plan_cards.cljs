@@ -118,11 +118,7 @@
                                             (filter (comp #{::pc/compute-plan} ::pt/event))
                                             (filter (comp seq ::pcp/nodes ::pc/plan)))
                             trace-tree (pt/trace->viz @t*)]
-                        (fm/set-value! this :ui/trace-tree trace-tree)
-                        (fm/set-value! this :ui/plan (-> plans first ::pc/plan))
-                        (fm/set-value! this :ui/node-details nil)
-                        (js/console.log "RESULT" res)
-                        (js/console.log "TRACE" trace))))]
+                        (fm/set-value! this :ui/trace-tree trace-tree))))]
     (dom/div :.container
       #_(dom/div
           (dom/select {:value    plan
@@ -144,7 +140,13 @@
       (if trace-tree
         (dom/div :.trace
           (trace/d3-trace {::trace/trace-data      trace-tree
-                           ::trace/on-show-details (fn [event] (js/console.log "details" event))})))
+                           ::trace/on-show-details (fn [events]
+                                                     (let [events' (mapv (comp read-string #(gobj/get % "edn-original")) events)]
+                                                       (if-let [plan (->> (filter (comp #{"reader3-execute"} :event) events')
+                                                                          first :plan)]
+                                                         (fm/set-value! this :ui/plan plan)
+                                                         (fm/set-value! this :ui/node-details nil))
+                                                       (js/console.log "details" events')))})))
 
       (dom/div {:style {:marginBottom "10px"}}
         (dom-select {:value    label-kind
