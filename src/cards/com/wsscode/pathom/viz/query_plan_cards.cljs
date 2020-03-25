@@ -13,10 +13,13 @@
             [com.wsscode.pathom.viz.codemirror :as cm]
             [com.wsscode.pathom.viz.helpers :as h]
             [com.wsscode.pathom.viz.query-plan :as plan-view]
+            [com.wsscode.pathom.viz.trace :as trace]
             [goog.object :as gobj]
             [nubank.workspaces.card-types.fulcro3 :as ct.fulcro]
             [nubank.workspaces.core :as ws]
-            [nubank.workspaces.model :as wsm]))
+            [nubank.workspaces.model :as wsm]
+            [com.wsscode.pathom.core :as p]
+            [com.wsscode.pathom.connect.foreign :as pcf]))
 
 (defn safe-read [s]
   (try
@@ -31,18 +34,29 @@
                     read-string)]
       {::examples demos})))
 
+(defonce indexes (atom {}))
+
 (def parser
-  (ps/connect-async-parser
-    {::ps/connect-reader  pc/reader3
-     ::ps/foreign-parsers [(ps/connect-serial-parser
-                             [(pc/constantly-resolver :foreign "value")
-                              (pc/constantly-resolver :foreign2 "second value")])]}
-    [query-planner-examples
-     (pc/constantly-resolver :answer 42)
-     (pc/constantly-resolver :pi js/Math.PI)
-     (pc/constantly-resolver :tao (/ js/Math.PI 2))
-     (pc/single-attr-resolver :pi :tao #(/ % 2))
-     (pc/alias-resolver :foreign :foreign->local)]))
+  (p/async-parser
+    {::p/env     {::p/reader               [{:foo (constantly "bar")}
+                                            p/map-reader
+                                            pc/reader3
+                                            pc/open-ident-reader
+                                            p/env-placeholder-reader]
+                  ::p/placeholder-prefixes #{">"}}
+     ::p/mutate  pc/mutate-async
+     ::p/plugins [(pc/connect-plugin {::pc/indexes  indexes
+                                      ::pc/register [query-planner-examples
+                                                     (pc/constantly-resolver :answer 42)
+                                                     (pc/constantly-resolver :pi js/Math.PI)
+                                                     (pc/constantly-resolver :tau (* js/Math.PI 2))
+                                                     (pc/single-attr-resolver :pi :tau #(* % 2))
+                                                     (pc/alias-resolver :foreign :foreign->local)]})
+                  (pcf/foreign-parser-plugin {::pcf/parsers [(ps/connect-serial-parser
+                                                               [(pc/constantly-resolver :foreign "value")
+                                                                (pc/constantly-resolver :foreign2 "second value")])]})
+                  p/error-handler-plugin
+                  p/trace-plugin]}))
 
 (comment
   (go-promise
@@ -67,46 +81,52 @@
 
 (fc/defsc QueryPlanWrapper
   [this {::keys   [examples]
-         :ui/keys [selected-example query node-details label-kind]}]
+         :ui/keys [plan query node-details label-kind trace-tree]}]
   {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
-                  (merge {::id                 (random-uuid)
-                          :ui/selected-example nil
-                          :ui/label-kind       ::pc/sym
-                          :ui/query            "[:com.wsscode.pathom.viz.query-plan-cards/examples]"}
+                  (merge {::id           (random-uuid)
+                          :ui/plan       nil
+                          :ui/label-kind ::pc/sym
+                          :ui/trace-tree nil
+                          :ui/query      "[:tau]"}
                     current-normalized
                     data-tree))
    :ident       ::id
    :query       [::id
                  ::examples
-                 :ui/selected-example
+                 :ui/plan
                  :ui/label-kind
                  :ui/query
-                 :ui/node-details]
+                 :ui/node-details
+                 :ui/trace-tree]
    :css         [[:.container {:flex           1
                                :display        "flex"
                                :flex-direction "column"}]
                  [:.row {:display "flex"}]
+                 [:.trace {:height "300px" :overflow "hidden"}]
                  [:.flex {:flex "1"}]
                  [:.editor {:height   "90px"
                             :overflow "hidden"}]
                  [:.node-details {:width "500px"}]]
-   :css-include [plan-view/QueryPlanViz plan-view/NodeDetails]}
+   :css-include [plan-view/QueryPlanViz plan-view/NodeDetails trace/D3Trace]}
   (let [run-query (fn []
                     (go
-                      (let [query (-> this fc/props :ui/query safe-read)
-                            t*    (atom [])
-                            _     (<?maybe (parser {:com.wsscode.pathom.trace/trace* t*} query))
-                            trace (pt/compute-durations @t*)
-                            plans (->> trace
-                                       (filter (comp #{::pc/compute-plan} ::pt/event))
-                                       (filter (comp seq ::pcp/nodes ::pc/plan)))]
-                        (fm/set-value! this :ui/selected-example (-> plans first ::pc/plan))
+                      (let [query      (-> this fc/props :ui/query safe-read)
+                            t*         (atom [])
+                            res        (<?maybe (parser {:com.wsscode.pathom.trace/trace* t*} query))
+                            trace      (pt/compute-durations @t*)
+                            plans      (->> trace
+                                            (filter (comp #{::pc/compute-plan} ::pt/event))
+                                            (filter (comp seq ::pcp/nodes ::pc/plan)))
+                            trace-tree (pt/trace->viz @t*)]
+                        (fm/set-value! this :ui/trace-tree trace-tree)
+                        (fm/set-value! this :ui/plan (-> plans first ::pc/plan))
                         (fm/set-value! this :ui/node-details nil)
-                        (js/console.log "PLANS" plans))))]
+                        (js/console.log "RESULT" res)
+                        (js/console.log "TRACE" trace))))]
     (dom/div :.container
       #_(dom/div
-          (dom/select {:value    selected-example
-                       :onChange #(fm/set-string! this :ui/selected-example :event %)}
+          (dom/select {:value    plan
+                       :onChange #(fm/set-string! this :ui/plan :event %)}
             (dom/option "Select example")
             (for [[title _] examples]
               (dom/option {:key title} title))))
@@ -114,11 +134,17 @@
       (dom/div :.editor
         (cm/pathom
           {:value       (or (str query) "")
+           :onChange    #(fm/set-value! this :ui/query %)
+           ::pc/indexes @indexes
            ::cm/options {::cm/extraKeys
                          {"Cmd-Enter"   run-query
                           "Ctrl-Enter"  run-query
-                          "Shift-Enter" run-query}}
-           :onChange    #(fm/set-value! this :ui/query %)}))
+                          "Shift-Enter" run-query}}}))
+
+      (if trace-tree
+        (dom/div :.trace
+          (trace/d3-trace {::trace/trace-data      trace-tree
+                           ::trace/on-show-details (fn [event] (js/console.log "details" event))})))
 
       (dom/div {:style {:marginBottom "10px"}}
         (dom-select {:value    label-kind
@@ -129,7 +155,7 @@
 
       (dom/div :.row
         (dom/div :.flex
-          (if-let [graph selected-example]
+          (if-let [graph plan]
             (plan-view/query-plan-viz
               {::pcp/graph
                graph
