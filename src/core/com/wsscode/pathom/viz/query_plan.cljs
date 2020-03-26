@@ -27,7 +27,7 @@
 
 (fc/defsc NodeDetails
   [this {::pcp/keys [node-id source-for-attrs requires input foreign-ast]
-         ::pc/keys  [sym]
+         ::pc/keys  [sym node-resolver-error]
          :as        node}]
   {:pre-merge (fn [{:keys [current-normalized data-tree]}]
                 (merge {::pcp/node-id (random-uuid)} current-normalized data-tree))
@@ -40,6 +40,7 @@
                ::pcp/requires
                ::pcp/input
                ::pcp/foreign-ast
+               ::pc/node-resolver-error
                ::pc/sym]
    :css       [[:.container {:border  "1px solid #ccc"
                              :padding "14px"}]
@@ -78,7 +79,10 @@
       (detail-info "Input" (pr-str input)))
 
     (if foreign-ast
-      (detail-info "Foreign Query" (pr-str (eql/ast->query foreign-ast))))))
+      (detail-info "Foreign Query" (pr-str (eql/ast->query foreign-ast))))
+
+    (if node-resolver-error
+      (detail-info "Error" (pr-str (::pc/resolver-error node-resolver-error))))))
 
 (def node-details (fc/factory NodeDetails {:keyfn ::pcp/node-id}))
 
@@ -205,7 +209,8 @@
       [:&.node-and {:fill "#e8e840"}]
       [:&.node-or {:fill "#b3b3f5"}]
       [:&.node-dynamic {:fill "#828282"}]
-      [:&.node-selected {:stroke       "#c00"
+      [:&.node-error {:fill "#ff5f5f"}]
+      [:&.node-selected {:stroke       "#000"
                          :stroke-width "2px"}]]
 
      [:.line {:stroke       "#ef9d0e6b"
@@ -248,6 +253,9 @@
                                                   :.node-or)
 
                                                 (if foreign-ast :.node-dynamic)
+
+                                                (if (::pc/node-resolver-error node)
+                                                  :.node-error)
 
                                                 (if (= selected-node-id node-id)
                                                   :.node-selected)]

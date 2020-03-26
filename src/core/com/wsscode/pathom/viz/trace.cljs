@@ -8,7 +8,7 @@
             [com.fulcrologic.fulcro.components :as fc]
             [goog.object :as gobj]))
 
-(defn add-edn-backup [trace]
+(defn add-edn-dna [trace]
   (walk/postwalk
     (fn [x]
       (if (and (map? x) (contains? x :event))
@@ -25,7 +25,7 @@
       (renderPathomTrace svg
         (clj->js {:svgWidth    (gobj/get container "clientWidth")
                   :svgHeight   (gobj/get container "clientHeight")
-                  :data        (-> trace-data add-edn-backup (h/stringify-keyword-values))
+                  :data        (-> trace-data add-edn-dna (h/stringify-keyword-values))
                   :showDetails (or on-show-details identity)})))))
 
 (defn recompute-trace-size [this]
@@ -39,7 +39,8 @@
   {:css
    [[:.container {:flex      1
                   :max-width "100%"
-                  :height    "100%"}]
+                  :height    "100%"
+                  :overflow  "hidden"}]
 
     [:$pathom-attribute
      {:fill    "#d4d4d4"

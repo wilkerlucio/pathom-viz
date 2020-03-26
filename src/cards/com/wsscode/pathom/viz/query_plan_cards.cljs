@@ -1,5 +1,6 @@
 (ns com.wsscode.pathom.viz.query-plan-cards
   (:require [cljs.reader :refer [read-string]]
+            [clojure.core.async :as async]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [com.fulcrologic.fulcro.components :as fc]
             [com.fulcrologic.fulcro.data-fetch :as df]
@@ -7,7 +8,9 @@
             [com.wsscode.async.async-cljs :refer [<?maybe go go-promise <!]]
             [com.wsscode.common.async-cljs :refer [go-catch <!p]]
             [com.wsscode.pathom.connect :as pc]
+            [com.wsscode.pathom.connect.foreign :as pcf]
             [com.wsscode.pathom.connect.planner :as pcp]
+            [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.sugar :as ps]
             [com.wsscode.pathom.trace :as pt]
             [com.wsscode.pathom.viz.codemirror :as cm]
@@ -18,12 +21,12 @@
             [nubank.workspaces.card-types.fulcro3 :as ct.fulcro]
             [nubank.workspaces.core :as ws]
             [nubank.workspaces.model :as wsm]
-            [com.wsscode.pathom.core :as p]
-            [com.wsscode.pathom.connect.foreign :as pcf]))
+            [com.wsscode.pathom.misc :as p.misc]))
 
 (defn safe-read [s]
   (try
-    (read-string s)
+    (read-string {:readers {'error identity}}
+      s)
     (catch :default _ nil)))
 
 (pc/defresolver query-planner-examples [_ _]
@@ -36,6 +39,29 @@
 
 (defonce indexes (atom {}))
 
+(def registry
+  [query-planner-examples
+   (pc/constantly-resolver :answer 42)
+   (pc/resolver 'slow
+     {::pc/output [:slow]}
+     (fn [_ _]
+       (go-promise
+         (<! (async/timeout 300))
+         {:slow "slow"})))
+   (pc/resolver 'error
+     {::pc/output [:error]}
+     (fn [_ _]
+       (throw (ex-info "Sync Error" {:error "data"}))))
+   (pc/resolver 'error-async
+     {::pc/output [:error-async]}
+     (fn [_ _]
+       (go-promise
+         (throw (ex-info "Async Error" {:error "data"})))))
+   (pc/constantly-resolver :pi js/Math.PI)
+   (pc/constantly-resolver :tau (* js/Math.PI 2))
+   (pc/single-attr-resolver :pi :tau #(* % 2))
+   (pc/alias-resolver :foreign :foreign->local)])
+
 (def parser
   (p/async-parser
     {::p/env     {::p/reader               [{:foo (constantly "bar")}
@@ -46,12 +72,7 @@
                   ::p/placeholder-prefixes #{">"}}
      ::p/mutate  pc/mutate-async
      ::p/plugins [(pc/connect-plugin {::pc/indexes  indexes
-                                      ::pc/register [query-planner-examples
-                                                     (pc/constantly-resolver :answer 42)
-                                                     (pc/constantly-resolver :pi js/Math.PI)
-                                                     (pc/constantly-resolver :tau (* js/Math.PI 2))
-                                                     (pc/single-attr-resolver :pi :tau #(* % 2))
-                                                     (pc/alias-resolver :foreign :foreign->local)]})
+                                      ::pc/register registry})
                   (pcf/foreign-parser-plugin {::pcf/parsers [(ps/connect-serial-parser
                                                                [(pc/constantly-resolver :foreign "value")
                                                                 (pc/constantly-resolver :foreign2 "second value")])]})
@@ -118,6 +139,9 @@
                                             (filter (comp #{::pc/compute-plan} ::pt/event))
                                             (filter (comp seq ::pcp/nodes ::pc/plan)))
                             trace-tree (pt/trace->viz @t*)]
+                        (js/console.log "RES" res)
+                        (fm/set-value! this :ui/plan nil)
+                        (fm/set-value! this :ui/node-details nil)
                         (fm/set-value! this :ui/trace-tree trace-tree))))]
     (dom/div :.container
       #_(dom/div
@@ -141,10 +165,12 @@
         (dom/div :.trace
           (trace/d3-trace {::trace/trace-data      trace-tree
                            ::trace/on-show-details (fn [events]
-                                                     (let [events' (mapv (comp read-string #(gobj/get % "edn-original")) events)]
+                                                     (let [events' (mapv (comp safe-read #(gobj/get % "edn-original")) events)]
                                                        (if-let [plan (->> (filter (comp #{"reader3-execute"} :event) events')
                                                                           first :plan)]
-                                                         (fm/set-value! this :ui/plan plan)
+                                                         (fm/set-value! this :ui/plan (update plan ::pcp/nodes
+                                                                                        (fn [nodes]
+                                                                                          (p.misc/map-vals pcp/integrate-node-log nodes))))
                                                          (fm/set-value! this :ui/node-details nil))
                                                        (js/console.log "details" events')))})))
 
