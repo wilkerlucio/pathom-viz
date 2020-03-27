@@ -14,6 +14,7 @@
             [nubank.workspaces.card-types.fulcro3 :as ct.fulcro]
             [nubank.workspaces.core :as ws]
             [nubank.workspaces.model :as wsm]
+            [com.wsscode.pathom.viz.aux.demo-parser :as demo-parser]
             [cljs.core.async :as async]))
 
 (def registry [cp/client-parser-mutation])
@@ -30,15 +31,8 @@
                   p/error-handler-plugin
                   p/trace-plugin]}))
 
-(def parsers
-  {:base (ps/connect-async-parser
-           [(pc/constantly-resolver :answer 42)
-            (pc/resolver 'slow
-              {::pc/output [:slow]}
-              (fn [_ _]
-                (go-promise
-                  (<! (async/timeout 1000))
-                  {:slow "slow"})))])})
+(def client-parsers
+  (atom {:base demo-parser/parser}))
 
 (ws/defcard parser-assistant-card
   {::wsm/align ::wsm/stretch-flex}
@@ -54,4 +48,4 @@
 
                                 :remotes
                                 {:remote
-                                 (h/pathom-remote #(parser (assoc % ::cp/parsers parsers) %2))}}}))
+                                 (h/pathom-remote #(parser (assoc % ::cp/parsers @client-parsers) %2))}}}))

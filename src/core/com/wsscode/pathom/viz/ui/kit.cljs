@@ -452,7 +452,19 @@
   {:css         [[:.flex {:flex "1"}]
                  [:.scrollbars {:overflow "auto"}]
                  [:.no-scrollbars {:overflow "hidden"}]
-                 [:.nowrap {:white-space "nowrap"}]]
+                 [:.nowrap {:white-space "nowrap"}]
+                 [:.divisor-v {:width         "20px"
+                               :background    "#eee"
+                               :border        "1px solid #e0e0e0"
+                               :border-top    "0"
+                               :border-bottom "0"
+                               :z-index       "2"}]
+                 [:.divisor-h {:height       "20px"
+                               :background   "#eee"
+                               :border       "1px solid #e0e0e0"
+                               :border-left  "0"
+                               :border-right "0"
+                               :z-index      "2"}]]
    :css-include [Button
                  CollapsibleBox
                  Column
@@ -479,7 +491,7 @@
 
 (defn gc
   "Return a map pointing to the given global classes.
-  Eg: (kc :.flex :.scrollbars)"
+  Eg: (gc :.flex :.scrollbars)"
   [& k]
   {:classes (mapv css k)})
 

@@ -1,11 +1,12 @@
 (ns com.wsscode.pathom.viz.helpers
   (:require ["react-draggable" :refer [DraggableCore]]
             [cljs.core.async :refer [go <!]]
+            [cljs.reader :refer [read-string]]
             [cljs.spec.alpha :as s]
             [clojure.pprint]
             [clojure.walk :as walk]
-            [com.fulcrologic.fulcro.algorithms.tx-processing :as txn]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
+            [com.fulcrologic.fulcro.algorithms.tx-processing :as txn]
             [com.fulcrologic.fulcro.components :as fp]
             [com.fulcrologic.fulcro.mutations :as fm]
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
@@ -83,6 +84,11 @@
   "Helper to call transaction to update some key from current component."
   [component key fn & args]
   (fp/transact! component [`(update-value {:key ~key :fn ~fn :args ~args})]))
+
+(defn safe-read [s]
+  (try
+    (read-string {:readers {'error identity}} s)
+    (catch :default _ nil)))
 
 (defn toggle-set-item [set item]
   (if (contains? set item)

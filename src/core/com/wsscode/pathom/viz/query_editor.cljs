@@ -8,11 +8,12 @@
             [com.fulcrologic.fulcro.mutations :as fm]
             [com.wsscode.async.async-cljs :refer [<?maybe go-promise <!]]
             [com.wsscode.pathom.connect :as pc]
+            [com.wsscode.pathom.connect.planner :as pcp]
             [com.wsscode.pathom.core :as p]
-            [com.wsscode.pathom.fulcro.network :as pfn]
             [com.wsscode.pathom.viz.client-parser :as cp]
             [com.wsscode.pathom.viz.codemirror :as cm]
             [com.wsscode.pathom.viz.helpers :as pvh]
+            [com.wsscode.pathom.viz.query-plan :as plan-view]
             [com.wsscode.pathom.viz.trace :as pvt]))
 
 (declare QueryEditor TransactionResponse)
@@ -70,7 +71,6 @@
 (defn load-indexes
   [app {::keys    [id]
         ::cp/keys [parser-id]}]
-  (js/console.log "GO")
   (let [props {::id                       id
                ::cp/parser-id             parser-id
                ::cp/client-parser-request index-query}]
@@ -114,23 +114,27 @@
 (fc/defsc QueryEditor
   [this
    {::keys                   [query result request-trace?]
-    :ui/keys                 [query-running?]
+    :ui/keys                 [query-running? selected-graph-plan plan-viewer]
     :com.wsscode.pathom/keys [trace]
     ::pc/keys                [indexes]}
    {::keys [default-trace-size editor-props
-            enable-trace?]
+            enable-trace?
+            default-plan-size]
     :or    {default-trace-size 400
+            default-plan-size  200
             enable-trace?      true}}]
   {:initial-state     (fn [_]
                         {::id             (random-uuid)
                          ::request-trace? true
                          ::query          "[]"
-                         ::result         ""})
+                         ::result         ""
+                         :ui/plan-viewer  {}})
    :pre-merge         (fn [{:keys [current-normalized data-tree]}]
                         (merge {::id             (random-uuid)
                                 ::request-trace? true
                                 ::query          "[]"
-                                ::result         ""}
+                                ::result         ""
+                                :ui/plan-viewer  {}}
                           current-normalized data-tree))
 
    :ident             ::id
@@ -140,8 +144,10 @@
                        ::result
                        ::cp/parser-id
                        ::pc/indexes
+                       :ui/selected-graph-plan
                        :ui/query-running?
-                       :com.wsscode.pathom/trace]
+                       :com.wsscode.pathom/trace
+                       {:ui/plan-viewer (fc/get-query plan-view/PlanViewWithDetails)}]
    :css               [[:$CodeMirror {:height   "100% !important"
                                       :width    "100% !important"
                                       :position "absolute !important"
@@ -187,7 +193,8 @@
                                   :position "relative"}
                         [:$CodeMirror {:background "#f6f7f8"}]]
                        [:.trace {:display     "flex"
-                                 :padding-top "18px"}]]
+                                 :padding-top "18px"}]
+                       [:.plan {:display     "flex"}]]
    :css-include       [pvt/D3Trace Button]
    :componentDidMount (fn [this]
                         (js/setTimeout
@@ -195,13 +202,14 @@
                           100))
    :initLocalState    (fn [this]
                         {:run-query (fn []
-                                      (let [{:ui/keys  [query-running?]
+                                      (let [{:ui/keys  [query-running? plan-viewer]
                                              ::keys    [id query request-trace?]
                                              ::cp/keys [parser-id]
                                              :as       props} (fc/props this)
                                             {::keys [enable-trace?]
                                              :or    {enable-trace? true}} (fc/get-computed props)]
-                                        (if-not query-running?
+                                        (when-not query-running?
+                                          (plan-view/set-plan-view-graph! this plan-viewer nil)
                                           (let [props' {::id                       id
                                                         ::request-trace?           (and request-trace? enable-trace?)
                                                         ::cp/parser-id             parser-id
@@ -262,6 +270,20 @@
 
           (dom/div :.trace {:style {:height (str (or (fc/get-state this :trace-height) default-trace-size) "px")}}
             (pvt/d3-trace {::pvt/trace-data      trace
-                           ::pvt/on-show-details #(js/console.log %)})))))))
+                           ::pvt/on-show-details (fn [events]
+                                                   (plan-view/set-plan-view-graph! this plan-viewer
+                                                     (plan-view/events->plan events))
+                                                   (fc/transact! this [:ui/plan-viewer])
+                                                   (js/console.log events))}))))
+
+      (if (::pcp/graph plan-viewer)
+        (fc/fragment
+          (pvh/drag-resize this {:attribute :plan-height
+                                 :default   default-plan-size
+                                 :props     {:className (:divisor-h css)}}
+            (dom/div))
+
+          (dom/div :.plan {:style {:height (str (or (fc/get-state this :plan-height) default-plan-size) "px")}}
+            (plan-view/plan-view-with-details plan-viewer)))))))
 
 (def query-editor (fc/computed-factory QueryEditor))

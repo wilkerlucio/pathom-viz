@@ -3,10 +3,14 @@
             ["./detect-element-size" :refer [addResizeListener]]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [com.fulcrologic.fulcro.components :as fc]
+            [com.fulcrologic.fulcro.mutations :as fm]
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.connect.planner :as pcp]
             [com.wsscode.pathom.misc :as p.misc]
+            [com.wsscode.pathom.viz.helpers :as h]
+            [com.wsscode.pathom.viz.helpers :as pvh]
+            [com.wsscode.pathom.viz.ui.kit :as ui]
             [edn-query-language.core :as eql]
             [goog.object :as gobj]))
 
@@ -91,7 +95,7 @@
     (if node-resolver-error
       (detail-info "Error" (pr-str (::pc/resolver-error node-resolver-error))))))
 
-(def node-details (fc/factory NodeDetails {:keyfn ::pcp/node-id}))
+(def node-details-ui (fc/factory NodeDetails {:keyfn ::pcp/node-id}))
 
 (defn branches-count [{::pcp/keys [run-next] :as node}]
   (cond-> (count (pcp/node-branches node))
@@ -116,6 +120,15 @@
           (map vector (sort-by branches-count #(compare %2 %) v) (range))))
       graph'
       depths)))
+
+(defn events->plan [events]
+  (let [events' (mapv (comp h/safe-read #(gobj/get % "edn-original")) events)]
+    (js/console.log "EVENTS'" events')
+    (if-let [plan (->> (filter (comp #{"reader3-execute"} :event) events')
+                       first :plan)]
+      (update plan ::pcp/nodes
+        (fn [nodes]
+          (p.misc/map-vals pcp/integrate-node-log nodes))))))
 
 (defn pos->coord [{::keys [x y]}]
   (str x "," y))
@@ -244,13 +257,12 @@
                :margin      "0"
                :padding-top "6px"}]]]}
   (dom/div :.container
-    (let [graph' (layout-graph graph)
-          focus  (fc/get-state this ::focus-node)]
+    (let [focus (fc/get-state this ::focus-node)]
       (dom/svg {:width "100%" :height "600"}
         (for [{::keys     [x y width height]
                ::pc/keys  [sym]
                ::pcp/keys [node-id run-next foreign-ast node-trace]
-               :as        node} (vals (::pcp/nodes graph'))]
+               :as        node} (vals (::pcp/nodes graph))]
           (let [start {::x (+ x (/ width 2)) ::y (+ y height)}
                 cx    (+ x node-half-size)
                 cy    (+ y node-half-size)]
@@ -292,14 +304,69 @@
                                    :height node-size}
                 (str node-id))
 
-              (for [next-node (mapv #(pcp/get-node graph' %) (pcp/node-branches node))]
+              (for [next-node (mapv #(pcp/get-node graph %) (pcp/node-branches node))]
                 (dom/path :.line {:classes [(if (contains? #{node-id (::pcp/node-id next-node)} focus) :.line-focus)]
                                   :d       (create-path-curve start {::x (+ (::x next-node) (/ (::width next-node) 2)) ::y (::y next-node)})
                                   :key     (str node-id "->" (::pcp/node-id next-node))}))
 
-              (if-let [next-node (pcp/get-node graph' run-next)]
+              (if-let [next-node (pcp/get-node graph run-next)]
                 (dom/path :.line-next {:classes [(if (contains? #{node-id (::pcp/node-id next-node)} focus) :.line-focus)]
                                        :d       (create-path-curve start {::x (+ (::x next-node) (/ (::width next-node) 2)) ::y (::y next-node)})
                                        :key     (str node-id "->" (::pcp/node-id next-node))})))))))))
 
 (def query-plan-viz (fc/computed-factory QueryPlanViz))
+
+(fm/defmutation set-plan-view-graph [{::pcp/keys [graph]}]
+  (action [{:keys [state ref]}]
+    (swap! state update-in ref assoc
+      ::pcp/graph (some-> graph (layout-graph))
+      :ui/node-details nil)))
+
+(defn set-plan-view-graph! [app {::keys [id]} graph]
+  (fc/transact! app [(set-plan-view-graph {::pcp/graph graph})]
+    {:ref [::id id]}))
+
+(fc/defsc PlanViewWithDetails
+  [this {::pcp/keys [graph]
+         :ui/keys   [label-kind node-details]
+         :as        props}]
+  {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
+                  (merge {::id           (random-uuid)
+                          :ui/label-kind ::pc/sym}
+                    current-normalized data-tree))
+   :ident       ::id
+   :query       [::id ::pcp/graph :ui/label-kind :ui/node-details]
+   :css-include [QueryPlanViz NodeDetails]}
+  (ui/row (ui/gc :.flex :.no-scrollbars)
+    (dom/div {:classes [(if-not node-details (ui/css :.flex))]
+              :style   {:width (str (or (fc/get-state this :details-width) 400) "px")}}
+      (query-plan-viz
+        {::pcp/graph
+         graph
+
+         ::selected-node-id
+         (::pcp/node-id node-details)
+
+         ::label-kind
+         label-kind
+
+         ::on-click-node
+         (fn [e node]
+           (js/console.log "NODE" node)
+           (fm/set-value! this :ui/node-details
+             (if (= node-details node)
+               nil
+               node)))}))
+
+    (if node-details
+      (fc/fragment
+        (pvh/drag-resize this {:attribute :details-width
+                               :axis      "x"
+                               :default   400
+                               :props     (ui/gc :.divisor-v)}
+          (dom/div))
+
+        (dom/div (ui/gc :.flex)
+          (node-details-ui node-details))))))
+
+(def plan-view-with-details (fc/factory PlanViewWithDetails {:keyfn ::id}))

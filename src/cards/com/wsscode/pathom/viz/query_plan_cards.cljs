@@ -247,7 +247,7 @@
                      node)))})))
         (if node-details
           (dom/div :.node-details
-            (plan-view/node-details node-details)))))))
+            (plan-view/node-details-ui node-details)))))))
 
 (ws/defcard query-plan-card
   {::wsm/align ::wsm/stretch-flex}

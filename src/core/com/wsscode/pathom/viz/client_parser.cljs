@@ -17,8 +17,6 @@
   {::pc/params [::client-parser-request ::parser-id]
    ::pc/output [::client-parser-response]}
   (if-let [parser (get parsers parser-id)]
-    (do
-      (js/console.log "RUN" client-parser-request)
-     (let-chan [response (parser {} client-parser-request)]
-       {::client-parser-response response}))
+    (let-chan [response (parser {} client-parser-request)]
+      {::client-parser-response response})
     (throw (ex-info "Parser not found" {::parser-id parser-id}))))
