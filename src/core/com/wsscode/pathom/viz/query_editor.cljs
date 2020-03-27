@@ -36,18 +36,21 @@
 (defn env-parser-response [env]
   (-> env :result :body (get `cp/client-parser-mutation) ::cp/client-parser-response))
 
-(fm/defmutation run-query [_]
+(fm/defmutation run-query [{::keys [request-trace?]}]
   (action [{:keys [state ref]}]
     (swap! state update-in ref assoc :ui/query-running? true))
   (ok-action [{:keys [state ref] :as env}]
     (let [response (env-parser-response env)]
       (swap! state update-in ref assoc
         :ui/query-running? false
+        :com.wsscode.pathom/trace (get response :com.wsscode.pathom/trace)
         ::result (pvh/pprint (dissoc response :com.wsscode.pathom/trace)))))
   (error-action [env]
     (js/console.log "QUERY ERROR" env))
   (remote [{:keys [ast]}]
-    (assoc ast :key `cp/client-parser-mutation)))
+    (cond-> (assoc ast :key `cp/client-parser-mutation)
+      request-trace?
+      (update-in [:params ::cp/client-parser-request] conj :com.wsscode.pathom/trace))))
 
 (fm/defmutation load-index [_]
   (action [{:keys [state ref]}]
@@ -193,12 +196,14 @@
    :initLocalState    (fn [this]
                         {:run-query (fn []
                                       (let [{:ui/keys  [query-running?]
-                                             ::keys    [id query]
+                                             ::keys    [id query request-trace?]
                                              ::cp/keys [parser-id]
                                              :as       props} (fc/props this)
-                                            {::keys [enable-trace?]} (fc/get-computed props)]
+                                            {::keys [enable-trace?]
+                                             :or    {enable-trace? true}} (fc/get-computed props)]
                                         (if-not query-running?
                                           (let [props' {::id                       id
+                                                        ::request-trace?           (and request-trace? enable-trace?)
                                                         ::cp/parser-id             parser-id
                                                         ::cp/client-parser-request (safe-read query)}]
                                             (fc/transact! this [(run-query props')])))))})}
@@ -247,14 +252,16 @@
                     ::cm/options {::cm/readOnly    true
                                   ::cm/lineNumbers true}}
               editor-props))))
+
       (if trace
-        (pvh/drag-resize this {:attribute :trace-height
-                               :default   default-trace-size
-                               :props     {:className (:divisor-h css)}}
-          (dom/div)))
-      (if trace
-        (dom/div :.trace {:style {:height (str (or (fc/get-state this :trace-height) default-trace-size) "px")}}
-          (pvt/d3-trace {::pvt/trace-data      trace
-                         ::pvt/on-show-details #(js/console.log %)}))))))
+        (fc/fragment
+          (pvh/drag-resize this {:attribute :trace-height
+                                 :default   default-trace-size
+                                 :props     {:className (:divisor-h css)}}
+            (dom/div))
+
+          (dom/div :.trace {:style {:height (str (or (fc/get-state this :trace-height) default-trace-size) "px")}}
+            (pvt/d3-trace {::pvt/trace-data      trace
+                           ::pvt/on-show-details #(js/console.log %)})))))))
 
 (def query-editor (fc/computed-factory QueryEditor))
