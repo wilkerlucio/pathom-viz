@@ -1,18 +1,19 @@
 (ns com.wsscode.pathom.viz.query-editor
   (:require [cljs.reader :refer [read-string]]
+            [com.fulcrologic.fulcro-css.css :as css]
+            [com.fulcrologic.fulcro-css.localized-dom :as dom]
+            [com.fulcrologic.fulcro.application :as fa]
+            [com.fulcrologic.fulcro.components :as fc]
+            [com.fulcrologic.fulcro.data-fetch :as df]
+            [com.fulcrologic.fulcro.mutations :as fm]
             [com.wsscode.async.async-cljs :refer [<?maybe go-promise <!]]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.fulcro.network :as pfn]
+            [com.wsscode.pathom.viz.client-parser :as cp]
             [com.wsscode.pathom.viz.codemirror :as cm]
             [com.wsscode.pathom.viz.helpers :as pvh]
-            [com.wsscode.pathom.viz.trace :as pvt]
-            [com.fulcrologic.fulcro.data-fetch :as df]
-            [com.fulcrologic.fulcro-css.localized-dom :as dom]
-            [com.fulcrologic.fulcro.mutations :as fm]
-            [com.fulcrologic.fulcro.components :as fc]
-            [com.fulcrologic.fulcro.application :as fa]
-            [com.fulcrologic.fulcro-css.css :as css]))
+            [com.wsscode.pathom.viz.trace :as pvt]))
 
 (declare QueryEditor TransactionResponse)
 
@@ -29,6 +30,7 @@
   {::pc/output [::pc/indexes]}
   (client-parser {} [{::pc/indexes [::pc/idents ::pc/index-io ::pc/autocomplete-ignore]}]))
 
+#_
 (pc/defmutation run-query-server [{::keys [client-parser]} {::keys [id query request-trace?]}]
   {::pc/sym    `run-query
    ::pc/params [::id ::query ::request-trace?]
@@ -43,28 +45,18 @@
          :com.wsscode.pathom/trace nil}
         (select-keys response pull-keys)))))
 
-(defn client-card-parser
-  "Returns a new parser that will use the card-parser setting the client
-  parser to be `client-parser`."
-  ([client-parser] (client-card-parser client-parser {}))
-  ([client-parser {::keys [wrap-run-query]}]
-   (let [card-parser
-         (p/async-parser {::p/env     {::p/reader [p/map-reader pc/async-reader2 pc/open-ident-reader]}
-                          ::p/mutate  pc/mutate-async
-                          ::p/plugins [p/error-handler-plugin
-                                       p/request-cache-plugin
-                                       (-> (pc/connect-plugin {::pc/register [indexes (cond-> run-query-server
-                                                                                        wrap-run-query
-                                                                                        (update ::pc/mutate wrap-run-query))]})
-                                           (dissoc ::pc/register))
-                                       p/trace-plugin]})]
-     (fn [env tx]
-       (card-parser (assoc env ::client-parser client-parser) tx)))))
-
 (fm/defmutation run-query [_]
-  (action [_] nil)
-  (remote [env]
-    (fm/returning env TransactionResponse)))
+  (action [{:keys [state ref]}]
+    (swap! state update-in ref assoc :ui/query-running? true))
+  (ok-action [{:keys [state ref] :as env}]
+    (let [response (-> env :result :body (get `cp/client-parser-mutation) ::cp/client-parser-response)]
+      (swap! state update-in ref assoc
+        :ui/query-running? false
+        ::result (pvh/pprint (dissoc response :com.wsscode.pathom/trace)))))
+  (error-action [env]
+    (js/console.log "QUERY ERROR" env))
+  (remote [{:keys [ast]}]
+    (assoc ast :key `cp/client-parser-mutation)))
 
 (defn load-indexes
   [app-or-reconciler]
@@ -106,6 +98,8 @@
 
 (def button (fc/factory Button))
 
+(defn load-query-editor-index [])
+
 (fc/defsc QueryEditor
   [this
    {::keys                   [query result request-trace?]
@@ -128,9 +122,15 @@
                                 ::result         ""}
                           current-normalized data-tree))
 
-   :ident             [::id ::id]
-   :query             [::id ::request-trace? ::query ::result :ui/query-running?
-                       ::pc/indexes :com.wsscode.pathom/trace]
+   :ident             ::id
+   :query             [::id
+                       ::request-trace?
+                       ::query
+                       ::result
+                       ::cp/parser-id
+                       ::pc/indexes
+                       :ui/query-running?
+                       :com.wsscode.pathom/trace]
    :css               [[:$CodeMirror {:height   "100% !important"
                                       :width    "100% !important"
                                       :position "absolute !important"
@@ -184,13 +184,16 @@
                           100))
    :initLocalState    (fn [this]
                         {:run-query (fn []
-                                      (let [{:ui/keys [query-running?] :as props} (fc/props this)
+                                      (let [{:ui/keys  [query-running?]
+                                             ::keys    [id query]
+                                             ::cp/keys [parser-id]
+                                             :as       props} (fc/props this)
                                             {::keys [enable-trace?]} (fc/get-computed props)]
                                         (if-not query-running?
-                                          (let [props (update props ::request-trace? #(and enable-trace? %))]
-                                            (fc/ptransact! this [`(fm/set-props {:ui/query-running? true})
-                                                                 `(run-query ~props)
-                                                                 `(fm/set-props {:ui/query-running? false})])))))})}
+                                          (let [props' {::id                       id
+                                                        ::cp/parser-id             parser-id
+                                                        ::cp/client-parser-request (safe-read query)}]
+                                            (fc/transact! this [(run-query props')])))))})}
   (let [run-query (fc/get-state this :run-query)
         css (css/get-classnames QueryEditor)]
     (dom/div :.container
