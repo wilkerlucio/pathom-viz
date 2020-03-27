@@ -41,7 +41,8 @@
         (ct.fulcro/fulcro-card-init
           card
           {::ct.fulcro/root pv.query-editor/QueryEditor
-           ::ct.fulcro/app  {:client-did-mount
+           ::ct.fulcro/app  {#_ #_
+                             :client-did-mount
                              (fn [app]
                                (if started-callback
                                  (started-callback app))
@@ -53,9 +54,11 @@
                              {pv.query-editor/remote-key
                               (pathom-remote
                                 (pv.query-editor/client-card-parser parser))}}})]
+
     (assoc fulcro-card
       ::wsm/refresh
       (fn [node]
+        #_
         (pv.query-editor/load-indexes app)
         (refresh node)))))
 

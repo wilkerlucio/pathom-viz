@@ -49,7 +49,8 @@
                                                   ::query.editor/query "[:answer]"}}
      ::ct.fulcro/app           {:client-did-mount
                                 (fn [app]
-                                  (js/console.log "app started" app))
+                                  (query.editor/load-indexes app {::query.editor/id "singleton"
+                                                                  ::cp/parser-id    :base}))
 
                                 :remotes
                                 {:remote

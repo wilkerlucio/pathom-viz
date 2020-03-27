@@ -26,30 +26,21 @@
 
 ;; Parser
 
+(def index-query
+  [{::pc/indexes [::pc/idents ::pc/index-io ::pc/autocomplete-ignore]}])
+
 (pc/defresolver indexes [{::keys [client-parser]} _]
   {::pc/output [::pc/indexes]}
-  (client-parser {} [{::pc/indexes [::pc/idents ::pc/index-io ::pc/autocomplete-ignore]}]))
+  (client-parser {} index-query))
 
-#_
-(pc/defmutation run-query-server [{::keys [client-parser]} {::keys [id query request-trace?]}]
-  {::pc/sym    `run-query
-   ::pc/params [::id ::query ::request-trace?]
-   ::pc/output [::id ::result]}
-  (go-promise
-    (let [pull-keys [:com.wsscode.pathom/trace]
-          query     (cond-> (safe-read query) request-trace? (conj :com.wsscode.pathom/trace))
-          response  (<?maybe (client-parser {} query))]
-      (merge
-        {::id                      id
-         ::result                  (pvh/pprint (apply dissoc response pull-keys))
-         :com.wsscode.pathom/trace nil}
-        (select-keys response pull-keys)))))
+(defn env-parser-response [env]
+  (-> env :result :body (get `cp/client-parser-mutation) ::cp/client-parser-response))
 
 (fm/defmutation run-query [_]
   (action [{:keys [state ref]}]
     (swap! state update-in ref assoc :ui/query-running? true))
   (ok-action [{:keys [state ref] :as env}]
-    (let [response (-> env :result :body (get `cp/client-parser-mutation) ::cp/client-parser-response)]
+    (let [response (env-parser-response env)]
       (swap! state update-in ref assoc
         :ui/query-running? false
         ::result (pvh/pprint (dissoc response :com.wsscode.pathom/trace)))))
@@ -58,13 +49,30 @@
   (remote [{:keys [ast]}]
     (assoc ast :key `cp/client-parser-mutation)))
 
+(fm/defmutation load-index [_]
+  (action [{:keys [state ref]}]
+    (swap! state update-in ref assoc :ui/query-running? true))
+  (ok-action [{:keys [state ref] :as env}]
+    (let [response (env-parser-response env)]
+      (swap! state update-in ref assoc
+        :ui/query-running? false
+        ::pc/indexes (-> response
+                         (->> (p/elide-items p/special-outputs))
+                         ::pc/indexes))))
+  (error-action [env]
+    (js/console.log "QUERY ERROR" env))
+  (remote [{:keys [ast]}]
+    (assoc ast :key `cp/client-parser-mutation)))
+
 (defn load-indexes
-  [app-or-reconciler]
-  (let [app        (or (:app app-or-reconciler) app-or-reconciler)
-        root-ident (-> app fa/current-state :ui/root)]
-    (df/load app root-ident QueryEditor
-      {:focus  [::pc/indexes]
-       :remote remote-key})))
+  [app {::keys    [id]
+        ::cp/keys [parser-id]}]
+  (js/console.log "GO")
+  (let [props {::id                       id
+               ::cp/parser-id             parser-id
+               ::cp/client-parser-request index-query}]
+    (fc/transact! app [(load-index props)]
+      {:ref [::id id]})))
 
 ;; UI
 
@@ -205,7 +213,7 @@
                         :onChange #(fm/toggle! this ::request-trace?)})
             "Request trace"))
         (dom/div :.flex)
-        (button {:onClick #(load-indexes (fc/any->app this))
+        (button {:onClick #(load-indexes (fc/any->app this) (fc/props this))
                  :style   {:marginRight "6px"}}
           "Refresh index")
         (button {:onClick  run-query
