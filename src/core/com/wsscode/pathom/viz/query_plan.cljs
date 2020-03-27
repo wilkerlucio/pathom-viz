@@ -27,7 +27,7 @@
 
 (fc/defsc NodeDetails
   [this {::pcp/keys [node-id source-for-attrs requires input foreign-ast]
-         ::pc/keys  [sym node-resolver-error]
+         ::pc/keys  [sym node-resolver-error node-resolver-success]
          :as        node}]
   {:pre-merge (fn [{:keys [current-normalized data-tree]}]
                 (merge {::pcp/node-id (random-uuid)} current-normalized data-tree))
@@ -41,6 +41,7 @@
                ::pcp/input
                ::pcp/foreign-ast
                ::pc/node-resolver-error
+               ::pc/node-resolver-success
                ::pc/sym]
    :css       [[:.container {:border  "1px solid #ccc"
                              :padding "14px"}]
@@ -76,10 +77,16 @@
       (detail-info "Requires" (pr-str requires)))
 
     (if (seq input)
-      (detail-info "Input" (pr-str input)))
+      (detail-info "Input"
+        (pr-str (or (::pc/resolver-call-input node-resolver-success)
+                    (::pc/resolver-call-input node-resolver-error)
+                    input))))
 
     (if foreign-ast
       (detail-info "Foreign Query" (pr-str (eql/ast->query foreign-ast))))
+
+    (if node-resolver-success
+      (detail-info "Response" (pr-str (::pc/resolver-response node-resolver-success))))
 
     (if node-resolver-error
       (detail-info "Error" (pr-str (::pc/resolver-error node-resolver-error))))))
@@ -213,6 +220,8 @@
       [:&.node-selected {:stroke       "#000"
                          :stroke-width "2px"}]]
 
+     [:.node-untouched {:opacity "0.6"}]
+
      [:.line {:stroke       "#ef9d0e6b"
               :stroke-width "2px"
               :fill         "none"}
@@ -237,15 +246,16 @@
   (dom/div :.container
     (let [graph' (layout-graph graph)
           focus  (fc/get-state this ::focus-node)]
-      (dom/svg {:width "100%" :height "400"}
+      (dom/svg {:width "100%" :height "600"}
         (for [{::keys     [x y width height]
                ::pc/keys  [sym]
-               ::pcp/keys [node-id run-next foreign-ast]
+               ::pcp/keys [node-id run-next foreign-ast node-trace]
                :as        node} (vals (::pcp/nodes graph'))]
           (let [start {::x (+ x (/ width 2)) ::y (+ y height)}
                 cx    (+ x node-half-size)
                 cy    (+ y node-half-size)]
-            (dom/g {:key (str node-id)}
+            (dom/g {:key     (str node-id)
+                    :classes [(if-not (seq node-trace) :.node-untouched)]}
               (dom/circle :.node {:classes     [(cond
                                                   (::pcp/run-and node)
                                                   :.node-and
