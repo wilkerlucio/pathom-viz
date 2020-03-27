@@ -42,25 +42,66 @@
 (def registry
   [query-planner-examples
    (pc/constantly-resolver :answer 42)
+
    (pc/resolver 'slow
      {::pc/output [:slow]}
      (fn [_ _]
        (go-promise
          (<! (async/timeout 300))
          {:slow "slow"})))
+
+   (pc/constantly-resolver :pi js/Math.PI)
+   (pc/constantly-resolver :tau (* js/Math.PI 2))
+   (pc/single-attr-resolver :pi :tau #(* % 2))
+   (pc/alias-resolver :foreign :foreign->local)
+
+   ; region errors
+
    (pc/resolver 'error
      {::pc/output [:error]}
      (fn [_ _]
        (throw (ex-info "Sync Error" {:error "data"}))))
+
+   (pc/resolver 'maybe-error-error
+     {::pc/output [:maybe-error]}
+     (fn [_ _]
+       (throw (ex-info "Sync Error" {:error "data"}))))
+
+   (pc/resolver 'maybe-error-success
+     {::pc/output [:maybe-error]}
+     (fn [_ _]
+       {:maybe-error "value"}))
+
+   (pc/resolver 'error-with-dep
+     {::pc/input  #{:pi}
+      ::pc/output [:error-with-dep]}
+     (fn [_ _]
+       (throw (ex-info "Sync Error" {:error "data"}))))
+
+   (pc/single-attr-resolver :error :error-dep pr-str)
+
+   (pc/single-attr-resolver :error-dep :error-dep-dep pr-str)
+
    (pc/resolver 'error-async
      {::pc/output [:error-async]}
      (fn [_ _]
        (go-promise
          (throw (ex-info "Async Error" {:error "data"})))))
-   (pc/constantly-resolver :pi js/Math.PI)
-   (pc/constantly-resolver :tau (* js/Math.PI 2))
-   (pc/single-attr-resolver :pi :tau #(* % 2))
-   (pc/alias-resolver :foreign :foreign->local)])
+
+   (pc/resolver 'multi-dep-error
+     {::pc/input  #{:error-with-dep :answer}
+      ::pc/output [:multi-dep-error]}
+     (fn [_ _]
+       {:multi-dep-error "foi"}))
+
+   (pc/resolver 'foreign-error-dep
+     {::pc/input  #{:foreign-error}
+      ::pc/output [:foreign-error-dep]}
+     (fn [_ _]
+       {:foreign-error-dep "foi"}))
+
+   ; endregion
+   ])
 
 (def parser
   (p/async-parser
@@ -75,7 +116,11 @@
                                       ::pc/register registry})
                   (pcf/foreign-parser-plugin {::pcf/parsers [(ps/connect-serial-parser
                                                                [(pc/constantly-resolver :foreign "value")
-                                                                (pc/constantly-resolver :foreign2 "second value")])]})
+                                                                (pc/constantly-resolver :foreign2 "second value")
+                                                                (pc/resolver 'foreign-error
+                                                                  {::pc/output [:foreign-error]}
+                                                                  (fn [_ _]
+                                                                    (throw (ex-info "Foreign Error" {:error "data"}))))])]})
                   p/error-handler-plugin
                   p/trace-plugin]}))
 
@@ -108,7 +153,7 @@
                           :ui/plan       nil
                           :ui/label-kind ::pc/sym
                           :ui/trace-tree nil
-                          :ui/query      "[:tau]"}
+                          :ui/query      "[:foreign->local :maybe-error :multi-dep-error :tau :pi :answer :foreign-error-dep]"}
                     current-normalized
                     data-tree))
    :ident       ::id
@@ -178,8 +223,7 @@
         (dom-select {:value    label-kind
                      :onChange #(fm/set-value! this :ui/label-kind %2)}
           (dom-option {:value ::pc/sym} "Node name")
-          (dom-option {:value ::pcp/source-for-attrs} "Attribute source")
-          (dom-option {:value ::pcp/requires} "Requires")))
+          (dom-option {:value ::pcp/source-for-attrs} "Attribute source")))
 
       (dom/div :.row
         (dom/div :.flex
