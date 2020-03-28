@@ -27,7 +27,7 @@
 (defn detail-info [title content]
   (dom/div
     (dom/div :.label title)
-    (dom/div content)))
+    (dom/div :.detail content)))
 
 (fc/defsc NodeDetails
   [this {::pcp/keys [node-id source-for-attrs requires input foreign-ast
@@ -49,17 +49,22 @@
                ::pc/node-resolver-error
                ::pc/node-resolver-success
                ::pc/sym]
-   :css       [[:.container {:border      "1px solid #ccc"
-                             :padding     "14px"}]
+   :css       [[:.container {:padding  "14px"
+                             :overflow "auto"
+                             :flex     "1"}]
+               [:.detail {:margin-bottom "8px"}]
+               [:.code {:font-family "monospace"
+                        :white-space "pre"}]
                [:.title {:font-weight "bold"
-                         :text-align "center"}]
+                         :text-align  "center"}]
                [:.title-and {:text-transform "uppercase"}]
                [:.title-or {:text-transform "uppercase"}]
-               [:.label {:font-weight "bold"}]]}
+               [:.label {:font-weight   "bold"
+                         :margin-bottom "5px"}]]}
   (dom/div :.container
     (case (pcp/node-kind node)
       ::pcp/node-resolver
-      (dom/div :.title.title-resolver "Resolver")
+      (dom/div :.title.title-resolver (str sym))
 
       ::pcp/node-and
       (dom/div :.title.title-and "And")
@@ -73,38 +78,36 @@
     (if node-id
       (detail-info "Node ID" (str node-id)))
 
-    (if sym
-      (detail-info "Resolver" (str sym)))
-
     (if-let [branches (pcp/node-branches node)]
-      (detail-info "Branches" (pr-str branches)))
+      (detail-info "Branches" (dom/div :.code (h/pprint-str branches))))
 
     (if (seq after-nodes)
-      (detail-info "After Nodes" (pr-str after-nodes)))
+      (detail-info "After Nodes" (dom/div :.code (h/pprint-str after-nodes))))
 
     (if run-next
-      (detail-info "Run Next" (pr-str run-next)))
+      (detail-info "Run Next" (dom/div :.code (h/pprint-str run-next))))
 
     (if source-for-attrs
-      (detail-info "Source for attributes" (pr-str source-for-attrs)))
+      (detail-info "Source for attributes" (dom/div :.code (h/pprint-str source-for-attrs))))
 
     (if requires
-      (detail-info "Requires" (pr-str requires)))
+      (detail-info "Requires" (dom/div :.code (h/pprint-str requires))))
 
     (if (seq input)
       (detail-info "Input"
-        (pr-str (or (::pc/resolver-call-input node-resolver-success)
-                    (::pc/resolver-call-input node-resolver-error)
-                    input))))
+        (dom/div :.code
+          (h/pprint-str (or (::pc/resolver-call-input node-resolver-success)
+                            (::pc/resolver-call-input node-resolver-error)
+                            input)))))
 
     (if foreign-ast
-      (detail-info "Foreign Query" (pr-str (eql/ast->query foreign-ast))))
+      (detail-info "Foreign Query" (dom/div :.code (h/pprint-str (eql/ast->query foreign-ast)))))
 
     (if node-resolver-success
-      (detail-info "Response" (pr-str (::pc/resolver-response node-resolver-success))))
+      (detail-info "Response" (dom/div :.code (h/pprint-str (::pc/resolver-response node-resolver-success)))))
 
     (if node-resolver-error
-      (detail-info "Error" (pr-str (::pc/resolver-error node-resolver-error))))))
+      (detail-info "Error" (dom/div :.code (h/pprint-str (::pc/resolver-error node-resolver-error)))))))
 
 (def node-details-ui (fc/factory NodeDetails {:keyfn ::pcp/node-id}))
 
@@ -384,7 +387,6 @@
                                :props     (ui/gc :.divisor-v)}
           (dom/div))
 
-        (dom/div (ui/gc :.flex)
-          (node-details-ui node-details))))))
+        (node-details-ui node-details)))))
 
 (def plan-view-with-details (fc/factory PlanViewWithDetails {:keyfn ::id}))

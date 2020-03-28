@@ -83,6 +83,7 @@
   [this props]
   {:css [[:.container {:display        "flex"
                        :flex-direction "column"
+                       :max-width      "100%"
                        :max-height     "100%"}]]}
   (dom/div :.container props
     (fc/children this)))
@@ -93,7 +94,8 @@
   [this props]
   {:css [[:.container {:display   "flex"
                        :max-width "100%"}]
-         [:.center {:align-items "center"}]]}
+         [:.center {:align-items "center"}]
+         [:.stretch {:align-items "center"}]]}
   (dom/div :.container props (fc/children this)))
 
 (def row (fc/factory Row))
@@ -492,6 +494,7 @@
                  [:.no-scrollbars {:overflow "hidden"}]
                  [:.nowrap {:white-space "nowrap"}]
                  [:.height-100 {:height "100%"}]
+                 [:.max-width-100 {:max-width "100%"}]
                  [:.divisor-v {:width         "20px"
                                :background    "#eee"
                                :border        "1px solid #e0e0e0"
