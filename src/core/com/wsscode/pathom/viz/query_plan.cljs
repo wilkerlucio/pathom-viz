@@ -49,9 +49,12 @@
                ::pc/node-resolver-error
                ::pc/node-resolver-success
                ::pc/sym]
-   :css       [[:.container {:border  "1px solid #ccc"
-                             :padding "14px"}]
-               [:.title {:text-align "center"}]
+   :css       [[:.container {:border      "1px solid #ccc"
+                             :padding     "14px"}]
+               [:.title {:font-weight "bold"
+                         :text-align "center"}]
+               [:.title-and {:text-transform "uppercase"}]
+               [:.title-or {:text-transform "uppercase"}]
                [:.label {:font-weight "bold"}]]}
   (dom/div :.container
     (case (pcp/node-kind node)
