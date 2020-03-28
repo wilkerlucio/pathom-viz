@@ -4,7 +4,9 @@
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [com.fulcrologic.fulcro.components :as fc]
             [com.fulcrologic.fulcro.dom :as domc]
+            [com.fulcrologic.fulcro.mutations :as fm]
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
+            [com.wsscode.pathom.misc :as p.misc]
             [com.wsscode.pathom.viz.helpers :as h]
             [goog.object :as gobj]
             [goog.string :as gstr]))
@@ -19,9 +21,13 @@
 (def text-base {:font-family font-base
                 :line-height "1.5"})
 
+(def text-sans-13
+  {:font-family "sans-serif"
+   :font-size   "13px"})
+
 (def css-header
-  {:margin "0"
-   :font-size "2rem"
+  {:margin      "0"
+   :font-size   "2rem"
    :font-weight "600"})
 
 (def no-user-select
@@ -34,6 +40,9 @@
 ; endregion
 
 ; region helpers
+
+(defn add-class [props class]
+  (update props :classes p.misc/vconj class))
 
 (def mergers
   {:classes (fn [a b]
@@ -400,6 +409,45 @@
 
 (def text-field (fc/factory TextField))
 
+(fc/defsc TabContainer
+  [this props]
+  {:css [[:.container {:display        "flex"
+                       :flex           "1"
+                       :flex-direction "column"
+                       :max-width      "100%"
+                       :max-height     "100%"}]]}
+  (dom/div :.container props (fc/children this)))
+
+(def tab-container (fc/factory TabContainer))
+
+(>def ::active-tab-id any?)
+(>def ::tab-id any?)
+
+(fc/defsc TabNav
+  [this {::keys [active-tab-id target] :as props}]
+  {:css [[:.container {:background "#eee"
+                       :border     "1px solid #ddd"
+                       :display    "flex"
+                       :padding    "0 1px"}
+          [:&.border-collapse-bottom {:border-bottom "none"}]]
+         [:.tab {:cursor        "pointer"
+                 :margin-bottom "-1px"
+                 :padding       "5px 9px"}
+          text-sans-13
+          [:&:hover {:background "#e5e5e5"}]]
+         [:.tab-active {:border-bottom "2px solid #5c7ebb"
+                        :z-index       "1"}]]}
+  (dom/div :.container props
+    (for [[{::keys [tab-id] :as p} & c] (fc/children this)
+          :let [active? (= tab-id active-tab-id)]]
+      (apply dom/div :.tab
+        (cond-> p
+          target (assoc :onClick #(fm/set-value! target ::active-tab-id tab-id))
+          active? (add-class :.tab-active))
+        c))))
+
+(def tab-nav (fc/factory TabNav))
+
 (fc/defsc NumberInput
   [this p]
   {:css            [[:.container {:display     "inline-flex"
@@ -515,6 +563,8 @@
                  PanelBlock
                  RawCollapsible
                  Row
+                 TabContainer
+                 TabNav
                  Tag
                  TextField
                  ToggleAction

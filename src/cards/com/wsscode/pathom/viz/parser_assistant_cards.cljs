@@ -38,7 +38,8 @@
   {::wsm/align ::wsm/stretch-flex}
   (ct.fulcro/fulcro-card
     {::ct.fulcro/root          assistant/ParserAssistant
-     ::ct.fulcro/initial-state {:ui/query-editor {::cp/parser-id       :base
+     ::ct.fulcro/initial-state {::assistant/id   "assistant"
+                                :ui/query-editor {::cp/parser-id       :base
                                                   ::query.editor/id    "singleton"
                                                   ::query.editor/query "[:answer]"}}
      ::ct.fulcro/app           {:client-did-mount
