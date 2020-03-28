@@ -260,7 +260,6 @@
     (let [focus (fc/get-state this ::focus-node)]
       (dom/svg {:width "100%" :height "600"}
         (for [{::keys     [x y width height]
-               ::pc/keys  [sym]
                ::pcp/keys [node-id run-next foreign-ast node-trace]
                :as        node} (vals (::pcp/nodes graph))]
           (let [start {::x (+ x (/ width 2)) ::y (+ y height)}
@@ -340,6 +339,14 @@
   (ui/row (ui/gc :.flex :.no-scrollbars)
     (dom/div {:classes [(if-not node-details (ui/css :.flex))]
               :style   {:width (str (or (fc/get-state this :details-width) 400) "px")}}
+      (ui/toolbar {}
+        (dom/label
+          (dom/span {:style {:margin "0 5px"}} "Label kind:")
+          (ui/dom-select {:value    label-kind
+                          :onChange #(fm/set-value! this :ui/label-kind %2)}
+            (ui/dom-option {:value ::pc/sym} "Node name")
+            (ui/dom-option {:value ::pcp/source-for-attrs} "Attribute source"))))
+
       (query-plan-viz
         {::pcp/graph
          graph
