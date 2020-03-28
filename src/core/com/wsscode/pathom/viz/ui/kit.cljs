@@ -5,6 +5,7 @@
             [com.fulcrologic.fulcro.components :as fc]
             [com.fulcrologic.fulcro.dom :as domc]
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
+            [com.wsscode.pathom.viz.helpers :as h]
             [goog.object :as gobj]
             [goog.string :as gstr]))
 
@@ -431,6 +432,27 @@
 
 (def number-input (fc/factory NumberInput))
 
+(defn dom-select
+  "Similar to fulcro dom/select, but does value encode/decode in EDN so you can use
+  EDN values directly."
+  [props & children]
+  (apply dom/select
+    (-> props
+        (update :value pr-str)
+        (update :onChange (fn [f]
+                            (fn [e]
+                              (f e (h/safe-read (.. e -target -value)))))))
+    children))
+
+(defn dom-option
+  "Similar to fulcro dom/option, but does value encode/decode in EDN so you can use
+  EDN values directly."
+  [props & children]
+  (apply dom/option
+    (-> props
+        (update :value pr-str))
+    children))
+
 (s/def ::active? boolean?)
 
 (fc/defsc ToggleAction
@@ -446,6 +468,22 @@
 
 (def toggle-action (fc/factory ToggleAction))
 
+(fc/defsc Toolbar
+  [this props]
+  {:css [[:.container {:background    "#eeeeee"
+                       :border-bottom "1px solid #e0e0e0"
+                       :padding       "5px 4px"
+                       :display       "flex"
+                       :align-items   "center"
+                       :font-family   "sans-serif"
+                       :font-size     "13px"}
+          [:label {:display     "flex"
+                   :align-items "center"}
+           [:input {:margin-right "5px"}]]]]}
+  (apply dom/div :.container props (fc/children this)))
+
+(def toolbar (fc/factory Toolbar))
+
 ; endregion
 
 (fc/defsc UIKit [_ _]
@@ -453,6 +491,7 @@
                  [:.scrollbars {:overflow "auto"}]
                  [:.no-scrollbars {:overflow "hidden"}]
                  [:.nowrap {:white-space "nowrap"}]
+                 [:.height-100 {:height "100%"}]
                  [:.divisor-v {:width         "20px"
                                :background    "#eee"
                                :border        "1px solid #e0e0e0"
@@ -475,7 +514,8 @@
                  Row
                  Tag
                  TextField
-                 ToggleAction]})
+                 ToggleAction
+                 Toolbar]})
 
 (def ui-css (css/get-classnames UIKit))
 
