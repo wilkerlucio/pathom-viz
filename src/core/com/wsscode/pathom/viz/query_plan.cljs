@@ -30,7 +30,8 @@
     (dom/div content)))
 
 (fc/defsc NodeDetails
-  [this {::pcp/keys [node-id source-for-attrs requires input foreign-ast]
+  [this {::pcp/keys [node-id source-for-attrs requires input foreign-ast
+                     after-nodes run-next]
          ::pc/keys  [sym node-resolver-error node-resolver-success]
          :as        node}]
   {:pre-merge (fn [{:keys [current-normalized data-tree]}]
@@ -40,6 +41,7 @@
                ::pcp/run-and
                ::pcp/run-or
                ::pcp/source-for-attrs
+               ::pcp/after-nodes
                ::pcp/run-next
                ::pcp/requires
                ::pcp/input
@@ -73,6 +75,12 @@
 
     (if-let [branches (pcp/node-branches node)]
       (detail-info "Branches" (pr-str branches)))
+
+    (if (seq after-nodes)
+      (detail-info "After Nodes" (pr-str after-nodes)))
+
+    (if run-next
+      (detail-info "Run Next" (pr-str run-next)))
 
     (if source-for-attrs
       (detail-info "Source for attributes" (pr-str source-for-attrs)))
