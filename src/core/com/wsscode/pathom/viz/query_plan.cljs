@@ -138,7 +138,6 @@
 
 (defn events->plan [events]
   (let [events' (mapv (comp h/safe-read #(gobj/get % "edn-original")) events)]
-    (js/console.log "EVENTS'" events')
     (if-let [plan (->> (filter (comp #{"reader3-execute"} :event) events')
                        first :plan)]
       (update plan ::pcp/nodes

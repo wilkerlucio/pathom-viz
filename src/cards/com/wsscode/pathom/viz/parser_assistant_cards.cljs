@@ -7,6 +7,7 @@
             [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.sugar :as ps]
             [com.wsscode.pathom.viz.client-parser :as cp]
+
             [com.wsscode.pathom.viz.helpers :as h]
             [com.wsscode.pathom.viz.parser-assistant :as assistant]
             [com.wsscode.pathom.viz.query-editor :as query.editor]
@@ -32,16 +33,14 @@
                   p/trace-plugin]}))
 
 (def client-parsers
-  (atom {:base demo-parser/parser}))
+  (atom {::assistant/singleton demo-parser/parser}))
 
 (ws/defcard parser-assistant-card
   {::wsm/align ::wsm/stretch-flex}
   (ct.fulcro/fulcro-card
     {::ct.fulcro/root          assistant/ParserAssistant
      ::ct.fulcro/initial-state {::assistant/id     "assistant"
-                                :ui/query-editor   {::cp/parser-id       :base
-                                                    ::query.editor/id    "singleton"
-                                                    ::query.editor/query "[:answer]"}
+                                :ui/query-editor   {::query.editor/id "singleton"}
                                 :ui/index-explorer {:com.wsscode.pathom.viz.index-explorer/id "singleton"}}
      ::ct.fulcro/app           {:remotes
                                 {:remote
