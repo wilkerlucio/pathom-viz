@@ -163,6 +163,10 @@
                  on-pick-query]
          :or    {on-pick-query identity}}]
   {:css [[:.container {}]
+         [:.title {:background "#eee"
+                   :border-bottom "1px solid #ccc"
+                   :padding "6px"}
+          ui/text-sans-13]
          [:.history-item {:border-bottom "1px solid #ccc"
                           :cursor        "pointer"
                           :font-family   ui/font-code
@@ -172,6 +176,7 @@
                           :white-space   "pre"}
           [:&:hover {:background "#9fdcff"}]]]}
   (dom/div :.container
+    (dom/div :.title "History")
     (for [query (rseq query-history)]
       (dom/div :.history-item {:key     (hash query)
                                :onClick #(on-pick-query query %)}
@@ -368,7 +373,7 @@
                                                    (plan-view/set-plan-view-graph! this plan-viewer
                                                      (plan-view/events->plan events))
                                                    (fc/transact! this [:ui/plan-viewer])
-                                                   (js/console.log events))}))))
+                                                   (js/console.log "Attribute trace:" events))}))))
 
       (if (::pcp/graph plan-viewer)
         (fc/fragment
