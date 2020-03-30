@@ -238,6 +238,7 @@
                                      :min-height     "200px"}]
                        [:.query-row {:display  "flex"
                                      :flex     "1"
+                                     :overflow "hidden"
                                      :position "relative"}]
                        [:.toolbar {:background    "#eeeeee"
                                    :border-bottom "1px solid #e0e0e0"
@@ -269,7 +270,9 @@
                        [:.trace {:display     "flex"
                                  :padding-top "18px"}]
                        [:.plan {:display "flex"}]
-                       [:.history-container {:width "250px"}]]
+                       [:.history-container {:width      "250px"
+                                             :max-height "100%"
+                                             :overflow   "auto"}]]
    :css-include       [pvt/D3Trace Button HistoryView]
    :componentDidMount (fn [this]
                         (let [parser-id (-> this fc/props ::cp/parser-id)]
