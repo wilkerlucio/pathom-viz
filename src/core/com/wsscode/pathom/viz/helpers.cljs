@@ -46,12 +46,12 @@
   (with-out-str
     (clojure.pprint/pprint x)))
 
-(defn drag-resize [this {:keys [attribute default axis props persistent-key] :or {axis "y"}} child]
+(defn drag-resize [this {:keys [attribute default axis props persistent-key key] :or {axis "y"}} child]
   (let [default' (if persistent-key
                    (ls/get persistent-key default)
                    default)]
     (js/React.createElement DraggableCore
-      #js {:key     "dragHandler"
+      #js {:key     (or key "dragHandler")
            :onStart (fn [e dd]
 
                       (gobj/set this "start" (gobj/get dd axis))

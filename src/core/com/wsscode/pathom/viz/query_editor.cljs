@@ -1,28 +1,54 @@
 (ns com.wsscode.pathom.viz.query-editor
   (:require [cljs.reader :refer [read-string]]
+            [cljs.spec.alpha :as s]
             [com.fulcrologic.fulcro-css.css :as css]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [com.fulcrologic.fulcro.components :as fc]
+            [com.fulcrologic.fulcro.data-fetch :as df]
             [com.fulcrologic.fulcro.mutations :as fm]
+            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [com.wsscode.async.async-cljs :refer [<?maybe go-promise <!]]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.connect.planner :as pcp]
             [com.wsscode.pathom.core :as p]
+            [com.wsscode.pathom.misc :as p.misc]
             [com.wsscode.pathom.viz.client-parser :as cp]
             [com.wsscode.pathom.viz.codemirror :as cm]
             [com.wsscode.pathom.viz.helpers :as pvh]
+            [com.wsscode.pathom.viz.lib.local-storage :as ls]
             [com.wsscode.pathom.viz.query-plan :as plan-view]
             [com.wsscode.pathom.viz.trace :as pvt]
-            [com.wsscode.pathom.viz.lib.local-storage :as ls]))
+            [com.wsscode.pathom.viz.ui.kit :as ui]))
 
 (declare QueryEditor TransactionResponse)
 
-(def remote-key :pathom-query-editor-remote)
+(>def ::query string?)
+(>def ::query-history (s/coll-of ::query :kind vector?))
 
-(defn safe-read [s]
-  (try
-    (read-string s)
-    (catch :default _ nil)))
+;; Helpers
+
+(def history-max-size 100)
+
+(defn history-append [history query]
+  (-> (into [] (comp (remove #{query})
+                     (take (dec history-max-size))) history)
+      (p.misc/vconj query)))
+
+;; Registry
+
+(pc/defmutation add-query-to-history-remote [_ {::keys [query] ::cp/keys [parser-id]}]
+  {::pc/params [::query ::cp/parser-id]}
+  (let [store-key       [::query-history parser-id]
+        current-history (ls/get store-key [])
+        new-history     (history-append current-history query)]
+    (ls/set! store-key new-history)))
+
+(pc/defresolver query-history-resolver [env {::cp/keys [parser-id]}]
+  {::pc/input  #{::cp/parser-id}
+   ::pc/output [::query-history]}
+  {::query-history (ls/get [::query-history parser-id] [])})
+
+(def registry [add-query-to-history-remote query-history-resolver])
 
 ;; Parser
 
@@ -64,6 +90,12 @@
   (remote [{:keys [ast]}]
     (assoc ast :key `cp/client-parser-mutation)))
 
+(fm/defmutation add-query-to-history [{::keys [query]}]
+  (action [{:keys [state ref]}]
+    (swap! state update-in (conj ref ::query-history) history-append query))
+  (remote [{:keys [ast]}]
+    (assoc ast :key `add-query-to-history-remote)))
+
 (defn load-indexes
   [app {::keys    [id]
         ::cp/keys [parser-id]}]
@@ -100,36 +132,82 @@
            :user-select      "none"
            :outline          "none"}
           [:&:disabled {:background "#b0c1d6"
-                        :color      "#eaeaea"}]]]}
+                        :color      "#eaeaea"
+                        :cursor     "not-allowed"}]]]}
   (dom/button :.container props (fc/children this)))
 
 (def button (fc/factory Button))
 
 (defn load-query-editor-index [])
 
+(defn run-query! [this]
+  (let [{:ui/keys  [query-running? plan-viewer]
+         ::keys    [id query request-trace?]
+         ::cp/keys [parser-id]
+         :as       props} (fc/props this)
+        {::keys [enable-trace?]
+         :or    {enable-trace? true}} (fc/get-computed props)]
+    (when-not query-running?
+      (plan-view/set-plan-view-graph! this plan-viewer nil)
+      (if-let [query' (pvh/safe-read query)]
+        (let [props' {::id                       id
+                      ::request-trace?           (and request-trace? enable-trace?)
+                      ::cp/parser-id             parser-id
+                      ::cp/client-parser-request query'}]
+          (fc/transact! this [(run-query props')
+                              (add-query-to-history {::cp/parser-id parser-id
+                                                     ::query        query})]))))))
+
+(fc/defsc HistoryView
+  [this {::keys [query-history
+                 on-pick-query]
+         :or    {on-pick-query identity}}]
+  {:css [[:.container {}]
+         [:.history-item {:border-bottom "1px solid #ccc"
+                          :cursor        "pointer"
+                          :font-family   ui/font-code
+                          :max-height    "32px"
+                          :overflow      "auto"
+                          :padding       "5px"
+                          :white-space   "pre"}
+          [:&:hover {:background "#9fdcff"}]]]}
+  (dom/div :.container
+    (for [query (rseq query-history)]
+      (dom/div :.history-item {:key     (hash query)
+                               :onClick #(on-pick-query query %)}
+        (str query)))))
+
+(def history-view (fc/factory HistoryView))
+
 (fc/defsc QueryEditor
   [this
-   {::keys                   [query result request-trace?]
-    :ui/keys                 [query-running? plan-viewer]
-    :com.wsscode.pathom/keys [trace]
-    ::pc/keys                [indexes]}
+   {::keys                   [query result request-trace? query-history]
+    ::pc/keys                [indexes]
+    :ui/keys                 [query-running? plan-viewer show-history?]
+    :com.wsscode.pathom/keys [trace]}
    {::keys [editor-props enable-trace?
             default-trace-size
             default-plan-size
-            default-query-size]
+            default-query-size
+            default-history-size]
     :or    {enable-trace? true}}]
   {:initial-state     (fn [_]
-                        {::id             (random-uuid)
-                         ::request-trace? true
-                         ::query          "[]"
-                         ::result         ""
-                         :ui/plan-viewer  {}})
+                        {::id              (random-uuid)
+                         ::request-trace?  true
+                         ::query           "[]"
+                         ::result          ""
+                         ::query-history   []
+                         :ui/show-history? true
+                         :ui/plan-viewer   {}})
    :pre-merge         (fn [{:keys [current-normalized data-tree]}]
-                        (merge {::id             (random-uuid)
-                                ::request-trace? true
-                                ::query          "[]"
-                                ::result         ""
-                                :ui/plan-viewer  {}}
+                        (merge {::id               (random-uuid)
+                                ::request-trace?   true
+                                ::query            "[]"
+                                ::result           ""
+                                ::query-history    []
+                                :ui/show-history?  true
+                                :ui/query-running? false
+                                :ui/plan-viewer    {}}
                           current-normalized data-tree))
 
    :ident             ::id
@@ -137,9 +215,11 @@
                        ::request-trace?
                        ::query
                        ::result
+                       ::query-history
                        ::cp/parser-id
                        ::pc/indexes
                        :ui/query-running?
+                       :ui/show-history?
                        :com.wsscode.pathom/trace
                        {:ui/plan-viewer (fc/get-query plan-view/PlanViewWithDetails)}]
    :css               [[:$CodeMirror {:height   "100% !important"
@@ -188,32 +268,26 @@
                         [:$CodeMirror {:background "#f6f7f8"}]]
                        [:.trace {:display     "flex"
                                  :padding-top "18px"}]
-                       [:.plan {:display     "flex"}]]
-   :css-include       [pvt/D3Trace Button]
+                       [:.plan {:display "flex"}]
+                       [:.history-container {:width "250px"}]]
+   :css-include       [pvt/D3Trace Button HistoryView]
    :componentDidMount (fn [this]
+                        (let [parser-id (-> this fc/props ::cp/parser-id)]
+                          (df/load! this (fc/get-ident this) QueryEditor
+                            {:focus  [::query-history ::id]
+                             :params {:pathom/context {::cp/parser-id parser-id}}}))
                         (js/setTimeout
                           #(fc/set-state! this {:render? true})
                           100))
    :initLocalState    (fn [this]
-                        {:run-query (fn []
-                                      (let [{:ui/keys  [query-running? plan-viewer]
-                                             ::keys    [id query request-trace?]
-                                             ::cp/keys [parser-id]
-                                             :as       props} (fc/props this)
-                                            {::keys [enable-trace?]
-                                             :or    {enable-trace? true}} (fc/get-computed props)]
-                                        (when-not query-running?
-                                          (plan-view/set-plan-view-graph! this plan-viewer nil)
-                                          (let [props' {::id                       id
-                                                        ::request-trace?           (and request-trace? enable-trace?)
-                                                        ::cp/parser-id             parser-id
-                                                        ::cp/client-parser-request (safe-read query)}]
-                                            (fc/transact! this [(run-query props')])))))})}
-  (let [run-query          (fc/get-state this :run-query)
-        css                (css/get-classnames QueryEditor)
-        default-query-size (ls/get ::query-width (or default-query-size 400))
-        default-trace-size (ls/get ::trace-height (or default-trace-size 400))
-        default-plan-size  (ls/get ::plan-height (or default-plan-size 200))]
+                        {:run-query (partial run-query! this)})}
+  (let [run-query            (fc/get-state this :run-query)
+        css                  (css/get-classnames QueryEditor)
+        show-history?        (ls/get ::show-history? true)
+        default-history-size (ls/get ::history-width (or default-history-size 250))
+        default-query-size   (ls/get ::query-width (or default-query-size 400))
+        default-trace-size   (ls/get ::trace-height (or default-trace-size 400))
+        default-plan-size    (ls/get ::plan-height (or default-plan-size 200))]
     (dom/div :.container
       (dom/div :.toolbar
         (if enable-trace?
@@ -223,6 +297,12 @@
                         :onChange #(fm/toggle! this ::request-trace?)})
             "Request trace"))
         (dom/div :.flex)
+        (button {:onClick  #(do
+                              (fm/toggle! this :ui/show-history?)
+                              (ls/set! ::show-history? (not show-history?)))
+                 :disabled (not (seq query-history))
+                 :style    {:marginRight "6px"}}
+          "History")
         (button {:onClick #(load-indexes (fc/any->app this) (fc/props this))
                  :style   {:marginRight "6px"}}
           "Refresh index")
@@ -231,6 +311,18 @@
           "Run query"))
 
       (dom/div :.query-row
+        (if (and show-history? (seq query-history))
+          (fc/fragment
+            (dom/div :.history-container {:style {:width (str (or (fc/get-state this :history-width) default-history-size) "px")}}
+              (history-view {::query-history query-history
+                             ::on-pick-query #(fm/set-value! this ::query %)}))
+            (pvh/drag-resize this {:attribute      :history-width
+                                   :persistent-key ::history-width
+                                   :axis           "x"
+                                   :key            "dragHandlerHistory"
+                                   :default        default-history-size
+                                   :props          {:className (:divisor-v css)}}
+              (dom/div))))
         (when (fc/get-state this :render?)
           (cm/pathom
             (merge {:className   (:editor css)

@@ -17,7 +17,7 @@
             [com.wsscode.pathom.viz.aux.demo-parser :as demo-parser]
             [cljs.core.async :as async]))
 
-(def registry [cp/client-parser-mutation])
+(def registry [cp/client-parser-mutation query.editor/registry])
 
 (def parser
   (p/async-parser
@@ -43,10 +43,6 @@
                                                     ::query.editor/id    "singleton"
                                                     ::query.editor/query "[:answer]"}
                                 :ui/index-explorer {:com.wsscode.pathom.viz.index-explorer/id "singleton"}}
-     ::ct.fulcro/app           {:client-did-mount
-                                (fn [app]
-                                  (assistant/initialize-parser-assistent app))
-
-                                :remotes
+     ::ct.fulcro/app           {:remotes
                                 {:remote
                                  (h/pathom-remote #(parser (assoc % ::cp/parsers @client-parsers) %2))}}}))

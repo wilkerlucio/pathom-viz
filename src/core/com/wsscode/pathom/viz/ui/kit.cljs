@@ -83,7 +83,7 @@
   [this props]
   {:css [[:.button {:cursor  "pointer"
                     :padding "1px 7px 2px"}
-          [:&:disabled {:cursor "default"}]]]}
+          [:&:disabled {:cursor "not-allowed"}]]]}
   (dom/button :.button props (fc/children this)))
 
 (def button (fc/factory Button))
