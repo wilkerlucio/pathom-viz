@@ -38,14 +38,14 @@
   {::wsm/align ::wsm/stretch-flex}
   (ct.fulcro/fulcro-card
     {::ct.fulcro/root          assistant/ParserAssistant
-     ::ct.fulcro/initial-state {::assistant/id   "assistant"
-                                :ui/query-editor {::cp/parser-id       :base
-                                                  ::query.editor/id    "singleton"
-                                                  ::query.editor/query "[:answer]"}}
+     ::ct.fulcro/initial-state {::assistant/id     "assistant"
+                                :ui/query-editor   {::cp/parser-id       :base
+                                                    ::query.editor/id    "singleton"
+                                                    ::query.editor/query "[:answer]"}
+                                :ui/index-explorer {:com.wsscode.pathom.viz.index-explorer/id "singleton"}}
      ::ct.fulcro/app           {:client-did-mount
                                 (fn [app]
-                                  (query.editor/load-indexes app {::query.editor/id "singleton"
-                                                                  ::cp/parser-id    :base}))
+                                  (assistant/initialize-parser-assistent app))
 
                                 :remotes
                                 {:remote

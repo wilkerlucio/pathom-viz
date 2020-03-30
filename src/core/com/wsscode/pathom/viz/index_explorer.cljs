@@ -5,7 +5,6 @@
             [cljs.spec.alpha :as s]
             [clojure.string :as str]
             [clojure.test.check.generators :as gen]
-            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [com.fulcrologic.fulcro-css.css :as css]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [com.fulcrologic.fulcro.algorithms.merge :as merge]
@@ -13,16 +12,18 @@
             [com.fulcrologic.fulcro.components :as fc]
             [com.fulcrologic.fulcro.mutations :as fm]
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
+            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [com.wsscode.fuzzy :as fuzzy]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.core :as p]
-            [com.wsscode.pathom.viz.helpers :as h]
+            [com.wsscode.pathom.viz.helpers :as pvh]
             [com.wsscode.pathom.viz.ui.context :as uic]
             [com.wsscode.pathom.viz.ui.expandable-tree :as ex-tree]
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.wsscode.spec-inspec :as si]
             [edn-query-language.core :as eql]
-            [goog.object :as gobj]))
+            [goog.object :as gobj]
+            [com.wsscode.pathom.viz.client-parser :as cp]))
 
 ; region specs
 
@@ -175,7 +176,7 @@
 (>defn compute-nodes-links [{::keys [attributes]}]
   [(s/keys :req [::attributes]) => ::attribute-graph]
   (let [attributes (filter ::pc/attribute attributes)
-        index      (h/index-by ::pc/attribute attributes)]
+        index      (pvh/index-by ::pc/attribute attributes)]
     {:nodes (into [] (map attribute->node) attributes)
      :links (mapcat
               (fn [{::pc/keys [attribute attr-provides]}]
@@ -207,7 +208,6 @@
         svg             (gobj/get this "svg")]
     (if current ((gobj/get current "dispose")))
     (gobj/set svg "innerHTML" "")
-    (js/console.log "NODES LINKS" (compute-nodes-links props))
     (let [render-settings (d3attr/render svg
                             (clj->js {:svgWidth    (gobj/get container "clientWidth")
                                       :svgHeight   (gobj/get container "clientHeight")
@@ -322,7 +322,7 @@
     :as    options} source]
   (if (contains? attr-visited source)
     sub-index
-    (let [index    (or attr-index (h/index-by ::pc/attribute attributes))
+    (let [index    (or attr-index (pvh/index-by ::pc/attribute attributes))
           base     (merge sub-index (select-keys index [source]))
           {::pc/keys [attr-reach-via attr-provides]} (get index source)
           options' (assoc options ::attr-index index
@@ -373,7 +373,7 @@
   (if (vector? x) (first x) x))
 
 (>defn attr-provides->path-map [attr-provides]
-  [::pc/attr-provides => ::h/path-map]
+  [::pc/attr-provides => ::pvh/path-map]
   (into {}
         (comp (map #(update % 0 (fn [x] (if (keyword? x) [x] x))))
               (map (fn [[path resolvers]]
@@ -385,7 +385,7 @@
   [::pc/attr-provides => ::ex-tree/root]
   (-> attr-provides
       attr-provides->path-map
-      h/path-map->tree))
+      pvh/path-map->tree))
 
 (defn render-plugin-extension [this view]
   (let [plugins (-> (gobj/get this "context") ::plugins)
@@ -525,7 +525,7 @@
         (attribute-graph
           (merge {::attributes      (attribute-network
                                       (merge {::attr-depth attr-depth
-                                              ::attr-index (h/index-by ::pc/attribute attributes)
+                                              ::attr-index (pvh/index-by ::pc/attribute attributes)
                                               ::attributes attributes}
                                         shared-options)
                                       attribute)
@@ -659,7 +659,7 @@
               (attribute-graph
                 (merge {::attributes      (attribute-network
                                             (merge {::attr-depth attr-depth
-                                                    ::attr-index (h/index-by ::pc/attribute attributes)
+                                                    ::attr-index (pvh/index-by ::pc/attribute attributes)
                                                     ::attributes attributes}
                                               shared-options)
                                             attribute)
@@ -682,7 +682,7 @@
           (if (seq attr-combinations)
             (ui/panel {::ui/panel-title "Input Combinations"
                        ::ui/panel-tag   (count attr-combinations)}
-              (for [input (sort-by (comp vec sort) h/vector-compare (map #(into (sorted-set) %) attr-combinations))]
+              (for [input (sort-by (comp vec sort) pvh/vector-compare (map #(into (sorted-set) %) attr-combinations))]
                 (attribute-link {::pc/attribute input} computed))))
 
           (if (seq attr-mutation-param-in)
@@ -789,7 +789,7 @@
 
         (if input
           (let [resolver-attrs (conj (out-all-attributes (->> output eql/query->ast) input) input')
-                attrs          (-> (h/index-by ::pc/attribute attributes)
+                attrs          (-> (pvh/index-by ::pc/attribute attributes)
                                    (select-keys resolver-attrs)
                                    (update input' assoc ::center? true)
                                    vals)]
@@ -954,7 +954,7 @@
                                   :overflow    "auto"}]]
    :initLocalState (fn [this]
                      {:search
-                      #(fc/transact! this [`(search {::text ~(h/target-value %)})])
+                      #(fc/transact! this [`(search {::text ~(pvh/target-value %)})])
 
                       :toggle-attribute-collapse
                       #(fm/toggle! this :ui/collapse-attributes?)
@@ -1028,7 +1028,7 @@
     (for [{::pc/keys [attribute attr-leaf-in attr-branch-in]} attr-type-mismatch]
       (ui/raw-collapsible {:react-key      (pr-str attribute)
                            ::ui/collapsed? (not (contains? attr-mismatch-expanded attribute))
-                           ::ui/on-toggle  #(h/update-value! this ::attr-mismatch-expanded h/toggle-set-item attribute)
+                           ::ui/on-toggle  #(pvh/update-value! this ::attr-mismatch-expanded pvh/toggle-set-item attribute)
                            ::ui/title      (attribute-link {::pc/attribute attribute} computed)}
         (dom/div :.resolver-container
           (for [resolver attr-branch-in]
@@ -1336,7 +1336,7 @@
                       :go-back          #(fc/transact! this [`(navigate-backwards)])
                       :go-forward       #(fc/transact! this [`(navigate-forwards)])
                       :go-stats         #(fc/transact! this [`(navigate-stats)])
-                      :go-graph-view    #(fc/transact! this [`(navigate-graph-view)])})}
+                      :go-graph-view    #(fc/transact! this [`(navigate-graph-view) ::id])})}
   (dom/create-element (gobj/get ExtensionContext "Provider") #js {:value extensions}
     (ui/row {:react-key "container" :classes (ui/ccss this :.out-container)}
       (ui/column {:classes (ui/ccss this :.menu)}
@@ -1372,3 +1372,27 @@
                               ::nested-provides? true}))))))
 
 (def index-explorer (fc/computed-factory IndexExplorer))
+
+(fm/defmutation load-indexes* [_]
+  (action [{:keys [state ref]}]
+    #_ (swap! state update-in ref assoc :ui/query-running? true)
+    nil)
+  (ok-action [{:keys [state ref] :as env}]
+    (let [indexes (-> (pvh/env-parser-response env)
+                      ::pc/indexes)]
+      (swap! state merge/merge-component IndexExplorer {::id    (second ref)
+                                                        ::index (p/elide-special-outputs indexes)})))
+  (error-action [env]
+    #_ (js/console.log "QUERY ERROR" env)
+    nil)
+  (remote [{:keys [ast]}]
+    (assoc ast :key `cp/client-parser-mutation)))
+
+(defn load-indexes
+  [app {::keys    [id]
+        ::cp/keys [parser-id]}]
+  (let [props {::id                       id
+               ::cp/parser-id             parser-id
+               ::cp/client-parser-request [::pc/indexes]}]
+    (fc/transact! app [(load-indexes* props)]
+      {:ref [::id id]})))

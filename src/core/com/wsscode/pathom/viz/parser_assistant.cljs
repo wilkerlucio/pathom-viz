@@ -3,15 +3,24 @@
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [com.wsscode.pathom.viz.query-editor :as query.editor]
             [com.wsscode.pathom.viz.index-explorer :as index.explorer]
-            [com.wsscode.pathom.viz.ui.kit :as ui]))
+            [com.wsscode.pathom.viz.ui.kit :as ui]
+            [com.wsscode.pathom.viz.client-parser :as cp]))
+
+(defn initialize-parser-assistent [app]
+  (query.editor/load-indexes app {::query.editor/id "singleton"
+                                  ::cp/parser-id    :base})
+  (index.explorer/load-indexes app {::index.explorer/id "singleton"
+                                    ::cp/parser-id      :base}))
 
 (fc/defsc ParserAssistant
-  [this {:ui/keys  [query-editor]
+  [this {:ui/keys  [query-editor index-explorer]
          ::ui/keys [active-tab-id]}]
   {:pre-merge (fn [{:keys [current-normalized data-tree]}]
                 (merge {::id               (random-uuid)
                         ::ui/active-tab-id ::query
-                        :ui/query-editor   {}} current-normalized data-tree))
+                        :ui/query-editor   {}
+                        :ui/index-explorer {}}
+                  current-normalized data-tree))
    :ident     ::id
    :query     [::id
                ::ui/active-tab-id
@@ -28,7 +37,7 @@
       (query.editor/query-editor query-editor)
 
       ::index-explorer
-      (dom/div "Index Explorer")
+      (index.explorer/index-explorer index-explorer)
 
       (dom/div "Invalid page"))))
 
