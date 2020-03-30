@@ -441,7 +441,7 @@
     (for [[{::keys [tab-id] :as p} & c] (fc/children this)
           :let [active? (= tab-id active-tab-id)]]
       (apply dom/div :.tab
-        (cond-> p
+        (cond-> (assoc p :key (pr-str tab-id))
           target (assoc :onClick #(fm/set-value! target ::active-tab-id tab-id))
           active? (add-class :.tab-active))
         c))))
