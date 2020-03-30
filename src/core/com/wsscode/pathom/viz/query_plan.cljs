@@ -10,6 +10,7 @@
             [com.wsscode.pathom.misc :as p.misc]
             [com.wsscode.pathom.viz.helpers :as h]
             [com.wsscode.pathom.viz.helpers :as pvh]
+            [com.wsscode.pathom.viz.lib.local-storage :as ls]
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [edn-query-language.core :as eql]
             [goog.object :as gobj]))
@@ -350,43 +351,45 @@
    :ident       ::id
    :query       [::id ::pcp/graph :ui/label-kind :ui/node-details]
    :css-include [QueryPlanViz NodeDetails]}
-  (ui/row (ui/gc :.flex :.no-scrollbars)
-    (dom/div {:classes [(if-not node-details (ui/css :.flex))]
-              :style   {:width (str (or (fc/get-state this :details-width) 400) "px")}}
-      (ui/toolbar {}
-        (dom/label
-          (dom/span {:style {:margin "0 5px"}} "Label kind:")
-          (ui/dom-select {:value    label-kind
-                          :onChange #(fm/set-value! this :ui/label-kind %2)}
-            (ui/dom-option {:value ::pc/sym} "Node name")
-            (ui/dom-option {:value ::pcp/source-for-attrs} "Attribute source"))))
+  (let [default-details-width (ls/get ::details-width 400)]
+   (ui/row (ui/gc :.flex :.no-scrollbars)
+     (dom/div {:classes [(if-not node-details (ui/css :.flex))]
+               :style   {:width (str (or (fc/get-state this :details-width) default-details-width) "px")}}
+       (ui/toolbar {}
+         (dom/label
+           (dom/span {:style {:margin "0 5px"}} "Label kind:")
+           (ui/dom-select {:value    label-kind
+                           :onChange #(fm/set-value! this :ui/label-kind %2)}
+             (ui/dom-option {:value ::pc/sym} "Node name")
+             (ui/dom-option {:value ::pcp/source-for-attrs} "Attribute source"))))
 
-      (query-plan-viz
-        {::pcp/graph
-         graph
+       (query-plan-viz
+         {::pcp/graph
+          graph
 
-         ::selected-node-id
-         (::pcp/node-id node-details)
+          ::selected-node-id
+          (::pcp/node-id node-details)
 
-         ::label-kind
-         label-kind
+          ::label-kind
+          label-kind
 
-         ::on-click-node
-         (fn [e node]
-           (js/console.log "NODE" node)
-           (fm/set-value! this :ui/node-details
-             (if (= node-details node)
-               nil
-               node)))}))
+          ::on-click-node
+          (fn [e node]
+            (js/console.log "NODE" node)
+            (fm/set-value! this :ui/node-details
+              (if (= node-details node)
+                nil
+                node)))}))
 
-    (if node-details
-      (fc/fragment
-        (pvh/drag-resize this {:attribute :details-width
-                               :axis      "x"
-                               :default   400
-                               :props     (ui/gc :.divisor-v)}
-          (dom/div))
+     (if node-details
+       (fc/fragment
+         (pvh/drag-resize this {:attribute      :details-width
+                                :persistent-key ::details-width
+                                :axis           "x"
+                                :default        default-details-width
+                                :props          (ui/gc :.divisor-v)}
+           (dom/div))
 
-        (node-details-ui node-details)))))
+         (node-details-ui node-details))))))
 
 (def plan-view-with-details (fc/factory PlanViewWithDetails {:keyfn ::id}))

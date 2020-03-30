@@ -12,6 +12,7 @@
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [com.wsscode.common.async-cljs :refer [<?maybe]]
             [com.wsscode.pathom.core :as p]
+            [com.wsscode.pathom.viz.lib.local-storage :as ls]
             [edn-query-language.core :as eql]
             [goog.object :as gobj]))
 
@@ -45,22 +46,28 @@
   (with-out-str
     (clojure.pprint/pprint x)))
 
-(defn drag-resize [this {:keys [attribute default axis props] :or {axis "y"}} child]
-  (js/React.createElement DraggableCore
-    #js {:key     "dragHandler"
-         :onStart (fn [e dd]
-                    (gobj/set this "start" (gobj/get dd axis))
-                    (gobj/set this "startSize" (or (fp/get-state this attribute) default)))
-         :onDrag  (fn [e dd]
-                    (let [start    (gobj/get this "start")
-                          size     (gobj/get this "startSize")
-                          value    (gobj/get dd axis)
-                          new-size (+ size (if (= "x" axis) (- value start) (- start value)))]
-                      (fp/set-state! this {attribute new-size})))}
-    (dom/div (merge {:style {:pointerEvents "all"
-                             :cursor        (if (= "x" axis) "ew-resize" "ns-resize")}}
-               props)
-      child)))
+(defn drag-resize [this {:keys [attribute default axis props persistent-key] :or {axis "y"}} child]
+  (let [default' (if persistent-key
+                   (ls/get persistent-key default)
+                   default)]
+    (js/React.createElement DraggableCore
+      #js {:key     "dragHandler"
+           :onStart (fn [e dd]
+
+                      (gobj/set this "start" (gobj/get dd axis))
+                      (gobj/set this "startSize" (or (fp/get-state this attribute) default')))
+           :onDrag  (fn [e dd]
+                      (let [start    (gobj/get this "start")
+                            size     (gobj/get this "startSize")
+                            value    (gobj/get dd axis)
+                            new-size (+ size (if (= "x" axis) (- value start) (- start value)))]
+                        (if persistent-key
+                          (ls/set! persistent-key new-size))
+                        (fp/set-state! this {attribute new-size})))}
+      (dom/div (merge {:style {:pointerEvents "all"
+                               :cursor        (if (= "x" axis) "ew-resize" "ns-resize")}}
+                 props)
+        child))))
 
 (defn pprint [x]
   (with-out-str (cljs.pprint/pprint x)))
@@ -106,6 +113,11 @@
   (p/transduce-maps
     (remove (fn [[_ v]] (contains? #{::p/not-found ::fp/not-found} v)))
     x))
+
+(defn env-parser-response [env]
+  (-> env :result :body
+      (get 'com.wsscode.pathom.viz.client-parser/client-parser-mutation)
+      :com.wsscode.pathom.viz.client-parser/client-parser-response))
 
 (>defn path-map->tree
   "Generate a tree structure from a map of maps to data. For example, the given structure:

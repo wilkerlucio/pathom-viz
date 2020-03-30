@@ -2,9 +2,7 @@
   (:require [cljs.reader :refer [read-string]]
             [com.fulcrologic.fulcro-css.css :as css]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
-            [com.fulcrologic.fulcro.application :as fa]
             [com.fulcrologic.fulcro.components :as fc]
-            [com.fulcrologic.fulcro.data-fetch :as df]
             [com.fulcrologic.fulcro.mutations :as fm]
             [com.wsscode.async.async-cljs :refer [<?maybe go-promise <!]]
             [com.wsscode.pathom.connect :as pc]
@@ -14,7 +12,8 @@
             [com.wsscode.pathom.viz.codemirror :as cm]
             [com.wsscode.pathom.viz.helpers :as pvh]
             [com.wsscode.pathom.viz.query-plan :as plan-view]
-            [com.wsscode.pathom.viz.trace :as pvt]))
+            [com.wsscode.pathom.viz.trace :as pvt]
+            [com.wsscode.pathom.viz.lib.local-storage :as ls]))
 
 (declare QueryEditor TransactionResponse)
 
@@ -34,14 +33,11 @@
   {::pc/output [::pc/indexes]}
   (client-parser {} index-query))
 
-(defn env-parser-response [env]
-  (-> env :result :body (get `cp/client-parser-mutation) ::cp/client-parser-response))
-
 (fm/defmutation run-query [{::keys [request-trace?]}]
   (action [{:keys [state ref]}]
     (swap! state update-in ref assoc :ui/query-running? true))
   (ok-action [{:keys [state ref] :as env}]
-    (let [response (env-parser-response env)]
+    (let [response (pvh/env-parser-response env)]
       (swap! state update-in ref assoc
         :ui/query-running? false
         :com.wsscode.pathom/trace (get response :com.wsscode.pathom/trace)
@@ -57,11 +53,11 @@
   (action [{:keys [state ref]}]
     (swap! state update-in ref assoc :ui/query-running? true))
   (ok-action [{:keys [state ref] :as env}]
-    (let [response (env-parser-response env)]
+    (let [response (pvh/env-parser-response env)]
       (swap! state update-in ref assoc
         :ui/query-running? false
         ::pc/indexes (-> response
-                         (->> (p/elide-items p/special-outputs))
+                         p/elide-special-outputs
                          ::pc/indexes))))
   (error-action [env]
     (js/console.log "QUERY ERROR" env))
@@ -114,15 +110,14 @@
 (fc/defsc QueryEditor
   [this
    {::keys                   [query result request-trace?]
-    :ui/keys                 [query-running? selected-graph-plan plan-viewer]
+    :ui/keys                 [query-running? plan-viewer]
     :com.wsscode.pathom/keys [trace]
     ::pc/keys                [indexes]}
-   {::keys [default-trace-size editor-props
-            enable-trace?
-            default-plan-size]
-    :or    {default-trace-size 400
-            default-plan-size  200
-            enable-trace?      true}}]
+   {::keys [editor-props enable-trace?
+            default-trace-size
+            default-plan-size
+            default-query-size]
+    :or    {enable-trace? true}}]
   {:initial-state     (fn [_]
                         {::id             (random-uuid)
                          ::request-trace? true
@@ -144,7 +139,6 @@
                        ::result
                        ::cp/parser-id
                        ::pc/indexes
-                       :ui/selected-graph-plan
                        :ui/query-running?
                        :com.wsscode.pathom/trace
                        {:ui/plan-viewer (fc/get-query plan-view/PlanViewWithDetails)}]
@@ -215,8 +209,11 @@
                                                         ::cp/parser-id             parser-id
                                                         ::cp/client-parser-request (safe-read query)}]
                                             (fc/transact! this [(run-query props')])))))})}
-  (let [run-query (fc/get-state this :run-query)
-        css (css/get-classnames QueryEditor)]
+  (let [run-query          (fc/get-state this :run-query)
+        css                (css/get-classnames QueryEditor)
+        default-query-size (ls/get ::query-width (or default-query-size 400))
+        default-trace-size (ls/get ::trace-height (or default-trace-size 400))
+        default-plan-size  (ls/get ::plan-height (or default-plan-size 200))]
     (dom/div :.container
       (dom/div :.toolbar
         (if enable-trace?
@@ -237,7 +234,7 @@
         (when (fc/get-state this :render?)
           (cm/pathom
             (merge {:className   (:editor css)
-                    :style       {:width (str (or (fc/get-state this :query-width) 400) "px")}
+                    :style       {:width (str (or (fc/get-state this :query-width) default-query-size) "px")}
                     :value       (or (str query) "")
                     ::pc/indexes (if (map? indexes) (p/elide-not-found indexes))
                     ::cm/options {::cm/extraKeys
@@ -248,10 +245,11 @@
                                    "Ctrl-Space"  "autocomplete"}}
                     :onChange    #(fm/set-value! this ::query %)}
               editor-props)))
-        (pvh/drag-resize this {:attribute :query-width
-                               :axis      "x"
-                               :default   400
-                               :props     {:className (:divisor-v css)}}
+        (pvh/drag-resize this {:attribute      :query-width
+                               :persistent-key ::query-width
+                               :axis           "x"
+                               :default        default-query-size
+                               :props          {:className (:divisor-v css)}}
           (dom/div))
         (if (fc/get-state this :render?)
           (cm/clojure
@@ -263,9 +261,10 @@
 
       (if trace
         (fc/fragment
-          (pvh/drag-resize this {:attribute :trace-height
-                                 :default   default-trace-size
-                                 :props     {:className (:divisor-h css)}}
+          (pvh/drag-resize this {:attribute      :trace-height
+                                 :persistent-key ::trace-height
+                                 :default        default-trace-size
+                                 :props          {:className (:divisor-h css)}}
             (dom/div))
 
           (dom/div :.trace {:style {:height (str (or (fc/get-state this :trace-height) default-trace-size) "px")}}
@@ -278,9 +277,10 @@
 
       (if (::pcp/graph plan-viewer)
         (fc/fragment
-          (pvh/drag-resize this {:attribute :plan-height
-                                 :default   default-plan-size
-                                 :props     {:className (:divisor-h css)}}
+          (pvh/drag-resize this {:attribute      :plan-height
+                                 :persistent-key ::plan-height
+                                 :default        default-plan-size
+                                 :props          {:className (:divisor-h css)}}
             (dom/div))
 
           (dom/div :.plan {:style {:height (str (or (fc/get-state this :plan-height) default-plan-size) "px")}}
