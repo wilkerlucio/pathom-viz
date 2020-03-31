@@ -445,13 +445,21 @@
                        :display       "flex"
                        :margin-bottom "-1px"}
           [:&.border-collapse-bottom {:border-bottom "none"}]]
-         [:.tab {:cursor  "pointer"
-                 :display "flex"
-                 :padding "5px 9px"}
+         [:.tab {:align-items "center"
+                 :cursor      "pointer"
+                 :display     "flex"
+                 :padding     "5px 9px"}
           text-sans-13
           [:&:hover {:background "#e5e5e5"}]]
          [:.tab-active {:border-bottom "2px solid #5c7ebb"
-                        :z-index       "1"}]]}
+                        :z-index       "1"}]
+         [:.x {:align-self    "flex-start"
+               :border-radius "50%"
+               :margin-left   "6px"
+               :font-family   "monospace"
+               :font-size     "10px"
+               :padding       "1px 4px"}
+          [:&:hover {:background "#aaa"}]]]}
   (dom/div :.container props
     (for [[{::keys [tab-id on-tab-close] :as p} & c] (fc/children this)
           :let [active? (= tab-id active-tab-id)]]
@@ -462,7 +470,7 @@
         (if on-tab-close
           (fc/fragment
             c
-            (dom/div :.x {:onClick (stop-propagation on-tab-close)} "X"))
+            (dom/div :.x {:onClick (stop-propagation on-tab-close)} "✕"))
           c)))))
 
 (def tab-nav (fc/factory TabNav))
