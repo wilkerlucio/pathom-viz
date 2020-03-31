@@ -18,7 +18,8 @@
             [com.wsscode.pathom.viz.aux.demo-parser :as demo-parser]
             [cljs.core.async :as async]))
 
-(def registry [cp/client-parser-mutation query.editor/registry])
+(def registry
+  [cp/registry query.editor/registry])
 
 (def parser
   (p/async-parser
@@ -30,6 +31,7 @@
      ::p/mutate  pc/mutate-async
      ::p/plugins [(pc/connect-plugin {::pc/register registry})
                   p/error-handler-plugin
+                  p/elide-special-outputs-plugin
                   p/trace-plugin]}))
 
 (def client-parsers
@@ -39,9 +41,20 @@
   {::wsm/align ::wsm/stretch-flex}
   (ct.fulcro/fulcro-card
     {::ct.fulcro/root          assistant/ParserAssistant
-     ::ct.fulcro/initial-state {::assistant/id     "assistant"
-                                :ui/query-editor   {::query.editor/id "singleton"}
-                                :ui/index-explorer {:com.wsscode.pathom.viz.index-explorer/id "singleton"}}
+     ::ct.fulcro/initial-state {::assistant/assistant-id "singleton"
+                                :ui/query-editor         {::query.editor/id "singleton"}
+                                :ui/index-explorer       {:com.wsscode.pathom.viz.index-explorer/id "singleton"}}
      ::ct.fulcro/app           {:remotes
                                 {:remote
-                                 (h/pathom-remote #(parser (assoc % ::cp/parsers @client-parsers) %2))}}}))
+                                 (h/pathom-remote #(parser (assoc % ::cp/parsers @client-parsers
+                                                                    ::cp/parsers* client-parsers) %2))}}}))
+
+(ws/defcard multi-parser-manager-card
+  {::wsm/align ::wsm/stretch-flex}
+  (ct.fulcro/fulcro-card
+    {::ct.fulcro/root          assistant/MultiParserManager
+     ::ct.fulcro/initial-state {::assistant/manager-id "singleton"}
+     ::ct.fulcro/app           {:remotes
+                                {:remote
+                                 (h/pathom-remote #(parser (assoc % ::cp/parsers @client-parsers
+                                                                    ::cp/parsers* client-parsers) %2))}}}))

@@ -75,6 +75,20 @@
   [any? => string?]
   (gobj/getValueByKeys e "target" "value"))
 
+(defn prevent-default
+  "Wrap a callback function f to prevent default event behavior."
+  [f]
+  (fn [e]
+    (.preventDefault e)
+    (f e)))
+
+(defn stop-propagation
+  "Wrap a callback function f to prevent default event behavior."
+  [f]
+  (fn [e]
+    (.stopPropagation e)
+    (f e)))
+
 ; endregion
 
 ; region basics
@@ -422,6 +436,7 @@
 
 (>def ::active-tab-id any?)
 (>def ::tab-id any?)
+(>def ::on-tab-close fn?)
 
 (fc/defsc TabNav
   [this {::keys [active-tab-id target] :as props}]
@@ -431,19 +446,24 @@
                        :margin-bottom "-1px"}
           [:&.border-collapse-bottom {:border-bottom "none"}]]
          [:.tab {:cursor  "pointer"
+                 :display "flex"
                  :padding "5px 9px"}
           text-sans-13
           [:&:hover {:background "#e5e5e5"}]]
          [:.tab-active {:border-bottom "2px solid #5c7ebb"
                         :z-index       "1"}]]}
   (dom/div :.container props
-    (for [[{::keys [tab-id] :as p} & c] (fc/children this)
+    (for [[{::keys [tab-id on-tab-close] :as p} & c] (fc/children this)
           :let [active? (= tab-id active-tab-id)]]
-      (apply dom/div :.tab
+      (dom/div :.tab
         (cond-> (assoc p :key (pr-str tab-id))
           target (assoc :onClick #(fm/set-value! target ::active-tab-id tab-id))
           active? (add-class :.tab-active))
-        c))))
+        (if on-tab-close
+          (fc/fragment
+            c
+            (dom/div :.x {:onClick (stop-propagation on-tab-close)} "X"))
+          c)))))
 
 (def tab-nav (fc/factory TabNav))
 
