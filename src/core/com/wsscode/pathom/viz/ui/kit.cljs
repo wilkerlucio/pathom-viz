@@ -425,14 +425,13 @@
 
 (fc/defsc TabNav
   [this {::keys [active-tab-id target] :as props}]
-  {:css [[:.container {:background "#eee"
-                       :border     "1px solid #ddd"
-                       :display    "flex"
-                       :padding    "0 1px"}
+  {:css [[:.container {:background    "#eee"
+                       :border        "1px solid #ddd"
+                       :display       "flex"
+                       :margin-bottom "-1px"}
           [:&.border-collapse-bottom {:border-bottom "none"}]]
-         [:.tab {:cursor        "pointer"
-                 :margin-bottom "-1px"
-                 :padding       "5px 9px"}
+         [:.tab {:cursor  "pointer"
+                 :padding "5px 9px"}
           text-sans-13
           [:&:hover {:background "#e5e5e5"}]]
          [:.tab-active {:border-bottom "2px solid #5c7ebb"
