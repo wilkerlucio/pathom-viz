@@ -1,6 +1,5 @@
 (ns com.wsscode.pathom.viz.parser-assistant
-  (:require ["react" :refer [useEffect]]
-            [com.fulcrologic.fulcro-css.localized-dom :as dom]
+  (:require [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [com.fulcrologic.fulcro.algorithms.merge :as merge]
             [com.fulcrologic.fulcro.components :as fc]
             [com.fulcrologic.fulcro.data-fetch :as df]
@@ -8,7 +7,8 @@
             [com.wsscode.pathom.viz.client-parser :as cp]
             [com.wsscode.pathom.viz.index-explorer :as index.explorer]
             [com.wsscode.pathom.viz.query-editor :as query.editor]
-            [com.wsscode.pathom.viz.ui.kit :as ui]))
+            [com.wsscode.pathom.viz.ui.kit :as ui]
+            [com.wsscode.pathom.viz.helpers :as pvh]))
 
 (defn initialize-parser-assistent [this]
   (let [{::cp/keys [parser-id] :as props} (fc/props this)]
@@ -16,19 +16,6 @@
                                      ::cp/parser-id    parser-id})
     (index.explorer/load-indexes this {::index.explorer/id (-> props :ui/index-explorer ::index.explorer/id)
                                        ::cp/parser-id      parser-id})))
-
-(defn wrap-effect [f]
-  (fn []
-    (let [res (f)]
-      (if (fn? res)
-        res
-        js/undefined))))
-
-(defn use-effect
-  ([f]
-   (useEffect (wrap-effect f)))
-  ([f args]
-   (useEffect (wrap-effect f) (to-array args))))
 
 (defn assoc-child [m path value]
   (if (map? (get-in m (butlast path)))
@@ -56,7 +43,7 @@
                 {:ui/query-editor (fc/get-query query.editor/QueryEditor)}
                 {:ui/index-explorer (fc/get-query index.explorer/IndexExplorer)}]
    :use-hooks? true}
-  (use-effect #(initialize-parser-assistent this) [])
+  (pvh/use-effect #(initialize-parser-assistent this) [])
 
   (ui/tab-container {}
     (ui/tab-nav {:classes           [:.border-collapse-bottom]
@@ -131,7 +118,7 @@
                 ::ui/active-tab-id
                 {:ui/parser-assistant (fc/get-query ParserAssistant)}]
    :use-hooks? true}
-  (use-effect #(reload-available-parsers this) [])
+  (pvh/use-effect #(reload-available-parsers this) [])
 
   (ui/column (ui/gc :.flex)
     (ui/row {}
@@ -145,7 +132,7 @@
         "Add parser from URL"))
     (if (seq available-parsers)
       (ui/tab-container {}
-        (ui/tab-nav {:classes           [:.border-collapse-bottom]
+        (ui/tab-nav {:classes           [(if parser-assistant :.border-collapse-bottom)]
                      ::ui/active-tab-id active-tab-id}
           (for [p available-parsers]
             [{::ui/tab-id       p

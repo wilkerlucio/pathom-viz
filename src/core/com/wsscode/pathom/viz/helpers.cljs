@@ -1,5 +1,7 @@
 (ns com.wsscode.pathom.viz.helpers
   (:require ["react-draggable" :refer [DraggableCore]]
+            ["react" :refer [useEffect useState]]
+            ["d3" :as d3]
             [cljs.core.async :refer [go <!]]
             [cljs.reader :refer [read-string]]
             [cljs.spec.alpha :as s]
@@ -119,6 +121,11 @@
       (get 'com.wsscode.pathom.viz.client-parser/client-parser-mutation)
       :com.wsscode.pathom.viz.client-parser/client-parser-response))
 
+(defn transform->css [{:keys [x y k] :as t}]
+  (if (seq t)
+    (str "translate(" x ", " y ") scale(" k ")")
+    ""))
+
 (>defn path-map->tree
   "Generate a tree structure from a map of maps to data. For example, the given structure:
 
@@ -169,3 +176,37 @@
                       (catch :default e
                         (js/console.error "Pathom Remote error:" e)
                         (error-handler {:body e}))))))})
+
+(defn wrap-effect [f]
+  (fn []
+    (let [res (f)]
+      (if (fn? res)
+        res
+        js/undefined))))
+
+(defn use-effect
+  ([f]
+   (useEffect (wrap-effect f)))
+  ([f args]
+   (useEffect (wrap-effect f) (to-array args))))
+
+(defn use-state
+  "A simple wrapper around React/useState. Returns a cljs vector for easy destructuring"
+  [initial-value]
+  (into-array (useState initial-value)))
+
+;; hooks
+
+(defn use-d3-zoom [this container-ref]
+  (let [[svg-transform set-svg-transform!] (use-state {})]
+    (use-effect #(let [svg        (.select d3 (gobj/get this container-ref))
+                       apply-zoom (fn []
+                                    (let [transform (.. d3 -event -transform)]
+                                      (set-svg-transform!
+                                        {:x (gobj/get transform "x")
+                                         :y (gobj/get transform "y")
+                                         :k (gobj/get transform "k")})))
+                       zoom       (doto (.zoom d3)
+                                    (.on "zoom" apply-zoom))]
+                   (.call svg zoom)) [])
+    svg-transform))

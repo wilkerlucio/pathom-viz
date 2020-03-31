@@ -445,10 +445,11 @@
                        :display       "flex"
                        :margin-bottom "-1px"}
           [:&.border-collapse-bottom {:border-bottom "none"}]]
-         [:.tab {:align-items "center"
-                 :cursor      "pointer"
-                 :display     "flex"
-                 :padding     "5px 9px"}
+         [:.tab {:align-items   "center"
+                 :border-bottom "2px solid transparent"
+                 :cursor        "pointer"
+                 :display       "flex"
+                 :padding       "5px 9px"}
           text-sans-13
           [:&:hover {:background "#e5e5e5"}]]
          [:.tab-active {:border-bottom "2px solid #5c7ebb"

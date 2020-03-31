@@ -8,7 +8,6 @@
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.connect.planner :as pcp]
             [com.wsscode.pathom.misc :as p.misc]
-            [com.wsscode.pathom.viz.helpers :as h]
             [com.wsscode.pathom.viz.helpers :as pvh]
             [com.wsscode.pathom.viz.lib.local-storage :as ls]
             [com.wsscode.pathom.viz.ui.kit :as ui]
@@ -80,35 +79,35 @@
       (detail-info "Node ID" (str node-id)))
 
     (if-let [branches (pcp/node-branches node)]
-      (detail-info "Branches" (dom/div :.code (h/pprint-str branches))))
+      (detail-info "Branches" (dom/div :.code (pvh/pprint-str branches))))
 
     (if (seq after-nodes)
-      (detail-info "After Nodes" (dom/div :.code (h/pprint-str after-nodes))))
+      (detail-info "After Nodes" (dom/div :.code (pvh/pprint-str after-nodes))))
 
     (if run-next
-      (detail-info "Run Next" (dom/div :.code (h/pprint-str run-next))))
+      (detail-info "Run Next" (dom/div :.code (pvh/pprint-str run-next))))
 
     (if source-for-attrs
-      (detail-info "Source for attributes" (dom/div :.code (h/pprint-str source-for-attrs))))
+      (detail-info "Source for attributes" (dom/div :.code (pvh/pprint-str source-for-attrs))))
 
     (if requires
-      (detail-info "Requires" (dom/div :.code (h/pprint-str requires))))
+      (detail-info "Requires" (dom/div :.code (pvh/pprint-str requires))))
 
     (if (seq input)
       (detail-info "Input"
         (dom/div :.code
-          (h/pprint-str (or (::pc/resolver-call-input node-resolver-success)
-                            (::pc/resolver-call-input node-resolver-error)
-                            input)))))
+          (pvh/pprint-str (or (::pc/resolver-call-input node-resolver-success)
+                              (::pc/resolver-call-input node-resolver-error)
+                              input)))))
 
     (if foreign-ast
-      (detail-info "Foreign Query" (dom/div :.code (h/pprint-str (eql/ast->query foreign-ast)))))
+      (detail-info "Foreign Query" (dom/div :.code (pvh/pprint-str (eql/ast->query foreign-ast)))))
 
     (if node-resolver-success
-      (detail-info "Response" (dom/div :.code (h/pprint-str (::pc/resolver-response node-resolver-success)))))
+      (detail-info "Response" (dom/div :.code (pvh/pprint-str (::pc/resolver-response node-resolver-success)))))
 
     (if node-resolver-error
-      (detail-info "Error" (dom/div :.code (h/pprint-str (::pc/resolver-error node-resolver-error)))))))
+      (detail-info "Error" (dom/div :.code (pvh/pprint-str (::pc/resolver-error node-resolver-error)))))))
 
 (def node-details-ui (fc/factory NodeDetails {:keyfn ::pcp/node-id}))
 
@@ -137,7 +136,7 @@
       depths)))
 
 (defn events->plan [events]
-  (let [events' (mapv (comp h/safe-read #(gobj/get % "edn-original")) events)]
+  (let [events' (mapv (comp pvh/safe-read #(gobj/get % "edn-original")) events)]
     (if-let [plan (->> (filter (comp #{"reader3-execute"} :event) events')
                        first :plan)]
       (update plan ::pcp/nodes
@@ -269,63 +268,67 @@
      [:.label {:font-size   "11px"
                :text-align  "center"
                :margin      "0"
-               :padding-top "6px"}]]]}
-  (dom/div :.container
-    (let [focus (fc/get-state this ::focus-node)]
-      (dom/svg {:width "100%" :height "600"}
-        (for [{::keys     [x y width height]
-               ::pcp/keys [node-id run-next foreign-ast node-trace]
-               :as        node} (vals (::pcp/nodes graph))]
-          (let [start {::x (+ x (/ width 2)) ::y (+ y height)}
-                cx    (+ x node-half-size)
-                cy    (+ y node-half-size)]
-            (dom/g {:key     (str node-id)
-                    :classes [(if-not (seq node-trace) :.node-untouched)]}
-              (dom/circle :.node {:classes     [(cond
-                                                  (::pcp/run-and node)
-                                                  :.node-and
-                                                  (::pcp/run-or node)
-                                                  :.node-or)
+               :padding-top "6px"}]]]
 
-                                                (if foreign-ast :.node-dynamic)
+   :use-hooks? true}
+  (let [svg-transform (pvh/use-d3-zoom this "svg")]
+    (dom/div :.container
+      (let [focus (fc/get-state this ::focus-node)]
+        (dom/svg {:width "100%" :height "600" :ref #(gobj/set this "svg" %)}
+          (dom/g {:transform (pvh/transform->css svg-transform)}
+            (for [{::keys     [x y width height]
+                   ::pcp/keys [node-id run-next foreign-ast node-trace]
+                   :as        node} (vals (::pcp/nodes graph))]
+              (let [start {::x (+ x (/ width 2)) ::y (+ y height)}
+                    cx    (+ x node-half-size)
+                    cy    (+ y node-half-size)]
+                (dom/g {:key     (str node-id)
+                        :classes [(if-not (seq node-trace) :.node-untouched)]}
+                  (dom/circle :.node {:classes     [(cond
+                                                      (::pcp/run-and node)
+                                                      :.node-and
+                                                      (::pcp/run-or node)
+                                                      :.node-or)
 
-                                                (if (::pc/node-resolver-error node)
-                                                  :.node-error)
+                                                    (if foreign-ast :.node-dynamic)
 
-                                                (if (= selected-node-id node-id)
-                                                  :.node-selected)]
-                                  :cx          cx
-                                  :cy          cy
-                                  :r           node-half-size
-                                  :onClick     #(on-click-node % node)
-                                  :onMouseOver #(do
-                                                  (on-mouse-over-node % node)
-                                                  (fc/set-state! this {::focus-node node-id}))
-                                  :onMouseOut  #(do
-                                                  (on-mouse-out-node % node)
-                                                  (fc/set-state! this {::focus-node nil}))})
-              (dom/foreignObject {:x      (- x node-size)
-                                  :y      (+ y node-size)
-                                  :width  (* node-size 3)
-                                  :height node-space}
-                (dom/p :.label
-                  (render-node-value props node)))
+                                                    (if (::pc/node-resolver-error node)
+                                                      :.node-error)
 
-              (dom/text :.node-id {:x      cx
-                                   :y      cy
-                                   :width  node-size
-                                   :height node-size}
-                (str node-id))
+                                                    (if (= selected-node-id node-id)
+                                                      :.node-selected)]
+                                      :cx          cx
+                                      :cy          cy
+                                      :r           node-half-size
+                                      :onClick     #(on-click-node % node)
+                                      :onMouseOver #(do
+                                                      (on-mouse-over-node % node)
+                                                      (fc/set-state! this {::focus-node node-id}))
+                                      :onMouseOut  #(do
+                                                      (on-mouse-out-node % node)
+                                                      (fc/set-state! this {::focus-node nil}))})
+                  (dom/foreignObject {:x      (- x node-size)
+                                      :y      (+ y node-size)
+                                      :width  (* node-size 3)
+                                      :height node-space}
+                    (dom/p :.label
+                      (render-node-value props node)))
 
-              (for [next-node (mapv #(pcp/get-node graph %) (pcp/node-branches node))]
-                (dom/path :.line {:classes [(if (contains? #{node-id (::pcp/node-id next-node)} focus) :.line-focus)]
-                                  :d       (create-path-curve start {::x (+ (::x next-node) (/ (::width next-node) 2)) ::y (::y next-node)})
-                                  :key     (str node-id "->" (::pcp/node-id next-node))}))
+                  (dom/text :.node-id {:x      cx
+                                       :y      cy
+                                       :width  node-size
+                                       :height node-size}
+                    (str node-id))
 
-              (if-let [next-node (pcp/get-node graph run-next)]
-                (dom/path :.line-next {:classes [(if (contains? #{node-id (::pcp/node-id next-node)} focus) :.line-focus)]
-                                       :d       (create-path-curve start {::x (+ (::x next-node) (/ (::width next-node) 2)) ::y (::y next-node)})
-                                       :key     (str node-id "->" (::pcp/node-id next-node))})))))))))
+                  (for [next-node (mapv #(pcp/get-node graph %) (pcp/node-branches node))]
+                    (dom/path :.line {:classes [(if (contains? #{node-id (::pcp/node-id next-node)} focus) :.line-focus)]
+                                      :d       (create-path-curve start {::x (+ (::x next-node) (/ (::width next-node) 2)) ::y (::y next-node)})
+                                      :key     (str node-id "->" (::pcp/node-id next-node))}))
+
+                  (if-let [next-node (pcp/get-node graph run-next)]
+                    (dom/path :.line-next {:classes [(if (contains? #{node-id (::pcp/node-id next-node)} focus) :.line-focus)]
+                                           :d       (create-path-curve start {::x (+ (::x next-node) (/ (::width next-node) 2)) ::y (::y next-node)})
+                                           :key     (str node-id "->" (::pcp/node-id next-node))})))))))))))
 
 (def query-plan-viz (fc/computed-factory QueryPlanViz))
 
