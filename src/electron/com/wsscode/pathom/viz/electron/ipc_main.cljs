@@ -1,4 +1,4 @@
-(ns com.wsscode.electron.ipc-main
+(ns com.wsscode.pathom.viz.electron.ipc-main
   (:require
     ["electron" :refer [ipcMain]]))
 

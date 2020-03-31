@@ -168,6 +168,10 @@
     (encoder node)
     (str (get node label-kind))))
 
+(defn zoom-transform [element-fn]
+  (let [svg-transform (pvh/use-d3-zoom element-fn)]
+    (pvh/transform->css svg-transform)))
+
 (fc/defsc QueryPlanViz
   [this {::pcp/keys [graph]
          ::keys     [on-click-node
@@ -270,12 +274,12 @@
                :margin      "0"
                :padding-top "6px"}]]]
 
-   :use-hooks? true}
-  (let [svg-transform (pvh/use-d3-zoom this "svg")
-        [focus set-focus-node!] (pvh/use-state nil)]
+   :use-hooks?
+   true}
+  (let [[focus set-focus-node!] (pvh/use-state nil)]
     (dom/div :.container
       (dom/svg {:width "100%" :height "100%" :ref #(gobj/set this "svg" %)}
-        (dom/g {:transform (pvh/transform->css svg-transform)}
+        (dom/g {:transform (zoom-transform #(gobj/get this "svg"))}
           (for [{::keys     [x y width height]
                  ::pcp/keys [node-id run-next foreign-ast node-trace]
                  :as        node} (vals (::pcp/nodes graph))]
@@ -354,44 +358,44 @@
    :query       [::id ::pcp/graph :ui/label-kind :ui/node-details]
    :css-include [QueryPlanViz NodeDetails]}
   (let [default-details-width (ls/get ::details-width 400)]
-   (ui/row (ui/gc :.flex :.no-scrollbars)
-     (ui/column {:classes [(if-not node-details (ui/css :.flex))]
-               :style   {:width (str (or (fc/get-state this :details-width) default-details-width) "px")}}
-       (ui/toolbar {}
-         (dom/label
-           (dom/span {:style {:margin "0 5px"}} "Label kind:")
-           (ui/dom-select {:value    label-kind
-                           :onChange #(fm/set-value! this :ui/label-kind %2)}
-             (ui/dom-option {:value ::pc/sym} "Node name")
-             (ui/dom-option {:value ::pcp/source-for-attrs} "Attribute source"))))
+    (ui/row (ui/gc :.flex :.no-scrollbars)
+      (ui/column {:classes [(if-not node-details (ui/css :.flex))]
+                  :style   {:width (str (or (fc/get-state this :details-width) default-details-width) "px")}}
+        (ui/toolbar {}
+          (dom/label
+            (dom/span {:style {:margin "0 5px"}} "Label kind:")
+            (ui/dom-select {:value    label-kind
+                            :onChange #(fm/set-value! this :ui/label-kind %2)}
+              (ui/dom-option {:value ::pc/sym} "Node name")
+              (ui/dom-option {:value ::pcp/source-for-attrs} "Attribute source"))))
 
-       (query-plan-viz
-         {::pcp/graph
-          graph
+        (query-plan-viz
+          {::pcp/graph
+           graph
 
-          ::selected-node-id
-          (::pcp/node-id node-details)
+           ::selected-node-id
+           (::pcp/node-id node-details)
 
-          ::label-kind
-          label-kind
+           ::label-kind
+           label-kind
 
-          ::on-click-node
-          (fn [e node]
-            (js/console.log "NODE" node)
-            (fm/set-value! this :ui/node-details
-              (if (= node-details node)
-                nil
-                node)))}))
+           ::on-click-node
+           (fn [e node]
+             (js/console.log "NODE" node)
+             (fm/set-value! this :ui/node-details
+               (if (= node-details node)
+                 nil
+                 node)))}))
 
-     (if node-details
-       (fc/fragment
-         (pvh/drag-resize this {:attribute      :details-width
-                                :persistent-key ::details-width
-                                :axis           "x"
-                                :default        default-details-width
-                                :props          (ui/gc :.divisor-v)}
-           (dom/div))
+      (if node-details
+        (fc/fragment
+          (pvh/drag-resize this {:attribute      :details-width
+                                 :persistent-key ::details-width
+                                 :axis           "x"
+                                 :default        default-details-width
+                                 :props          (ui/gc :.divisor-v)}
+            (dom/div))
 
-         (node-details-ui node-details))))))
+          (node-details-ui node-details))))))
 
 (def plan-view-with-details (fc/factory PlanViewWithDetails {:keyfn ::id}))

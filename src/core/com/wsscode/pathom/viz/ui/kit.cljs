@@ -440,11 +440,13 @@
 (>def ::on-tab-close fn?)
 
 (fc/defsc TabNav
-  [this {::keys [active-tab-id target] :as props}]
-  {:css [[:.container {:background    "#eee"
+  [this {::keys [active-tab-id target tab-right-tools] :as props}]
+  {:css [[:.container {:align-items   "baseline"
+                       :background    "#eee"
                        :border        "1px solid #ddd"
                        :display       "flex"
-                       :margin-bottom "-1px"}
+                       :margin-bottom "-1px"
+                       :padding-right "4px"}
           [:&.border-collapse-bottom {:border-bottom "none"}]]
          [:.tab {:align-items   "center"
                  :border-bottom "2px solid transparent"
@@ -466,14 +468,20 @@
     (for [[{::keys [tab-id on-tab-close] :as p} & c] (fc/children this)
           :let [active? (= tab-id active-tab-id)]]
       (dom/div :.tab
-        (cond-> (assoc p :key (pr-str tab-id))
+        (cond-> (-> p
+                    h/keep-unamespaced
+                    (assoc :key (pr-str tab-id)))
           target (assoc :onClick #(fm/set-value! target ::active-tab-id tab-id))
           active? (add-class :.tab-active))
         (if on-tab-close
           (fc/fragment
             c
             (dom/div :.x {:onClick (stop-propagation on-tab-close)} "✕"))
-          c)))))
+          c)))
+    (if tab-right-tools
+      (fc/fragment
+        (dom/div (gc :.flex))
+        tab-right-tools))))
 
 (def tab-nav (fc/factory TabNav))
 

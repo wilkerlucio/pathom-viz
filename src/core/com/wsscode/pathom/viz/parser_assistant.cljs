@@ -117,11 +117,16 @@
                 ::cp/available-parsers
                 ::ui/active-tab-id
                 {:ui/parser-assistant (fc/get-query ParserAssistant)}]
+   :css        [[:.blank {:flex            "1"
+                          :background      "#ccc"
+                          :display         "flex"
+                          :align-items     "center"
+                          :justify-content "center"}]]
    :use-hooks? true}
   (pvh/use-effect #(reload-available-parsers this) [])
 
   (ui/column (ui/gc :.flex)
-    (ui/row {}
+    #_ (ui/row {}
       (dom/input {:placeholder "http://localhost/graph"
                   :style       {:width "300px"}
                   :value       parser-url
@@ -130,17 +135,18 @@
                               (fc/transact! this [(add-parser-from-url {::cp/url parser-url})])
                               (reload-available-parsers this))}
         "Add parser from URL"))
-    (if (seq available-parsers)
-      (ui/tab-container {}
-        (ui/tab-nav {:classes           [(if parser-assistant :.border-collapse-bottom)]
-                     ::ui/active-tab-id active-tab-id}
-          (for [p available-parsers]
-            [{::ui/tab-id       p
-              ::ui/on-tab-close #(fc/transact! this [(remove-parser {::cp/parser-id p})])
-              :onClick          #(select-parser this p)}
-             (str p)]))
+    (ui/tab-container {}
+      (ui/tab-nav {:classes             [(if parser-assistant :.border-collapse-bottom)]
+                   ::ui/active-tab-id   active-tab-id
+                   ::ui/tab-right-tools (ui/button {} "+")}
+        (for [p available-parsers]
+          [{::ui/tab-id       p
+            ::ui/on-tab-close #(fc/transact! this [(remove-parser {::cp/parser-id p})])
+            :onClick          #(select-parser this p)}
+           (str p)]))
 
-        (if parser-assistant
-          (parser-assistant-ui parser-assistant))))))
+      (if parser-assistant
+        (parser-assistant-ui parser-assistant)
+        (dom/div :.blank "Select a parser")))))
 
 (def multi-parser-manager (fc/factory MultiParserManager {:keyfn ::manager-id}))

@@ -30,6 +30,12 @@
 
 (defn target-value [e] (gobj/getValueByKeys e "target" "value"))
 
+(>defn keep-unamespaced [m]
+  [map? => map?]
+  (into {}
+        (filter (comp simple-keyword? first))
+        m))
+
 (defn stringify-keyword-values [x]
   (walk/prewalk
     (fn [x]
@@ -197,16 +203,17 @@
 
 ;; hooks
 
-(defn use-d3-zoom [this container-ref]
-  (let [[svg-transform set-svg-transform!] (use-state {})]
-    (use-effect #(let [svg        (.select d3 (gobj/get this container-ref))
-                       apply-zoom (fn []
-                                    (let [transform (.. d3 -event -transform)]
-                                      (set-svg-transform!
-                                        {:x (gobj/get transform "x")
-                                         :y (gobj/get transform "y")
-                                         :k (gobj/get transform "k")})))
-                       zoom       (doto (.zoom d3)
-                                    (.on "zoom" apply-zoom))]
-                   (.call svg zoom)) [])
-    svg-transform))
+(defn use-d3-zoom
+  ([element-fn]
+   (let [[svg-transform set-svg-transform!] (use-state {})]
+     (use-effect #(let [svg        (.select d3 (element-fn))
+                        apply-zoom (fn []
+                                     (let [transform (.. d3 -event -transform)]
+                                       (set-svg-transform!
+                                         {:x (gobj/get transform "x")
+                                          :y (gobj/get transform "y")
+                                          :k (gobj/get transform "k")})))
+                        zoom       (doto (.zoom d3)
+                                     (.on "zoom" apply-zoom))]
+                    (.call svg zoom)) [])
+     svg-transform)))

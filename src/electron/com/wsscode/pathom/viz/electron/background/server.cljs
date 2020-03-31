@@ -1,6 +1,6 @@
 (ns com.wsscode.pathom.viz.electron.background.server
   (:require
-    [com.wsscode.electron.ipc-main :as ipc-main]
+    [com.wsscode.pathom.viz.electron.ipc-main :as ipc-main]
     [com.wsscode.socket-io.server :as io-server]))
 
 (goog-define SERVER_PORT 8238)
