@@ -429,7 +429,8 @@
                        :flex           "1"
                        :flex-direction "column"
                        :max-width      "100%"
-                       :max-height     "100%"}]]}
+                       :max-height     "100%"
+                       :overflow       "hidden"}]]}
   (dom/div :.container props (fc/children this)))
 
 (def tab-container (fc/factory TabContainer))

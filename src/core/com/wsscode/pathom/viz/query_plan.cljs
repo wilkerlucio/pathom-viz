@@ -274,7 +274,7 @@
   (let [svg-transform (pvh/use-d3-zoom this "svg")
         [focus set-focus-node!] (pvh/use-state nil)]
     (dom/div :.container
-      (dom/svg {:width "100%" :height "600" :ref #(gobj/set this "svg" %)}
+      (dom/svg {:width "100%" :height "100%" :ref #(gobj/set this "svg" %)}
         (dom/g {:transform (pvh/transform->css svg-transform)}
           (for [{::keys     [x y width height]
                  ::pcp/keys [node-id run-next foreign-ast node-trace]
@@ -355,7 +355,7 @@
    :css-include [QueryPlanViz NodeDetails]}
   (let [default-details-width (ls/get ::details-width 400)]
    (ui/row (ui/gc :.flex :.no-scrollbars)
-     (dom/div {:classes [(if-not node-details (ui/css :.flex))]
+     (ui/column {:classes [(if-not node-details (ui/css :.flex))]
                :style   {:width (str (or (fc/get-state this :details-width) default-details-width) "px")}}
        (ui/toolbar {}
          (dom/label
