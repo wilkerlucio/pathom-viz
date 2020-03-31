@@ -271,64 +271,64 @@
                :padding-top "6px"}]]]
 
    :use-hooks? true}
-  (let [svg-transform (pvh/use-d3-zoom this "svg")]
+  (let [svg-transform (pvh/use-d3-zoom this "svg")
+        [focus set-focus-node!] (pvh/use-state nil)]
     (dom/div :.container
-      (let [focus (fc/get-state this ::focus-node)]
-        (dom/svg {:width "100%" :height "600" :ref #(gobj/set this "svg" %)}
-          (dom/g {:transform (pvh/transform->css svg-transform)}
-            (for [{::keys     [x y width height]
-                   ::pcp/keys [node-id run-next foreign-ast node-trace]
-                   :as        node} (vals (::pcp/nodes graph))]
-              (let [start {::x (+ x (/ width 2)) ::y (+ y height)}
-                    cx    (+ x node-half-size)
-                    cy    (+ y node-half-size)]
-                (dom/g {:key     (str node-id)
-                        :classes [(if-not (seq node-trace) :.node-untouched)]}
-                  (dom/circle :.node {:classes     [(cond
-                                                      (::pcp/run-and node)
-                                                      :.node-and
-                                                      (::pcp/run-or node)
-                                                      :.node-or)
+      (dom/svg {:width "100%" :height "600" :ref #(gobj/set this "svg" %)}
+        (dom/g {:transform (pvh/transform->css svg-transform)}
+          (for [{::keys     [x y width height]
+                 ::pcp/keys [node-id run-next foreign-ast node-trace]
+                 :as        node} (vals (::pcp/nodes graph))]
+            (let [start {::x (+ x (/ width 2)) ::y (+ y height)}
+                  cx    (+ x node-half-size)
+                  cy    (+ y node-half-size)]
+              (dom/g {:key     (str node-id)
+                      :classes [(if-not (seq node-trace) :.node-untouched)]}
+                (dom/circle :.node {:classes     [(cond
+                                                    (::pcp/run-and node)
+                                                    :.node-and
+                                                    (::pcp/run-or node)
+                                                    :.node-or)
 
-                                                    (if foreign-ast :.node-dynamic)
+                                                  (if foreign-ast :.node-dynamic)
 
-                                                    (if (::pc/node-resolver-error node)
-                                                      :.node-error)
+                                                  (if (::pc/node-resolver-error node)
+                                                    :.node-error)
 
-                                                    (if (= selected-node-id node-id)
-                                                      :.node-selected)]
-                                      :cx          cx
-                                      :cy          cy
-                                      :r           node-half-size
-                                      :onClick     #(on-click-node % node)
-                                      :onMouseOver #(do
-                                                      (on-mouse-over-node % node)
-                                                      (fc/set-state! this {::focus-node node-id}))
-                                      :onMouseOut  #(do
-                                                      (on-mouse-out-node % node)
-                                                      (fc/set-state! this {::focus-node nil}))})
-                  (dom/foreignObject {:x      (- x node-size)
-                                      :y      (+ y node-size)
-                                      :width  (* node-size 3)
-                                      :height node-space}
-                    (dom/p :.label
-                      (render-node-value props node)))
+                                                  (if (= selected-node-id node-id)
+                                                    :.node-selected)]
+                                    :cx          cx
+                                    :cy          cy
+                                    :r           node-half-size
+                                    :onClick     #(on-click-node % node)
+                                    :onMouseOver #(do
+                                                    (on-mouse-over-node % node)
+                                                    (set-focus-node! node-id))
+                                    :onMouseOut  #(do
+                                                    (on-mouse-out-node % node)
+                                                    (set-focus-node! nil))})
+                (dom/foreignObject {:x      (- x node-size)
+                                    :y      (+ y node-size)
+                                    :width  (* node-size 3)
+                                    :height node-space}
+                  (dom/p :.label
+                    (render-node-value props node)))
 
-                  (dom/text :.node-id {:x      cx
-                                       :y      cy
-                                       :width  node-size
-                                       :height node-size}
-                    (str node-id))
+                (dom/text :.node-id {:x      cx
+                                     :y      cy
+                                     :width  node-size
+                                     :height node-size}
+                  (str node-id))
 
-                  (for [next-node (mapv #(pcp/get-node graph %) (pcp/node-branches node))]
-                    (dom/path :.line {:classes [(if (contains? #{node-id (::pcp/node-id next-node)} focus) :.line-focus)]
-                                      :d       (create-path-curve start {::x (+ (::x next-node) (/ (::width next-node) 2)) ::y (::y next-node)})
-                                      :key     (str node-id "->" (::pcp/node-id next-node))}))
+                (for [next-node (mapv #(pcp/get-node graph %) (pcp/node-branches node))]
+                  (dom/path :.line {:classes [(if (contains? #{node-id (::pcp/node-id next-node)} focus) :.line-focus)]
+                                    :d       (create-path-curve start {::x (+ (::x next-node) (/ (::width next-node) 2)) ::y (::y next-node)})
+                                    :key     (str node-id "->" (::pcp/node-id next-node))}))
 
-                  (if-let [next-node (pcp/get-node graph run-next)]
-                    (dom/path :.line-next {:classes [(if (contains? #{node-id (::pcp/node-id next-node)} focus) :.line-focus)]
-                                           :d       (create-path-curve start {::x (+ (::x next-node) (/ (::width next-node) 2)) ::y (::y next-node)})
-                                           :key     (str node-id "->" (::pcp/node-id next-node))})))))))))))
+                (if-let [next-node (pcp/get-node graph run-next)]
+                  (dom/path :.line-next {:classes [(if (contains? #{node-id (::pcp/node-id next-node)} focus) :.line-focus)]
+                                         :d       (create-path-curve start {::x (+ (::x next-node) (/ (::width next-node) 2)) ::y (::y next-node)})
+                                         :key     (str node-id "->" (::pcp/node-id next-node))}))))))))))
 
 (def query-plan-viz (fc/computed-factory QueryPlanViz))
 
