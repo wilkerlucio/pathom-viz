@@ -23,6 +23,7 @@
 
           :electron-background {:target           :node-script
                                 :main             com.wsscode.pathom.viz.electron.background.main/init
+                                :dev              {:compiler-options {:external-config {:guardrails {:throw? false}}}}
                                 :devtools         {:devtools-url "http://localhost:9632"
                                                    :after-load   com.wsscode.pathom.viz.electron.background.main/after-load}
                                 :compiler-options {:optimizations :simple}
@@ -30,6 +31,7 @@
 
           :electron-renderer   {:target           :browser
                                 :modules          {:main {:entries [com.wsscode.pathom.viz.electron.renderer.main]}}
+                                :dev              {:compiler-options {:external-config {:guardrails {:throw? false}}}}
                                 :devtools         {:devtools-url "http://localhost:9632"
                                                    :after-load   com.wsscode.pathom.viz.electron.renderer.main/after-load}
                                 :compiler-options {:optimizations :simple}
