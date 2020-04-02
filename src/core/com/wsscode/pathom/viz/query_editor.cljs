@@ -184,6 +184,15 @@
 
 (def history-view (fc/factory HistoryView))
 
+(defn init-query-editor [this]
+  (let [parser-id (-> this fc/props ::cp/parser-id)]
+    (df/load! this (fc/get-ident this) QueryEditor
+      {:focus  [::query-history ::id]
+       :params {:pathom/context {::cp/parser-id parser-id}}}))
+  (js/setTimeout
+    #(fc/set-state! this {:render? true})
+    100))
+
 (fc/defsc QueryEditor
   [this
    {::keys                   [query result request-trace? query-history]
@@ -196,22 +205,12 @@
             default-query-size
             default-history-size]
     :or    {enable-trace? true}}]
-  {:initial-state     (fn [_]
-                        {::id              (random-uuid)
-                         ::request-trace?  true
-                         ::query           "[]"
-                         ::result          ""
-                         ::query-history   []
-                         :ui/counter       0
-                         :ui/show-history? true
-                         :ui/plan-viewer   {}})
-   :pre-merge         (fn [{:keys [current-normalized data-tree]}]
+  {:pre-merge         (fn [{:keys [current-normalized data-tree]}]
                         (merge {::id               (random-uuid)
                                 ::request-trace?   true
                                 ::query            "[]"
                                 ::result           ""
                                 ::query-history    []
-                                :ui/counter        0
                                 :ui/show-history?  true
                                 :ui/query-running? false
                                 :ui/plan-viewer    {}}
@@ -225,7 +224,6 @@
                        ::query-history
                        ::cp/parser-id
                        ::pc/indexes
-                       :ui/counter
                        :ui/query-running?
                        :ui/show-history?
                        :com.wsscode.pathom/trace
@@ -282,17 +280,9 @@
                                              :max-height "100%"
                                              :overflow   "auto"}]]
    :css-include       [pvt/D3Trace Button HistoryView]
-   #_#_:componentDidMount (fn [this]
-                            (let [parser-id (-> this fc/props ::cp/parser-id)]
-                              (df/load! this (fc/get-ident this) QueryEditor
-                                {:focus  [::query-history ::id]
-                                 :params {:pathom/context {::cp/parser-id parser-id}}}))
-                            (js/setTimeout
-                              #(fc/set-state! this {:render? true})
-                              100))
+   :componentDidMount init-query-editor
    :initLocalState    (fn [this]
-                        {:run-query (partial run-query! this)})
-   :use-hooks?        true}
+                        {:run-query (partial run-query! this)})}
   (let [run-query            (fc/get-state this :run-query)
         css                  (css/get-classnames QueryEditor)
         show-history?        (ls/get ::show-history? true)
@@ -308,8 +298,6 @@
                         :checked  request-trace?
                         :onChange #(fm/toggle! this ::request-trace?)})
             "Request trace"))
-        (let [s (pvh/use-component-prop this :ui/counter)]
-          (dom/button {:onClick #(swap! s inc)} (str "Counter " @s)))
         (dom/div :.flex)
         (button {:onClick  #(do
                               (fm/toggle! this :ui/show-history?)

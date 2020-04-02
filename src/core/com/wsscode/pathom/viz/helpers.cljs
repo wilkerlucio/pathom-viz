@@ -262,37 +262,4 @@
   (-swap! [a f x y more] (fm/set-value! comp prop (apply f @a x y more))))
 
 (defn use-component-prop [comp prop]
-  (reify
-    IDeref
-    (-deref [o] (-> comp fc/props (get prop)))
-
-    IReset
-    (-reset! [o new-value] (fm/set-value! comp prop new-value) new-value)
-
-    ISwap
-    (-swap! [a f] (fm/set-value! comp prop (f @a)))
-    (-swap! [a f x] (fm/set-value! comp prop (f @a x)))
-    (-swap! [a f x y] (fm/set-value! comp prop (f @a x y)))
-    (-swap! [a f x y more] (fm/set-value! comp prop (apply f @a x y more)))))
-
-(comment 
-  (time
-    (use-component-prop nil nil))
-  (time
-    (->FulcroComponentProp nil nil))
-  (let [x (let [[x y] ["foo" (fn [& args] (println "CALL ME" args))]]
-            (reify
-              IDeref
-              (-deref [o] x)
-
-              IReset
-              (-reset! [o new-value]
-                (y new-value)
-                new-value)
-
-              ISwap
-              (-swap! [a f] (y f))
-              (-swap! [a f x] (y #(f % x)))
-              (-swap! [a f x y] (y #(f % x y)))
-              (-swap! [a f x y more] (y #(apply f % x y more)))))]
-    (swap! x str "xxx")))
+  (->FulcroComponentProp comp prop))
