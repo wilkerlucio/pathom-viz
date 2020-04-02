@@ -16,7 +16,8 @@
             [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.viz.lib.local-storage :as ls]
             [edn-query-language.core :as eql]
-            [goog.object :as gobj]))
+            [goog.object :as gobj]
+            [com.fulcrologic.fulcro.components :as fc]))
 
 (>def ::path (s/coll-of keyword? :kind vector?))
 (>def ::path-map "The tree of maps" (s/map-of ::path map?))
@@ -201,6 +202,21 @@
   [initial-value]
   (into-array (useState initial-value)))
 
+(defn use-atom-state [initial-value]
+  (let [[value set-value!] (use-state initial-value)]
+    (reify
+      IDeref
+      (-deref [o] value)
+
+      IReset
+      (-reset! [o new-value] (doto new-value set-value!))
+
+      ISwap
+      (-swap! [a f] (set-value! f))
+      (-swap! [a f x] (set-value! #(f % x)))
+      (-swap! [a f x y] (set-value! #(f % x y)))
+      (-swap! [a f x y more] (set-value! #(apply f % x y more))))))
+
 ;; hooks
 
 (defn use-d3-zoom
@@ -217,3 +233,66 @@
                                      (.on "zoom" apply-zoom))]
                     (.call svg zoom)) [])
      svg-transform)))
+
+(defn react-state->atom-like [[value set-value!]]
+  (reify
+    IDeref
+    (-deref [o] value)
+
+    IReset
+    (-reset! [o new-value] (doto new-value set-value!))
+
+    ISwap
+    (-swap! [a f] (set-value! f))
+    (-swap! [a f x] (set-value! #(f % x)))
+    (-swap! [a f x y] (set-value! #(f % x y)))
+    (-swap! [a f x y more] (set-value! #(apply f % x y more)))))
+
+(deftype FulcroComponentProp [comp prop]
+  IDeref
+  (-deref [o] (-> comp fc/props (get prop)))
+
+  IReset
+  (-reset! [o new-value] (fm/set-value! comp prop new-value) new-value)
+
+  ISwap
+  (-swap! [a f] (fm/set-value! comp prop (f @a)))
+  (-swap! [a f x] (fm/set-value! comp prop (f @a x)))
+  (-swap! [a f x y] (fm/set-value! comp prop (f @a x y)))
+  (-swap! [a f x y more] (fm/set-value! comp prop (apply f @a x y more))))
+
+(defn use-component-prop [comp prop]
+  (reify
+    IDeref
+    (-deref [o] (-> comp fc/props (get prop)))
+
+    IReset
+    (-reset! [o new-value] (fm/set-value! comp prop new-value) new-value)
+
+    ISwap
+    (-swap! [a f] (fm/set-value! comp prop (f @a)))
+    (-swap! [a f x] (fm/set-value! comp prop (f @a x)))
+    (-swap! [a f x y] (fm/set-value! comp prop (f @a x y)))
+    (-swap! [a f x y more] (fm/set-value! comp prop (apply f @a x y more)))))
+
+(comment 
+  (time
+    (use-component-prop nil nil))
+  (time
+    (->FulcroComponentProp nil nil))
+  (let [x (let [[x y] ["foo" (fn [& args] (println "CALL ME" args))]]
+            (reify
+              IDeref
+              (-deref [o] x)
+
+              IReset
+              (-reset! [o new-value]
+                (y new-value)
+                new-value)
+
+              ISwap
+              (-swap! [a f] (y f))
+              (-swap! [a f x] (y #(f % x)))
+              (-swap! [a f x y] (y #(f % x y)))
+              (-swap! [a f x y more] (y #(apply f % x y more)))))]
+    (swap! x str "xxx")))
