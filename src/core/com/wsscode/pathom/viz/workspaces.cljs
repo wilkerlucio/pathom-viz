@@ -50,6 +50,7 @@
                                (if load-index-at-start?
                                  (pv.query-editor/load-indexes app)))
 
+                             #_ #_
                              :remotes
                              {pv.query-editor/remote-key
                               (pathom-remote
