@@ -3,15 +3,17 @@
 
  :deps
  {com.wsscode/fuzzy          {:mvn/version "1.0.0"}
-  com.fulcrologic/guardrails {:mvn/version "0.0.12"}}
+  com.fulcrologic/guardrails {:mvn/version "0.0.12"}
+  com.cognitect/transit-clj  {:mvn/version "1.0.324"}
+  com.cognitect/transit-cljs {:mvn/version "0.8.256"}}
 
  :aliases
  {:provided
-  {:extra-deps {com.fulcrologic/fulcro       {:mvn/version "3.1.23-SNAPSHOT"}
-                com.wsscode/pathom           {:mvn/version "2.2.28"}
-                io.socket/socket.io-client   {:mvn/version "1.0.0"}
-                org.clojure/clojure          {:mvn/version "1.10.1"}
-                org.clojure/clojurescript    {:mvn/version "1.10.597"}}}
+  {:extra-deps {com.fulcrologic/fulcro     {:mvn/version "3.1.23-SNAPSHOT"}
+                com.wsscode/pathom         {:mvn/version "2.2.28"}
+                io.socket/socket.io-client {:mvn/version "1.0.0"}
+                org.clojure/clojure        {:mvn/version "1.10.1"}
+                org.clojure/clojurescript  {:mvn/version "1.10.597"}}}
 
   :dev
   {:extra-deps {binaryage/devtools   {:mvn/version "0.9.10"}
