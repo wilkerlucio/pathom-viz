@@ -11,10 +11,11 @@
      SERVER_PORT
 
      ::ws-server/on-client-connect
-     (fn [env {::ws-server/keys [client-connection] :as client}]
-       (js/console.log "Client connected" client)
-       #_
-       (ws-server/send-message! client-connection "Hello dear"))
+     (fn [env message]
+       (js/console.log "Client connected")
+       (cljs.pprint/pprint message)
+       (cljs.pprint/pprint env)
+       (ws-server/send-message! env [:hello/dear "Hello dear"]))
 
      ::ws-server/on-client-disconnect
      (fn [_ client]
@@ -22,4 +23,4 @@
 
      ::ws-server/on-client-message
      (fn [_ msg]
-       (js/console.log "NEW MSG" msg))}))
+       (js/console.log "NEW MSG" (cljs.pprint/pprint msg)))}))

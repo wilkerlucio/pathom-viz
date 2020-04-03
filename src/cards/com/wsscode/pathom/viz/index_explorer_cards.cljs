@@ -16,7 +16,10 @@
             [edn-query-language.core :as eql]
             [nubank.workspaces.card-types.fulcro3 :as ct.fulcro]
             [nubank.workspaces.core :as ws]
-            [nubank.workspaces.model :as wsm]))
+            [nubank.workspaces.model :as wsm]
+
+
+            [com.wsscode.pathom.viz.demo-connector]))
 
 (s/def :customer/id uuid?)
 

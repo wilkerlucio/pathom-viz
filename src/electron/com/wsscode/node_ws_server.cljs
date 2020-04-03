@@ -73,9 +73,9 @@
 
 ;; API
 
-(>defn send-message! [env msg]
-  [map? any? => any?]
-  nil)
+(>defn send-message! [{::keys [send-fn client-id] :as env} msg]
+  [map? vector? => any?]
+  (send-fn client-id msg))
 
 (>defn start-ws!
   [{::keys [port on-client-connect
@@ -92,18 +92,18 @@
          :user-id-fn    :client-id})))
   (go
     (loop []
-      (when-some [{:keys [client-id event send-fn] :as message} (<! (:ch-recv @channel-socket-server))]
+      (when-some [{:keys [client-id event] :as message} (<! (:ch-recv @channel-socket-server))]
         (let [[event-type event-data] event
-              config' (assoc config ::socket-conn @channel-socket-server)]
-          (log/debug "Server received:" event-type)
-          (log/trace "-> with event data:" event-data)
+              config' (assoc config ::socket-conn @channel-socket-server
+                                    ::client-id client-id
+                                    ::send-fn (:send-fn @channel-socket-server))]
           (case event-type
             :chsk/uidport-open
             (on-client-connect config' message)
             :chsk/uidport-close
             (on-client-disconnect config' message)
             :chsk/ws-ping
-            (log/trace "ws-ping from client:" client-id)
+            (js/console.log "ws-ping from client:" client-id)
 
             ; else
             (on-client-message config' message))))
