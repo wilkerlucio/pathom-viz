@@ -1,23 +1,25 @@
 (ns com.wsscode.pathom.viz.electron.background.server
   (:require
     [com.wsscode.pathom.viz.electron.ipc-main :as ipc-main]
-    [com.wsscode.socket-io.server :as io-server]))
+    [com.wsscode.node-ws-server :as ws-server]))
 
-(goog-define SERVER_PORT 8238)
+(goog-define SERVER_PORT 8240)
 
 (defn start! [env]
-  (io-server/start-socket-io-server
-    {::io-server/port
+  (ws-server/start-ws!
+    {::ws-server/port
      SERVER_PORT
 
-     ::io-server/on-client-connect
-     (fn [env {::io-server/keys [client-connection] :as client}]
+     ::ws-server/on-client-connect
+     (fn [env {::ws-server/keys [client-connection] :as client}]
        (js/console.log "Client connected" client)
-       (io-server/send-message client-connection "Hello dear"))
+       #_
+       (ws-server/send-message! client-connection "Hello dear"))
 
-     ::io-server/on-client-message
+     ::ws-server/on-client-disconnect
+     (fn [_ client]
+       (js/console.log "get out"))
+
+     ::ws-server/on-client-message
      (fn [_ msg]
-       (js/console.log "NEW MSG" msg))
-
-     ::io-server/on-client-disconnect
-     (fn [_ client])}))
+       (js/console.log "NEW MSG" msg))}))

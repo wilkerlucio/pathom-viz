@@ -2,14 +2,14 @@
  :http   {:host "localhost"
           :port 9632}
  :nrepl  {:port 59122}
- :builds {:workspaces          {:target           nubank.workspaces.shadow-cljs.target
-                                :ns-regexp        "-(test|cards)$"
-                                :output-dir       "workspaces/assets/js"
-                                :asset-path       "/js"
-                                :dev              {:compiler-options {:external-config {:guardrails {:throw? false}}}}
-                                :devtools         {:preloads  [devtools.preload com.fulcrologic.fulcro.inspect.preload]
-                                                   :http-root "workspaces/assets"
-                                                   :http-port 8086}}
+ :builds {:workspaces          {:target     nubank.workspaces.shadow-cljs.target
+                                :ns-regexp  "-(test|cards)$"
+                                :output-dir "workspaces/assets/js"
+                                :asset-path "/js"
+                                :dev        {:compiler-options {:external-config {:guardrails {:throw? false}}}}
+                                :devtools   {:preloads  [devtools.preload com.fulcrologic.fulcro.inspect.preload]
+                                             :http-root "workspaces/assets"
+                                             :http-port 8086}}
 
           :standalone          {:target           :browser
                                 :output-dir       "standalone/assets/js"
@@ -32,7 +32,8 @@
           :electron-renderer   {:target           :browser
                                 :modules          {:main {:entries [com.wsscode.pathom.viz.electron.renderer.main]}}
                                 :dev              {:compiler-options {:external-config {:guardrails {:throw? false}}}}
-                                :devtools         {:devtools-url "http://localhost:9632"
+                                :devtools         {:preloads     [devtools.preload com.fulcrologic.fulcro.inspect.websocket-preload]
+                                                   :devtools-url "http://localhost:9632"
                                                    :after-load   com.wsscode.pathom.viz.electron.renderer.main/after-load}
                                 :compiler-options {:optimizations :simple}
                                 :output-dir       "shells/electron/js/renderer"
