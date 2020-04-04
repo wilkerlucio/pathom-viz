@@ -11,7 +11,7 @@
 - Add Index Explorer
 
 ## [1.0.4]
-- Improved fuzzy search algoritm
+- Improved fuzzy search algorithm
 - Change style for batch resolver on trace
 
 ## [1.0.3]

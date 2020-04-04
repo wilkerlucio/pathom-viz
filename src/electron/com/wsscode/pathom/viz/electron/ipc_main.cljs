@@ -1,8 +1,12 @@
 (ns com.wsscode.pathom.viz.electron.ipc-main
   (:require
-    ["electron" :refer [ipcMain]]))
+    ["electron" :refer [ipcMain]]
+    [com.wsscode.transit :as wsst]
+    [com.wsscode.pathom.viz.async-utils :as pv.async]))
 
 (defn on-ipc-main-event [f]
   (.on ipcMain "event"
-    (fn [evt arg]
-      (f evt arg))))
+    (pv.async/event-queue!
+      (fn [evt msg]
+        (if-let [msg' (wsst/unpack-json msg)]
+          (f evt msg'))))))

@@ -77,6 +77,10 @@
   [map? vector? => any?]
   (send-fn client-id msg))
 
+(defn- augment-config [config]
+  (assoc config ::socket-conn @channel-socket-server
+                ::send-fn (:send-fn @channel-socket-server)))
+
 (>defn start-ws!
   [{::keys [port on-client-connect
             on-client-disconnect
@@ -94,9 +98,9 @@
     (loop []
       (when-some [{:keys [client-id event] :as message} (<! (:ch-recv @channel-socket-server))]
         (let [[event-type event-data] event
-              config' (assoc config ::socket-conn @channel-socket-server
-                                    ::client-id client-id
-                                    ::send-fn (:send-fn @channel-socket-server))]
+              config' (-> config
+                          (augment-config)
+                          (assoc ::client-id client-id))]
           (case event-type
             :chsk/uidport-open
             (on-client-connect config' message)
@@ -110,4 +114,6 @@
       (recur)))
 
   (log/info "Websocket Server Listening on port" port)
-  (reset! server-atom (start-web-server! config)))
+  (reset! server-atom (start-web-server! config))
+
+  (augment-config config))

@@ -93,10 +93,12 @@
 
 (declare MultiParserManager)
 
-(defn reload-available-parsers [this]
-  (df/load! this (fc/get-ident this) MultiParserManager
-    {:focus [::cp/available-parsers
-             ::manager-id]}))
+(defn reload-available-parsers
+  ([this] (reload-available-parsers this (fc/get-ident this)))
+  ([app ref]
+   (df/load! app ref MultiParserManager
+     {:focus [::cp/available-parsers
+              ::manager-id]})))
 
 (fc/defsc MultiParserManager
   [this {:ui/keys  [parser-assistant parser-url]

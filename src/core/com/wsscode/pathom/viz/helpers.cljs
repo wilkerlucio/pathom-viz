@@ -202,20 +202,38 @@
   [initial-value]
   (into-array (useState initial-value)))
 
+(deftype FulcroReactAtomState [value set-value!]
+  IDeref
+  (-deref [o] value)
+
+  IReset
+  (-reset! [o new-value] (doto new-value set-value!))
+
+  ISwap
+  (-swap! [a f] (set-value! f))
+  (-swap! [a f x] (set-value! #(f % x)))
+  (-swap! [a f x y] (set-value! #(f % x y)))
+  (-swap! [a f x y more] (set-value! #(apply f % x y more))))
+
 (defn use-atom-state [initial-value]
   (let [[value set-value!] (use-state initial-value)]
-    (reify
-      IDeref
-      (-deref [o] value)
+    (->FulcroReactAtomState value set-value!)))
 
-      IReset
-      (-reset! [o new-value] (doto new-value set-value!))
+(deftype FulcroComponentProp [comp prop]
+  IDeref
+  (-deref [o] (-> comp fc/props (get prop)))
 
-      ISwap
-      (-swap! [a f] (set-value! f))
-      (-swap! [a f x] (set-value! #(f % x)))
-      (-swap! [a f x y] (set-value! #(f % x y)))
-      (-swap! [a f x y more] (set-value! #(apply f % x y more))))))
+  IReset
+  (-reset! [o new-value] (fm/set-value! comp prop new-value) new-value)
+
+  ISwap
+  (-swap! [a f] (fm/set-value! comp prop (f @a)))
+  (-swap! [a f x] (fm/set-value! comp prop (f @a x)))
+  (-swap! [a f x y] (fm/set-value! comp prop (f @a x y)))
+  (-swap! [a f x y more] (fm/set-value! comp prop (apply f @a x y more))))
+
+(defn use-component-prop [comp prop]
+  (->FulcroComponentProp comp prop))
 
 ;; hooks
 
@@ -233,33 +251,3 @@
                                      (.on "zoom" apply-zoom))]
                     (.call svg zoom)) [])
      svg-transform)))
-
-(defn react-state->atom-like [[value set-value!]]
-  (reify
-    IDeref
-    (-deref [o] value)
-
-    IReset
-    (-reset! [o new-value] (doto new-value set-value!))
-
-    ISwap
-    (-swap! [a f] (set-value! f))
-    (-swap! [a f x] (set-value! #(f % x)))
-    (-swap! [a f x y] (set-value! #(f % x y)))
-    (-swap! [a f x y more] (set-value! #(apply f % x y more)))))
-
-(deftype FulcroComponentProp [comp prop]
-  IDeref
-  (-deref [o] (-> comp fc/props (get prop)))
-
-  IReset
-  (-reset! [o new-value] (fm/set-value! comp prop new-value) new-value)
-
-  ISwap
-  (-swap! [a f] (fm/set-value! comp prop (f @a)))
-  (-swap! [a f x] (fm/set-value! comp prop (f @a x)))
-  (-swap! [a f x y] (fm/set-value! comp prop (f @a x y)))
-  (-swap! [a f x y more] (fm/set-value! comp prop (apply f @a x y more))))
-
-(defn use-component-prop [comp prop]
-  (->FulcroComponentProp comp prop))

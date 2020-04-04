@@ -26,26 +26,23 @@
 (goog-define DEFAULT_HOST "localhost")
 (goog-define DEFAULT_PORT 8240)
 
-(defonce sente-socket-client (atom nil))
-
 (def backoff-ms #(enc/exp-backoff % {:max 1000}))
 
 (defn start-ws-messaging!
   [{::keys [host path port on-connect on-disconnect on-message
             send-ch]}]
-  (when-not @sente-socket-client
-    (reset! sente-socket-client
-      (sente/make-channel-socket-client! (or path "/chsk") "no-token-desired"
-        {:type           :auto
-         :host           (or host DEFAULT_HOST)
-         :port           (or port DEFAULT_PORT)
-         :protocol       :http
-         :packer         (make-packer {})
-         :wrap-recv-evs? false
-         :backoff-ms-fn  backoff-ms}))
+  (let [sente-socket-client
+        (sente/make-channel-socket-client! (or path "/chsk") "no-token-desired"
+          {:type           :auto
+           :host           (or host DEFAULT_HOST)
+           :port           (or port DEFAULT_PORT)
+           :protocol       :http
+           :packer         (make-packer {})
+           :wrap-recv-evs? false
+           :backoff-ms-fn  backoff-ms})]
 
     ; processing for queue to send data to the server
-    (let [{:keys [state send-fn]} @sente-socket-client]
+    (let [{:keys [state send-fn]} sente-socket-client]
       (go-loop [attempt 1]
         (let [open? (:open? @state)]
           (if open?
@@ -58,7 +55,7 @@
           (recur (if open? 1 (inc attempt))))))
 
     ; processing messages from the server
-    (let [{:keys [state ch-recv]} @sente-socket-client]
+    (let [{:keys [state ch-recv]} sente-socket-client]
       (go-loop [attempt 1]
         (let [open? (:open? @state)]
           (if open?

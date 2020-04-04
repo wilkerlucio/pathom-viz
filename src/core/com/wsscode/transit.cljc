@@ -1,6 +1,7 @@
 (ns com.wsscode.transit
   (:refer-clojure :exclude [read write])
-  (:require [cognitect.transit :as t])
+  (:require [cognitect.transit :as t]
+            #?(:cljs [goog.object :as gobj]))
   #?(:clj (:import (java.io ByteArrayOutputStream ByteArrayInputStream)
                    (com.cognitect.transit WriteHandler))))
 
@@ -39,3 +40,11 @@
      :cljs
      (let [writer (t/writer :json {:handlers cljs-write-handlers})]
        (t/write writer x))))
+
+#?(:cljs
+   (defn envelope-json [msg]
+     #js {:transit-message (write msg)}))
+
+#?(:cljs
+   (defn unpack-json [msg]
+     (some-> (gobj/get msg "transit-message") read)))
