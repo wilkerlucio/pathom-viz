@@ -22,7 +22,7 @@
                   ::p/placeholder-prefixes #{">"}}
      ::p/mutate  pc/mutate-async
      ::p/plugins [(pc/connect-plugin {::pc/register registry})
-                  (p/env-wrap-plugin #(assoc % ::cp/parsers @client-parsers))
+                  (p/env-wrap-plugin #(merge {::cp/parsers @client-parsers} %))
                   p/error-handler-plugin
                   p/elide-special-outputs-plugin
                   p/trace-plugin]}))
