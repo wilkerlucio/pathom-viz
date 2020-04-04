@@ -80,7 +80,7 @@
    => ::channel]
   (message-background! {:com.wsscode.node-ws-server/client-id client-id
                         :edn-query-language.core/query        query
-                        ::pv.async/response-id                (random-uuid)}))
+                        ::pv.async/request-id                 (random-uuid)}))
 
 (>def ::message-type qualified-keyword?)
 
@@ -93,16 +93,18 @@
       (do
         (swap! client-parsers assoc client-id
           (fn [_ tx]
+            (js/console.log "call to the parser with" msg)
+            {}
             (go-promise
               (try
                 (js/console.log "SENDING msg")
-                (<? (request-client-parser!
-                      {:edn-query-language.core/query        tx
-                       :com.wsscode.node-ws-server/client-id client-id}))
+                (let [res (<? (request-client-parser!
+                                {:edn-query-language.core/query        tx
+                                 :com.wsscode.node-ws-server/client-id client-id}))]
+                  (js/console.log "PARSER RESPONSE" res)
+                  res)
                 (catch :default e
-                  (js/console.error "response failed" e))))
-            (js/console.log "call to the parser with" msg)
-            {}))
+                  (js/console.error "response failed" e))))))
 
         (assistant/reload-available-parsers root multi-parser-ref))
 
@@ -110,6 +112,10 @@
       (js/console.log "Disconnect client")
 
       (js/console.warn "Unknown message received" msg))))
+
+(defn electron-handler+responder [root msg]
+  (if-not (pv.async/capture-response! msg)
+    (electron-message-handler root msg)))
 
 (defonce app
   (fapp/fulcro-app
@@ -136,7 +142,7 @@
                  ui/text-sans-13
                  [:a {:text-decoration "none"}]]]
    :use-hooks? true}
-  (use-electron-ipc #(electron-message-handler this %2))
+  (use-electron-ipc #(electron-handler+responder this %2))
   (ui/column (ui/gc :.flex)
     (assistant/multi-parser-manager multi-parser)
     (dom/div :.footer

@@ -7,9 +7,11 @@
     [com.wsscode.transit :as wsst]
     [taoensso.sente.packers.transit :as st]
     [taoensso.sente.server-adapters.express :as sente-express]
-    [taoensso.timbre :as log]))
+    [taoensso.timbre :as log]
+    [com.wsscode.pathom.viz.async-utils :as pv.async]))
 
 (>def ::port pos-int?)
+(>def ::client-id any?)
 
 (>def ::on-client-connect fn?)
 (>def ::on-client-disconnect fn?)
@@ -73,9 +75,15 @@
 
 ;; API
 
-(>defn send-message! [{::keys [send-fn client-id] :as env} msg]
-  [map? vector? => any?]
-  (send-fn client-id msg))
+(>defn send-message!
+  [{::keys [send-fn] :as env} msg]
+  [map? map?
+   => (? ::pv.async/channel)]
+  (let [client-id (or (::client-id msg)
+                      (::client-id env))]
+    (js/console.log "SEND to" client-id)
+    (send-fn client-id [::message msg]))
+  (pv.async/await! msg))
 
 (defn- augment-config [config]
   (assoc config ::socket-conn @channel-socket-server
@@ -101,16 +109,17 @@
               config' (-> config
                           (augment-config)
                           (assoc ::client-id client-id))]
-          (case event-type
-            :chsk/uidport-open
-            (on-client-connect config' message)
-            :chsk/uidport-close
-            (on-client-disconnect config' message)
-            :chsk/ws-ping
-            (js/console.log "ws-ping from client:" client-id)
+          (if-not (pv.async/capture-response! event-data)
+            (case event-type
+              :chsk/uidport-open
+              (on-client-connect config' message)
+              :chsk/uidport-close
+              (on-client-disconnect config' message)
+              :chsk/ws-ping
+              (js/console.log "ws-ping from client:" client-id)
 
-            ; else
-            (on-client-message config' message))))
+              ; else
+              (on-client-message config' message)))))
       (recur)))
 
   (log/info "Websocket Server Listening on port" port)

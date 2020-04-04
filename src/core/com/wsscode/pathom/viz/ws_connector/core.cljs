@@ -7,7 +7,8 @@
     [taoensso.encore :as enc]
     [taoensso.sente :as sente]
     [taoensso.sente.packers.transit :as st]
-    [com.wsscode.transit :as wsst]))
+    [com.wsscode.transit :as wsst]
+    [com.wsscode.pathom.viz.async-utils :as pv.async]))
 
 (>def ::host string?)
 (>def ::port pos-int?)
@@ -31,13 +32,17 @@
 (defn start-ws-messaging!
   [{::keys [host path port on-connect on-disconnect on-message
             send-ch]}]
-  (let [sente-socket-client
+  (let [client-id
+        (str (random-uuid))
+
+        sente-socket-client
         (sente/make-channel-socket-client! (or path "/chsk") "no-token-desired"
           {:type           :auto
            :host           (or host DEFAULT_HOST)
            :port           (or port DEFAULT_PORT)
            :protocol       :http
            :packer         (make-packer {})
+           :client-uuid    client-id
            :wrap-recv-evs? false
            :backoff-ms-fn  backoff-ms})]
 
@@ -48,7 +53,7 @@
           (if open?
             (when-let [msg (<! send-ch)]
               (js/console.log "SEND" msg)
-              (send-fn msg))
+              (send-fn [::message (assoc msg :com.wsscode.node-ws-server/client-id client-id)]))
             (do
               (js/console.log (str "Waiting for channel to be ready"))
               (async/<! (async/timeout (backoff-ms attempt)))))
@@ -61,7 +66,8 @@
           (if open?
             (do (let [{:keys [id ?data] :as evt} (<! ch-recv)]
                   (js/console.log "MSG RECEIVED" (dissoc evt :ch-recv))
-                  (on-message {} [id ?data])))
+                  (if (= id :com.wsscode.node-ws-server/message)
+                    (on-message {} ?data))))
             (do
               (js/console.log (str "Waiting for channel to be ready"))
               (async/<! (async/timeout (backoff-ms attempt)))))
@@ -75,14 +81,29 @@
 ;;;;
 
 (defn send-message! [send-ch msg]
-  (put! send-ch [::message msg]))
+  (put! send-ch msg))
+
+(defn handle-pathom-viz-message
+  [{::keys [parser send-ch]}
+   {::keys                        [type]
+    :edn-query-language.core/keys [query]
+    :as                           msg}]
+  (case type
+    ::parser-request
+    (let-chan [res (parser {} query)]
+      (js/console.log "REPLY" send-ch res)
+      (send-message! send-ch (pv.async/reply-message msg res)))
+
+    (js/console.warn "Unknown message received" msg)))
 
 (defn connect-parser [config parser]
-  (let [send-ch (async/chan (async/dropping-buffer 50000))]
+  (let [send-ch (async/chan (async/dropping-buffer 50000))
+        config' (assoc config ::parser parser ::send-ch send-ch)]
     (connect-ws!
       (merge
         {::on-message
          (fn [_ msg]
+           (handle-pathom-viz-message config' msg)
            (js/console.log "NEW MSG" msg))
 
          ::send-ch

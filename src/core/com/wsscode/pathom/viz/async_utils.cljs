@@ -5,39 +5,62 @@
             [com.wsscode.async.async-cljs :refer [<!maybe go-promise]]))
 
 (>def ::channel any?)
+(>def ::request-id any?)
 (>def ::response-id any?)
+(>def ::request-response any?)
 
 (def ^:dynamic *timeout* 5000)
 
 (defonce response-notifiers* (atom {}))
 
 (>defn await-response!
-  [response-id]
-  [::response-id => ::channel]
+  [{::keys [request-id] :as msg}]
+  [::request-id => ::channel]
   (let [chan  (async/promise-chan)
         timer (async/timeout *timeout*)]
-    (swap! response-notifiers* assoc response-id chan)
+    (swap! response-notifiers* assoc request-id chan)
     (go-promise
-      (let [[val port] (async/alts! [chan timer] :priority true)]
-        (swap! response-notifiers* dissoc response-id)
-        (if (= port chan)
-          val
+      (let [[val ch] (async/alts! [chan timer] :priority true)]
+        (swap! response-notifiers* dissoc request-id)
+        (if (= ch timer)
           (ex-info "Response timeout" {:timeout      *timeout*
-                                       ::response-id response-id}))))))
+                                       ::request-id  request-id
+                                       :request-keys (keys msg)})
+          val)))))
 
-(>defn await! [{::keys [response-id]}]
-  [(s/keys :opt [::response-id])
+(>defn await! [{::keys [request-id] :as msg}]
+  [(s/keys :opt [::request-id])
    => (? ::channel)]
-  (if response-id
-    (await-response! response-id)))
+  (if request-id
+    (await-response! msg)))
 
 (>defn resolve-response
   "Notify to a responder that the data is ready."
-  [response-id msg]
-  [::response-id any? => any?]
-  (if-let [chan (get @response-notifiers* response-id)]
+  [request-id msg]
+  [::request-id any? => any?]
+  (if-let [chan (get @response-notifiers* request-id)]
     (async/put! chan msg)
-    (js/console.warn "Tried to notify unavailable responder" response-id)))
+    (js/console.warn "Tried to notify unavailable responder" request-id)))
+
+(>defn capture-response!
+  [{::keys [response-id request-response]}]
+  [(? (s/keys :opt [::response-id ::request-response]))
+   => boolean?]
+  (if request-response
+    (do
+      (resolve-response response-id request-response)
+      true)
+    false))
+
+(>defn reply-message
+  "Helper to make a response map for a given message with a request-id.
+
+  Use this to generate response data from async events."
+  [{::keys [request-id]} value]
+  [(s/keys :req [::request-id]) any?
+   => (s/keys :req [::response-id ::request-response])]
+  {::response-id      request-id
+   ::request-response value})
 
 (>defn event-queue!
   "Add listener to object in event-name using `.on`, this will use a core
