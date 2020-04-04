@@ -954,7 +954,7 @@
                                   :overflow    "auto"}]]
    :initLocalState (fn [this]
                      {:search
-                      #(fc/transact! this [`(search {::text ~(pvh/target-value %)})])
+                      #(fc/transact! this [(search {::text (pvh/target-value %)})])
 
                       :toggle-attribute-collapse
                       #(fm/toggle! this :ui/collapse-attributes?)
@@ -963,19 +963,7 @@
                       #(fm/toggle! this :ui/collapse-resolvers?)
 
                       :toggle-mutation-collapse
-                      #(fm/toggle! this :ui/collapse-mutations?)
-
-                      :all-attributes
-                      (let [props    (fc/props this)
-                            computed (fc/get-computed props)]
-                        (dom/div
-                          (attribute-link {::pc/attribute #{}} computed)
-                          (into []
-                                (comp
-                                  (filter (comp keyword? ::pc/attribute))
-                                  (map (fn [{::pc/keys [attribute]}]
-                                         (attribute-link {::pc/attribute attribute} computed))))
-                                (::attributes props))))})}
+                      #(fm/toggle! this :ui/collapse-mutations?)})}
   (ui/column (ui/gc :.flex)
     (ui/text-field {:placeholder   "Filter"
                     :value         (or text "")
@@ -1162,8 +1150,8 @@
               (sort-by ::fuzzy/string))
          (->> index-attributes
               vals
-              (map #(hash-map ::fuzzy/string (pr-str (::pc/attribute %))
-                              ::search-value (::pc/attribute %)
+              (map #(hash-map ::fuzzy/string (pr-str (::pc/attribute-id %))
+                              ::search-value (::pc/attribute-id %)
                               ::search-type ::search-type-attribute))
               (sort-by ::fuzzy/string)))
        vec))
