@@ -9,7 +9,7 @@
 
  :aliases
  {:provided
-  {:extra-deps {com.fulcrologic/fulcro     {:mvn/version "3.1.23-SNAPSHOT"}
+  {:extra-deps {com.fulcrologic/fulcro     {:mvn/version "3.2.0"}
                 com.wsscode/pathom         {:mvn/version "2.2.28"}
                 io.socket/socket.io-client {:mvn/version "1.0.0"}
                 org.clojure/clojure        {:mvn/version "1.10.1"}
