@@ -1150,9 +1150,11 @@
               (sort-by ::fuzzy/string))
          (->> index-attributes
               vals
-              (map #(hash-map ::fuzzy/string (pr-str (::pc/attribute-id %))
-                              ::search-value (::pc/attribute-id %)
-                              ::search-type ::search-type-attribute))
+              (map #(let [attr-name (or (::pc/attribute-id %)
+                                        (::pc/attribute %))]
+                      (hash-map ::fuzzy/string (pr-str attr-name)
+                                ::search-value attr-name
+                                ::search-type ::search-type-attribute)))
               (sort-by ::fuzzy/string)))
        vec))
 
