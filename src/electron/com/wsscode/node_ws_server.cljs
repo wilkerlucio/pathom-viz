@@ -4,11 +4,11 @@
     [cljs.spec.alpha :as s]
     [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
     [com.wsscode.async.async-cljs :refer [go <!]]
+    [com.wsscode.async.processing :as wap]
     [com.wsscode.transit :as wsst]
     [taoensso.sente.packers.transit :as st]
     [taoensso.sente.server-adapters.express :as sente-express]
-    [taoensso.timbre :as log]
-    [com.wsscode.pathom.viz.async-utils :as pv.async]))
+    [taoensso.timbre :as log]))
 
 (>def ::port pos-int?)
 (>def ::client-id any?)
@@ -78,12 +78,12 @@
 (>defn send-message!
   [{::keys [send-fn] :as env} msg]
   [map? map?
-   => (? ::pv.async/channel)]
+   => (? ::wap/channel)]
   (let [client-id (or (::client-id msg)
                       (::client-id env))]
     (js/console.log "SEND to" client-id)
     (send-fn client-id [::message msg]))
-  (pv.async/await! msg))
+  (wap/await! msg))
 
 (defn- augment-config [config]
   (assoc config ::socket-conn @channel-socket-server
@@ -109,7 +109,7 @@
               config' (-> config
                           (augment-config)
                           (assoc ::client-id client-id))]
-          (if-not (pv.async/capture-response! event-data)
+          (if-not (wap/capture-response! event-data)
             (case event-type
               :chsk/uidport-open
               (on-client-connect config' message)

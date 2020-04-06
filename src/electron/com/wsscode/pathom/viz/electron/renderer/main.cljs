@@ -9,9 +9,9 @@
             [com.fulcrologic.fulcro.components :as fc]
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [com.wsscode.async.async-cljs :refer [go-promise <?]]
+            [com.wsscode.async.processing :as wap]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.core :as p]
-            [com.wsscode.pathom.viz.async-utils :as pv.async]
             [com.wsscode.pathom.viz.electron.react.use-electron-ipc :refer [use-electron-ipc]]
             [com.wsscode.pathom.viz.helpers :as pvh]
             [com.wsscode.pathom.viz.local-parser :as local.parser]
@@ -30,7 +30,7 @@
 
 (defn message-background! [msg]
   (.send ipcRenderer "event" (wsst/envelope-json msg))
-  (pv.async/await! msg))
+  (wap/await! msg))
 
 (defn electron-message-handler [root {::keys                           [message-type]
                                       :com.wsscode.node-ws-server/keys [client-id]
@@ -46,7 +46,7 @@
                 (<? (message-background!
                       {:edn-query-language.core/query        tx
                        :com.wsscode.node-ws-server/client-id client-id
-                       ::pv.async/request-id                 (random-uuid)}))
+                       ::wap/request-id                      (random-uuid)}))
                 (catch :default e
                   (js/console.error "response failed" e))))))
 

@@ -1,14 +1,14 @@
 (ns com.wsscode.pathom.viz.ws-connector.core
   (:require
-    [com.wsscode.async.async-cljs :refer [let-chan]]
     [cljs.core.async :as async :refer [>! <! go go-loop put!]]
-    [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
     [clojure.pprint :refer [pprint]]
+    [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
+    [com.wsscode.async.async-cljs :refer [let-chan]]
+    [com.wsscode.async.processing :as wap]
+    [com.wsscode.transit :as wsst]
     [taoensso.encore :as enc]
     [taoensso.sente :as sente]
-    [taoensso.sente.packers.transit :as st]
-    [com.wsscode.transit :as wsst]
-    [com.wsscode.pathom.viz.async-utils :as pv.async]))
+    [taoensso.sente.packers.transit :as st]))
 
 (>def ::host string?)
 (>def ::port pos-int?)
@@ -91,8 +91,7 @@
   (case type
     ::parser-request
     (let-chan [res (parser {} query)]
-      (js/console.log "REPLY" send-ch res)
-      (send-message! send-ch (pv.async/reply-message msg res)))
+      (send-message! send-ch (wap/reply-message msg res)))
 
     (js/console.warn "Unknown message received" msg)))
 
@@ -103,8 +102,7 @@
       (merge
         {::on-message
          (fn [_ msg]
-           (handle-pathom-viz-message config' msg)
-           (js/console.log "NEW MSG" msg))
+           (handle-pathom-viz-message config' msg))
 
          ::send-ch
          send-ch}
