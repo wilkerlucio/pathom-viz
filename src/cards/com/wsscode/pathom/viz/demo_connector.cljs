@@ -21,7 +21,7 @@
 (comment
   (def tracked-parser
     (ws-conn/connect-parser
-      {}
+      {::ws-conn/parser-id "tracked parser"}
       parser))
 
   (tracked-parser {} [:works]))

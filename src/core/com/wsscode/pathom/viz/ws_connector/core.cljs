@@ -16,6 +16,7 @@
 (>def ::on-connect fn?)
 (>def ::on-disconnect fn?)
 (>def ::on-message fn?)
+(>def ::parser-id any?)
 
 (defn make-packer
   "Returns a json packer for use with sente."
@@ -31,9 +32,9 @@
 
 (defn start-ws-messaging!
   [{::keys [host path port on-connect on-disconnect on-message
-            send-ch]}]
+            send-ch parser-id]}]
   (let [client-id
-        (str (random-uuid))
+        (str (or parser-id (random-uuid)))
 
         sente-socket-client
         (sente/make-channel-socket-client! (or path "/chsk") "no-token-desired"
