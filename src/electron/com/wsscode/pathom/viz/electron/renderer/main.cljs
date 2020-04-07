@@ -18,7 +18,8 @@
             [com.wsscode.pathom.viz.parser-assistant :as assistant]
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.wsscode.transit :as wsst]
-            [goog.object :as gobj]))
+            [goog.object :as gobj]
+            [clojure.set :as set]))
 
 (>def ::channel any?)
 (>def ::message-type qualified-keyword?)
@@ -32,30 +33,76 @@
   (.send ipcRenderer "event" (wsst/envelope-json msg))
   (wap/await! msg))
 
-(defn electron-message-handler [root {::keys                           [message-type]
-                                      :com.wsscode.node-ws-server/keys [client-id]
-                                      :as                              msg}]
-  (let [multi-parser-ref (:ui/multi-parser (fc/component->state-map root))]
-    (case message-type
-      ::connect-client
-      (do
-        (swap! local.parser/client-parsers assoc client-id
-          (fn [_ tx]
-            (go-promise
-              (try
-                (<? (message-background!
-                      {:edn-query-language.core/query        tx
-                       :com.wsscode.node-ws-server/client-id client-id
-                       ::wap/request-id                      (random-uuid)}))
-                (catch :default e
-                  (js/console.error "response failed" e))))))
+(defn create-background-parser [client-id]
+  (fn [_ tx]
+    (go-promise
+      (try
+        (<? (message-background!
+              {:com.wsscode.pathom.viz.electron.background.server/type
+               :com.wsscode.pathom.viz.electron.background.server/request-parser
 
-        (assistant/reload-available-parsers root multi-parser-ref))
+               :edn-query-language.core/query
+               tx
 
-      ::disconnect-client
-      (js/console.log "Disconnect client")
+               :com.wsscode.node-ws-server/client-id
+               client-id
 
-      (js/console.warn "Unknown message received" msg))))
+               ::wap/request-id
+               (random-uuid)}))
+        (catch :default e
+          (js/console.error "response failed" e))))))
+
+(defn add-background-parser! [client-id]
+  (swap! local.parser/client-parsers assoc client-id (create-background-parser client-id)))
+
+(defn multi-parser-ref [this]
+  (:ui/multi-parser (fc/component->state-map this)))
+
+(defn reload-parsers-ui! [this]
+  (assistant/reload-available-parsers this (multi-parser-ref this)))
+
+(defn electron-message-handler
+  [this {::keys                           [message-type]
+         :com.wsscode.node-ws-server/keys [client-id]
+         :as                              msg}]
+  (case message-type
+    ::connect-client
+    (do
+      (add-background-parser! client-id)
+      (reload-parsers-ui! this))
+
+    ::disconnect-client
+    (js/console.log "Disconnect client")
+
+    (js/console.warn "Unknown message received" msg)))
+
+(defn sync-background-parsers [this]
+  (go-promise
+    (try
+      (let [background-parsers (<? (message-background!
+                                     {:com.wsscode.pathom.viz.electron.background.server/type
+                                      :com.wsscode.pathom.viz.electron.background.server/connected-parsers
+
+                                      ::wap/request-id
+                                      (wap/random-request-id)}))
+            local-parsers      (set (keys @local.parser/client-parsers))
+            missing            (set/difference background-parsers local-parsers)
+            ;remove             (set/difference local-parsers background-parsers)
+            ]
+        (doseq [client-id missing]
+          (add-background-parser! client-id))
+
+        #_
+        (fc/transact! this
+          (into []
+                (map (fn [cid]
+                       `(assistant/remove-parser {:com.wsscode.pathom.viz.client-parser/parser-id cid})))
+                remove)
+          {:ref (multi-parser-ref this)})
+
+        (reload-parsers-ui! this))
+      (catch :default e
+        (js/console.error "Error syncing background parsers" e)))))
 
 ;; App Root Container
 
@@ -79,6 +126,7 @@
                  [:a {:text-decoration "none"}]]]
    :use-hooks? true}
   (use-electron-ipc #(electron-message-handler this %2))
+  (pvh/use-effect #(sync-background-parsers this) [])
   (ui/column (ui/gc :.flex)
     (assistant/multi-parser-manager multi-parser)
     (dom/div :.footer

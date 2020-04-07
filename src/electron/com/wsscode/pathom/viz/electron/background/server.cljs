@@ -21,6 +21,11 @@
   (.send web-contents "event" (wsst/envelope-json msg))
   (wap/await! msg))
 
+(defonce connected-clients* (atom #{}))
+
+(defn handle-client-message [server msg]
+  (js/console.log "NEW MSG"))
+
 (defn start-ws! [server]
   (ws-server/start-ws!
     {::ws-server/port
@@ -28,38 +33,39 @@
 
      ::ws-server/on-client-connect
      (fn [{::ws-server/keys [client-id] :as env} message]
-       (js/console.log "Client connected")
-       (cljs.pprint/pprint message)
-       (cljs.pprint/pprint env)
+       (js/console.log "Client connect" client-id)
+
+       (swap! connected-clients* conj client-id)
+
        (message-renderer! server
          {:com.wsscode.pathom.viz.electron.renderer.main/message-type
           :com.wsscode.pathom.viz.electron.renderer.main/connect-client
 
           ::ws-server/client-id
-          client-id})
-       #_(ws-server/send-message! env
-           {::ws-server/message-type :hello/dear
-            ::ws-server/message-data "Hello Dear"
-            ::wap/request-id         (random-uuid)}))
+          client-id}))
 
      ::ws-server/on-client-disconnect
-     (fn [_ client]
-       (js/console.log "get out"))
+     (fn [{::ws-server/keys [client-id] :as env} client]
+       (js/console.log "Client disconnect" client-id)
+
+       (swap! connected-clients* disj client-id)
+
+       (message-renderer! server
+         {:com.wsscode.pathom.viz.electron.renderer.main/message-type
+          :com.wsscode.pathom.viz.electron.renderer.main/disconnect-client
+
+          ::ws-server/client-id
+          client-id}))
 
      ::ws-server/on-client-message
-     (fn [_ msg]
-       (js/console.log "NEW MSG")
-       #_ (cljs.pprint/pprint msg))}))
+     handle-client-message}))
 
 (defn handle-renderer-message
-  [server message]
+  [server {::keys [type] :as message}]
   ;; LANDMARK: Hook up of incoming messages from Electron renderer
-  (cljs.pprint/pprint ["RENDER MSG" server message])
-  (cond
-    (:edn-query-language.core/query message)
+  (case type
+    ::request-parser
     (go-promise
-      (js/console.log "requesting data from client parser")
-      (cljs.pprint/pprint server)
       (try
         (let [res (<? (ws-server/send-message! server
                         {:com.wsscode.pathom.viz.ws-connector.core/type
@@ -73,12 +79,14 @@
 
                          ::wap/request-id
                          (random-uuid)}))]
-          (js/console.log "sending message back")
           (message-renderer! server
             (wap/reply-message message res)))
         (catch :default e
           (js/console.error "Error handling response")
-          (cljs.pprint/pprint (ex-data e)))))))
+          (cljs.pprint/pprint (ex-data e)))))
+
+    ::connected-parsers
+    (message-renderer! server (wap/reply-message message @connected-clients*))))
 
 (defonce started* (atom false))
 
@@ -86,9 +94,6 @@
   [(s/keys :req [::web-contents]) => any?]
   (when-not @started*
     (reset! started* true)
-
-    (.on web-contents "dom-ready"
-      (fn []
-        (let [server (merge server (start-ws! server))]
-          (ipc-main/on-ipc-main-event
-            #(handle-renderer-message server %2)))))))
+    (let [server (merge server (start-ws! server))]
+      (ipc-main/on-ipc-main-event
+        #(handle-renderer-message server %2)))))

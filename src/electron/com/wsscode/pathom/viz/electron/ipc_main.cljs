@@ -9,4 +9,5 @@
     (wap/event-queue!
       (fn [evt msg]
         (if-let [msg' (wsst/unpack-json msg)]
-          (f evt msg'))))))
+          (if-not (wap/capture-response! msg')
+            (f evt msg')))))))

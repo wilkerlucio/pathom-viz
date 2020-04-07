@@ -100,6 +100,11 @@
      {:focus [::cp/available-parsers
               ::manager-id]})))
 
+(defn add-from-url! [this]
+  (when-let [parser-url (js/prompt "Type the URL for the parser you want to add." "https://")]
+    (fc/transact! this [(add-parser-from-url {::cp/url parser-url})])
+    (reload-available-parsers this)))
+
 (fc/defsc MultiParserManager
   [this {:ui/keys  [parser-assistant parser-url]
          ::cp/keys [available-parsers]
@@ -125,30 +130,33 @@
                           :align-items     "center"
                           :justify-content "center"}]]
    :use-hooks? true}
-  (pvh/use-effect #(reload-available-parsers this) [])
+  (let [reload (pvh/use-callback #(reload-available-parsers this))]
+    (pvh/use-effect reload [])
 
-  (ui/column (ui/gc :.flex)
-    #_ (ui/row {}
-      (dom/input {:placeholder "http://localhost/graph"
-                  :style       {:width "300px"}
-                  :value       parser-url
-                  :onChange    #(fm/set-string! this :ui/parser-url :event %)})
-      (ui/button {:onClick #(do
-                              (fc/transact! this [(add-parser-from-url {::cp/url parser-url})])
-                              (reload-available-parsers this))}
-        "Add parser from URL"))
-    (ui/tab-container {}
-      (ui/tab-nav {:classes             [(if parser-assistant :.border-collapse-bottom)]
-                   ::ui/active-tab-id   active-tab-id
-                   ::ui/tab-right-tools (ui/button {} "+")}
-        (for [p available-parsers]
-          [{::ui/tab-id       p
-            ::ui/on-tab-close #(fc/transact! this [(remove-parser {::cp/parser-id p})])
-            :onClick          #(select-parser this p)}
-           (str p)]))
+    (ui/column (ui/gc :.flex)
+      #_(ui/row {}
+          (dom/input {:placeholder "http://localhost/graph"
+                      :style       {:width "300px"}
+                      :value       parser-url
+                      :onChange    #(fm/set-string! this :ui/parser-url :event %)})
+          (ui/button {:onClick #(do
+                                  (fc/transact! this [(add-parser-from-url {::cp/url parser-url})])
+                                  (reload-available-parsers this))}
+            "Add parser from URL"))
+      (ui/tab-container {}
+        (ui/tab-nav {:classes             [(if parser-assistant :.border-collapse-bottom)]
+                     ::ui/active-tab-id   active-tab-id
+                     ::ui/tab-right-tools (ui/row {:classes [:.center]}
+                                            (ui/button {:onClick (pvh/use-callback reload)} "Reload parsers")
+                                            (ui/button {:onClick (pvh/use-callback #(add-from-url! this))} "+"))}
+          (for [p available-parsers]
+            [{::ui/tab-id       p
+              ::ui/on-tab-close #(fc/transact! this [(remove-parser {::cp/parser-id p})])
+              :onClick          #(select-parser this p)}
+             (str p)]))
 
-      (if parser-assistant
-        (parser-assistant-ui parser-assistant)
-        (dom/div :.blank "Select a parser")))))
+        (if parser-assistant
+          (parser-assistant-ui parser-assistant)
+          (dom/div :.blank "Select a parser"))))))
 
-(def multi-parser-manager (fc/factory MultiParserManager {:keyfn ::manager-id}))
+(def multi-parser-manager (fc/computed-factory MultiParserManager {:keyfn ::manager-id}))
