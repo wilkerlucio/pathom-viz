@@ -1,6 +1,6 @@
 (ns com.wsscode.pathom.viz.helpers
   (:require ["react-draggable" :refer [DraggableCore]]
-            ["react" :refer [useEffect useState]]
+            ["react" :refer [useEffect useState useCallback]]
             ["d3" :as d3]
             [cljs.core.async :refer [go <!]]
             [cljs.reader :refer [read-string]]
@@ -196,6 +196,12 @@
    (useEffect (wrap-effect f)))
   ([f args]
    (useEffect (wrap-effect f) (to-array args))))
+
+(defn use-callback
+  ([cb]
+   (useCallback cb #js []))
+  ([cb args]
+   (useCallback cb (to-array args))))
 
 (defn use-state
   "A simple wrapper around React/useState. Returns a cljs vector for easy destructuring"
