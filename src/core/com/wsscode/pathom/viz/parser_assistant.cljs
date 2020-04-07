@@ -79,7 +79,7 @@
 (fm/defmutation remove-parser [{::cp/keys [parser-id]}]
   (action [{:keys [state ref]}]
     (swap! state update-in (conj ref ::cp/available-parsers) disj parser-id)
-    (if (= (get-in @state (conj ref :ui/parser-assistant ::cp/parser-id))
+    (if (= (second (get-in @state (conj ref :ui/parser-assistant)))
            parser-id)
       (swap! state update-in ref assoc :ui/parser-assistant nil)))
   (remote [{:keys [ast]}]
