@@ -8,6 +8,8 @@
 
 (defonce web-contents* (atom nil))
 
+(goog-define DEV false)
+
 (defn create-window []
   (let [win          (electron/BrowserWindow. #js {:width          1200
                                                    :height         800
@@ -16,7 +18,7 @@
     (.loadURL win (url/format #js {:pathname (path/join js/__dirname ".." ".." "index.html")
                                    :protocol "file:"
                                    :slashes  "true"}))
-    (.openDevTools web-contents)
+    (if DEV (.openDevTools web-contents))
     (reset! web-contents* web-contents)
     (server/start! {::server/web-contents web-contents})))
 

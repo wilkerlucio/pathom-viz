@@ -23,7 +23,8 @@
 
           :electron-background {:target           :node-script
                                 :main             com.wsscode.pathom.viz.electron.background.main/init
-                                :dev              {:compiler-options {:external-config {:guardrails {:throw? false}}}}
+                                :dev              {:compiler-options {:external-config {:guardrails {:throw? false}}}
+                                                   :closure-defines  {com.wsscode.pathom.viz.electron.background.main/DEV true}}
                                 :devtools         {:devtools-url "http://localhost:9632"
                                                    :after-load   com.wsscode.pathom.viz.electron.background.main/after-load}
                                 :compiler-options {:optimizations :simple}
