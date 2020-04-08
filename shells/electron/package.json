@@ -9,7 +9,7 @@
     "email": "wilkerlucio@gmail.com"
   },
   "license": "MIT",
-  "repository": "https://github.com:/wilkerlucio/pathom-viz.git",
+  "repository": "https://github.com/wilkerlucio/pathom-viz.git",
   "dependencies": {
     "electron-settings": "^3.2.0",
     "express": "^4.16.3",
