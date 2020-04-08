@@ -1,6 +1,6 @@
 (ns com.wsscode.pathom.viz.helpers
   (:require ["react-draggable" :refer [DraggableCore]]
-            ["react" :refer [useEffect useLayoutEffect useState useCallback useMemo]]
+            ["react" :as react]
             ["d3" :as d3]
             [cljs.core.async :refer [go <!]]
             [cljs.reader :refer [read-string]]
@@ -204,34 +204,52 @@
         res
         js/undefined))))
 
-(defn use-effect
-  ([f]
-   (useEffect (wrap-effect f)))
-  ([f args]
-   (useEffect (wrap-effect f) (to-array args))))
-
-(defn use-layout-effect
-  ([f]
-   (useLayoutEffect (wrap-effect f)))
-  ([f args]
-   (useLayoutEffect (wrap-effect f) (to-array args))))
-
-(defn use-callback
-  ([cb]
-   (useCallback cb #js []))
-  ([cb args]
-   (useCallback cb (to-array args))))
-
-(defn use-memo
-  ([cb]
-   (useMemo cb))
-  ([cb args]
-   (useMemo cb (to-array args))))
-
 (defn use-state
   "A simple wrapper around React/useState. Returns a cljs vector for easy destructuring"
   [initial-value]
-  (into-array (useState initial-value)))
+  (into-array (react/useState initial-value)))
+
+(defn use-effect
+  ([f]
+   (react/useEffect (wrap-effect f)))
+  ([f args]
+   (react/useEffect (wrap-effect f) (to-array args))))
+
+(defn use-context
+  [ctx]
+  (react/useContext ctx))
+
+(defn use-reducer
+  [reducer initial-arg init]
+  #_(into-array (useReducer)))
+
+(defn use-callback
+  ([cb]
+   (react/useCallback cb #js []))
+  ([cb args]
+   (react/useCallback cb (to-array args))))
+
+(defn use-memo
+  ([cb]
+   (react/useMemo cb))
+  ([cb args]
+   (react/useMemo cb (to-array args))))
+
+(defn use-ref
+  ([] (react/useRef nil))
+  ([value] (react/useRef value)))
+
+(defn use-imperative-handler [ref f]
+  (react/useImperativeHandler ref f))
+
+(defn use-layout-effect
+  ([f]
+   (react/useLayoutEffect (wrap-effect f)))
+  ([f args]
+   (react/useLayoutEffect (wrap-effect f) (to-array args))))
+
+(defn use-debug-value [value]
+  (react/useDebugValue value))
 
 (deftype FulcroReactAtomState [value set-value!]
   IDeref
