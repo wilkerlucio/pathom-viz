@@ -78,6 +78,37 @@
                  props)
         child))))
 
+(defn resolve-path
+  "Walks a db path, when find an ident it resets the path to that ident. Use to realize paths of relations."
+  [state path]
+  (loop [[h & t] path
+         new-path []]
+    (if h
+      (let [np (conj new-path h)
+            c  (get-in state np)]
+        (if (eql/ident? c)
+          (recur t c)
+          (recur t (conj new-path h))))
+      new-path)))
+
+(defn swap-in!
+  "Like swap! but starts at the ref from `env`, adds in supplied `path` elements (resolving across idents if necessary).
+   Finally runs an update-in on that resultant path with the given `args`.
+
+   Roughly equivalent to:
+
+   ```
+   (swap! (:state env) update-in (resolve-path @state (into (:ref env) path)) args)
+   ```
+
+   with a small bit of additional sanity checking.
+   "
+  [{:keys [state ref]} path & args]
+  (let [path (resolve-path @state (into ref path))]
+    (if (and path (get-in @state path))
+      (apply swap! state update-in path args)
+      @state)))
+
 (defn pprint [x]
   (with-out-str (cljs.pprint/pprint x)))
 
@@ -231,6 +262,11 @@
   (let [[value set-value!] (use-state initial-value)]
     (->FulcroReactAtomState value set-value!)))
 
+(defn use-persistent-state [store-key initial-value]
+  (let [[value set-value!] (use-state (ls/get store-key initial-value))
+        set-persistent! (fn [x] (ls/set! store-key x) (doto x set-value!))]
+    (->FulcroReactAtomState value set-persistent!)))
+
 (deftype FulcroComponentProp [comp prop]
   IDeref
   (-deref [o] (-> comp fc/props (get prop)))
@@ -263,3 +299,28 @@
                                      (.on "zoom" apply-zoom))]
                     (.call svg zoom)) [])
      svg-transform)))
+
+;; visual helpers
+
+(fc/defsc DragResize2
+  [this {:keys [state axis props key] :or {axis "y"}}]
+  {:use-hooks? true}
+  (let [start      (use-atom-state nil)
+        start-size (use-atom-state nil)]
+    (js/React.createElement DraggableCore
+      #js {:key     (or key "dragHandler")
+           :onStart (fn [e dd]
+                      (reset! start (gobj/get dd axis))
+                      (reset! start-size @state))
+           :onDrag  (fn [e dd]
+                      (let [start    @start
+                            size     @start-size
+                            value    (gobj/get dd axis)
+                            new-size (+ size (if (= "x" axis) (- value start) (- start value)))]
+                        (reset! state new-size)))}
+      (dom/div (merge {:style {:pointerEvents "all"
+                               :cursor        (if (= "x" axis) "ew-resize" "ns-resize")}}
+                 props)
+        (dom/div)))))
+
+(def drag-resize2 (fc/factory DragResize2))

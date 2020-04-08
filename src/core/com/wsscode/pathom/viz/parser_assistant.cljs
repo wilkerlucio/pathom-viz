@@ -5,16 +5,17 @@
             [com.fulcrologic.fulcro.data-fetch :as df]
             [com.fulcrologic.fulcro.mutations :as fm]
             [com.wsscode.pathom.viz.client-parser :as cp]
-            [com.wsscode.pathom.viz.index-explorer :as index.explorer]
-            [com.wsscode.pathom.viz.query-editor :as query.editor]
+            [com.wsscode.pathom.viz.index-explorer :as index-explorer]
+            [com.wsscode.pathom.viz.query-editor :as query-editor]
+            [com.wsscode.pathom.viz.request-history :as request-history]
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.wsscode.pathom.viz.helpers :as pvh]))
 
-(defn initialize-parser-assistent [this]
+(defn initialize-parser-assistant [this]
   (let [{::cp/keys [parser-id] :as props} (fc/props this)]
-    (query.editor/load-indexes this {::query.editor/id (-> props :ui/query-editor ::query.editor/id)
+    (query-editor/load-indexes this {::query-editor/id (-> props :ui/query-editor ::query-editor/id)
                                      ::cp/parser-id    parser-id})
-    (index.explorer/load-indexes this {::index.explorer/id (-> props :ui/index-explorer ::index.explorer/id)
+    (index-explorer/load-indexes this {::index-explorer/id (-> props :ui/index-explorer ::index-explorer/id)
                                        ::cp/parser-id      parser-id})))
 
 (defn assoc-child [m path value]
@@ -22,17 +23,18 @@
     (assoc-in m path value)))
 
 (fc/defsc ParserAssistant
-  [this {:ui/keys  [query-editor index-explorer]
+  [this {:ui/keys  [query-editor index-explorer request-history]
          ::ui/keys [active-tab-id]}]
   {:pre-merge  (fn [{:keys [current-normalized data-tree]}]
                  (let [parser-id (or (::cp/parser-id data-tree)
                                      (::cp/parser-id current-normalized)
                                      ::singleton)]
-                   (-> (merge {::assistant-id     (random-uuid)
-                               ::cp/parser-id     parser-id
-                               ::ui/active-tab-id ::tab-query
-                               :ui/query-editor   {}
-                               :ui/index-explorer {}}
+                   (-> (merge {::assistant-id      (random-uuid)
+                               ::cp/parser-id      parser-id
+                               ::ui/active-tab-id  ::tab-query
+                               :ui/query-editor    {::query-editor/id parser-id}
+                               :ui/index-explorer  {::index-explorer/id parser-id}
+                               :ui/request-history {::request-history/id parser-id}}
                          current-normalized data-tree)
                        (assoc-child [:ui/query-editor ::cp/parser-id] parser-id)
                        (assoc-child [:ui/index-explorer ::cp/parser-id] parser-id))))
@@ -40,10 +42,11 @@
    :query      [::assistant-id
                 ::ui/active-tab-id
                 ::cp/parser-id
-                {:ui/query-editor (fc/get-query query.editor/QueryEditor)}
-                {:ui/index-explorer (fc/get-query index.explorer/IndexExplorer)}]
+                {:ui/query-editor (fc/get-query query-editor/QueryEditor)}
+                {:ui/index-explorer (fc/get-query index-explorer/IndexExplorer)}
+                {:ui/request-history (fc/get-query request-history/RequestHistory)}]
    :use-hooks? true}
-  (pvh/use-effect #(initialize-parser-assistent this) [])
+  (pvh/use-effect #(initialize-parser-assistant this) [])
 
   (ui/tab-container {}
     (ui/tab-nav {:classes           [:.border-collapse-bottom]
@@ -54,13 +57,13 @@
       [{::ui/tab-id ::tab-requests} "Requests"])
     (case active-tab-id
       ::tab-query
-      (query.editor/query-editor query-editor)
+      (query-editor/query-editor query-editor)
 
       ::tab-index-explorer
-      (index.explorer/index-explorer index-explorer)
+      (index-explorer/index-explorer index-explorer)
 
       ::tab-requests
-      (dom/div "requests")
+      (request-history/request-history request-history)
 
       (dom/div "Invalid page"))))
 

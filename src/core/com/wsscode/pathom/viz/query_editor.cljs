@@ -18,6 +18,7 @@
             [com.wsscode.pathom.viz.lib.local-storage :as ls]
             [com.wsscode.pathom.viz.query-plan :as plan-view]
             [com.wsscode.pathom.viz.trace :as pvt]
+            [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
             [com.wsscode.pathom.viz.ui.kit :as ui]))
 
 (declare QueryEditor TransactionResponse)
@@ -60,14 +61,19 @@
   (client-parser {} index-query))
 
 (fm/defmutation run-query [{::keys [request-trace?]}]
-  (action [{:keys [state ref]}]
+  (action [{:keys [state ref] :as env}]
     (swap! state update-in ref assoc :ui/query-running? true))
   (ok-action [{:keys [state ref] :as env}]
     (let [response (pvh/env-parser-response env)]
       (swap! state update-in ref assoc
         :ui/query-running? false
         :com.wsscode.pathom/trace (get response :com.wsscode.pathom/trace)
-        ::result (pvh/pprint (dissoc response :com.wsscode.pathom/trace)))))
+        ::result (pvh/pprint (dissoc response :com.wsscode.pathom/trace)))
+      (pvh/swap-in! env [:ui/trace-viewer] assoc
+        :com.wsscode.pathom/trace (get response :com.wsscode.pathom/trace))
+      (pvh/swap-in! env [:ui/trace-viewer :ui/plan-viewer] assoc
+        ::pcp/graph nil
+        :ui/node-details nil)))
   (error-action [env]
     (js/console.log "QUERY ERROR" env))
   (remote [{:keys [ast]}]
@@ -141,10 +147,11 @@
 (defn load-query-editor-index [])
 
 (defn run-query! [this]
-  (let [{:ui/keys  [query-running? plan-viewer]
+  (let [{::keys [id]
+         :as    props} (fc/props this)
+        {:ui/keys  [query-running? plan-viewer]
          ::keys    [id query request-trace?]
-         ::cp/keys [parser-id]
-         :as       props} (fc/props this)
+         ::cp/keys [parser-id]} (get-in (fc/component->state-map this) [::id id])
         {::keys [enable-trace?]
          :or    {enable-trace? true}} (fc/get-computed props)]
     (when-not query-running?
@@ -170,7 +177,7 @@
          [:.history-item {:border-bottom "1px solid #ccc"
                           :cursor        "pointer"
                           :font-family   ui/font-code
-                          :max-height    "32px"
+                          :max-height    "45px"
                           :overflow      "auto"
                           :padding       "5px"
                           :white-space   "pre"}
@@ -195,101 +202,101 @@
 
 (fc/defsc QueryEditor
   [this
-   {::keys                   [query result request-trace? query-history]
-    ::pc/keys                [indexes]
-    :ui/keys                 [query-running? plan-viewer show-history?]
-    :com.wsscode.pathom/keys [trace]}
+   {::keys    [query result request-trace? query-history]
+    ::pc/keys [indexes]
+    :ui/keys  [query-running? show-history? trace-viewer]}
    {::keys [editor-props enable-trace?
             default-trace-size
             default-plan-size
             default-query-size
             default-history-size]
     :or    {enable-trace? true}}]
-  {:pre-merge         (fn [{:keys [current-normalized data-tree]}]
-                        (merge {::id               (random-uuid)
-                                ::request-trace?   true
-                                ::query            "[]"
-                                ::result           ""
-                                ::query-history    []
-                                :ui/show-history?  true
-                                :ui/query-running? false
-                                :ui/plan-viewer    {}}
-                          current-normalized data-tree))
+  {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
+                  (let [id (or (::id data-tree)
+                               (::id current-normalized)
+                               (random-uuid))]
+                    (merge {::id               id
+                            ::request-trace?   true
+                            ::query            "[]"
+                            ::result           ""
+                            ::query-history    []
+                            :ui/show-history?  true
+                            :ui/query-running? false
+                            :ui/trace-viewer   {::trace+plan/id id}}
+                      current-normalized data-tree)))
 
-   :ident             ::id
-   :query             [::id
-                       ::request-trace?
-                       ::query
-                       ::result
-                       ::query-history
-                       ::cp/parser-id
-                       ::pc/indexes
-                       :ui/query-running?
-                       :ui/show-history?
-                       :com.wsscode.pathom/trace
-                       {:ui/plan-viewer (fc/get-query plan-view/PlanViewWithDetails)}]
-   :css               [[:$CodeMirror {:height   "100% !important"
-                                      :width    "100% !important"
-                                      :position "absolute !important"
-                                      :z-index  "1"}
-                        [:$cm-atom-composite {:color "#ab890d"}]
-                        [:$cm-atom-ident {:color       "#219"
-                                          :font-weight "bold"}]]
-                       [:$CodeMirror-hint {:font-size "10px"}]
-                       [:.container {:border         "1px solid #ddd"
-                                     :display        "flex"
-                                     :flex-direction "column"
-                                     :flex           "1"
-                                     :max-width      "100%"
-                                     :min-height     "200px"}]
-                       [:.query-row {:display  "flex"
-                                     :flex     "1"
-                                     :overflow "hidden"
-                                     :position "relative"}]
-                       [:.toolbar {:background    "#eeeeee"
-                                   :border-bottom "1px solid #e0e0e0"
-                                   :padding       "5px 4px"
-                                   :display       "flex"
-                                   :align-items   "center"
-                                   :font-family   "sans-serif"
-                                   :font-size     "13px"}
-                        [:label {:display     "flex"
-                                 :align-items "center"}
-                         [:input {:margin-right "5px"}]]]
-                       [:.flex {:flex "1"}]
-                       [:.editor {:position "relative"}]
-                       [:.divisor-v {:width         "20px"
-                                     :background    "#eee"
-                                     :border        "1px solid #e0e0e0"
-                                     :border-top    "0"
-                                     :border-bottom "0"
-                                     :z-index       "2"}]
-                       [:.divisor-h {:height       "20px"
-                                     :background   "#eee"
-                                     :border       "1px solid #e0e0e0"
-                                     :border-left  "0"
-                                     :border-right "0"
-                                     :z-index      "2"}]
-                       [:.result {:flex     "1"
-                                  :position "relative"}
-                        [:$CodeMirror {:background "#f6f7f8"}]]
-                       [:.trace {:display     "flex"
-                                 :padding-top "18px"}]
-                       [:.plan {:display "flex"}]
-                       [:.history-container {:width      "250px"
-                                             :max-height "100%"
-                                             :overflow   "auto"}]]
-   :css-include       [pvt/D3Trace Button HistoryView]
-   :componentDidMount init-query-editor
-   :initLocalState    (fn [this]
-                        {:run-query (partial run-query! this)})}
-  (let [run-query            (fc/get-state this :run-query)
-        css                  (css/get-classnames QueryEditor)
-        show-history?        (ls/get ::show-history? true)
-        default-history-size (ls/get ::history-width (or default-history-size 250))
-        default-query-size   (ls/get ::query-width (or default-query-size 400))
-        default-trace-size   (ls/get ::trace-height (or default-trace-size 400))
-        default-plan-size    (ls/get ::plan-height (or default-plan-size 200))]
+   :ident       ::id
+   :query       [::id
+                 ::request-trace?
+                 ::query
+                 ::result
+                 ::query-history
+                 ::cp/parser-id
+                 ::pc/indexes
+                 :ui/query-running?
+                 :ui/show-history?
+                 :com.wsscode.pathom/trace
+                 {:ui/trace-viewer (fc/get-query trace+plan/TraceWithPlan)}]
+   :css         [[:$CodeMirror {:height   "100% !important"
+                                :width    "100% !important"
+                                :position "absolute !important"
+                                :z-index  "1"}
+                  [:$cm-atom-composite {:color "#ab890d"}]
+                  [:$cm-atom-ident {:color       "#219"
+                                    :font-weight "bold"}]]
+                 [:$CodeMirror-hint {:font-size "10px"}]
+                 [:.container {:border         "1px solid #ddd"
+                               :display        "flex"
+                               :flex-direction "column"
+                               :flex           "1"
+                               :max-width      "100%"
+                               :min-height     "200px"}]
+                 [:.query-row {:display  "flex"
+                               :flex     "1"
+                               :overflow "hidden"
+                               :position "relative"}]
+                 [:.toolbar {:background    "#eeeeee"
+                             :border-bottom "1px solid #e0e0e0"
+                             :padding       "5px 4px"
+                             :display       "flex"
+                             :align-items   "center"
+                             :font-family   "sans-serif"
+                             :font-size     "13px"}
+                  [:label {:display     "flex"
+                           :align-items "center"}
+                   [:input {:margin-right "5px"}]]]
+                 [:.flex {:flex "1"}]
+                 [:.editor {:position "relative"}]
+                 [:.divisor-v {:width         "20px"
+                               :background    "#eee"
+                               :border        "1px solid #e0e0e0"
+                               :border-top    "0"
+                               :border-bottom "0"
+                               :z-index       "2"}]
+                 [:.divisor-h {:height       "20px"
+                               :background   "#eee"
+                               :border       "1px solid #e0e0e0"
+                               :border-left  "0"
+                               :border-right "0"
+                               :z-index      "2"}]
+                 [:.result {:flex     "1"
+                            :position "relative"}
+                  [:$CodeMirror {:background "#f6f7f8"}]]
+                 [:.trace {:display     "flex"
+                           :padding-top "18px"
+                           :overflow    "hidden"}]
+                 [:.history-container {:width      "250px"
+                                       :max-height "100%"
+                                       :overflow   "auto"}]]
+   :css-include [pvt/D3Trace Button HistoryView]
+   :use-hooks?  true}
+  (pvh/use-effect #(init-query-editor this) [])
+  (let [run-query     (pvh/use-callback #(run-query! this))
+        css           (css/get-classnames QueryEditor)
+        show-history? (pvh/use-persistent-state ::show-history? true)
+        history-size  (pvh/use-persistent-state ::history-width (or default-history-size 250))
+        query-size    (pvh/use-persistent-state ::query-width (or default-query-size 400))
+        trace-size    (pvh/use-persistent-state ::trace-height (or default-trace-size 400))]
     (dom/div :.container
       (dom/div :.toolbar
         (if enable-trace?
@@ -299,9 +306,7 @@
                         :onChange #(fm/toggle! this ::request-trace?)})
             "Request trace"))
         (dom/div :.flex)
-        (button {:onClick  #(do
-                              (fm/toggle! this :ui/show-history?)
-                              (ls/set! ::show-history? (not show-history?)))
+        (button {:onClick  #(swap! show-history? not)
                  :disabled (not (seq query-history))
                  :style    {:marginRight "6px"}}
           "History")
@@ -313,71 +318,50 @@
           "Run query"))
 
       (dom/div :.query-row
-        (if (and show-history? (seq query-history))
+        (if (and @show-history? (seq query-history))
           (fc/fragment
-            (dom/div :.history-container {:style {:width (str (or (fc/get-state this :history-width) default-history-size) "px")}}
+            (dom/div :.history-container {:style {:width (str @history-size "px")}}
               (history-view {::query-history query-history
                              ::on-pick-query #(fm/set-value! this ::query %)}))
-            (pvh/drag-resize this {:attribute      :history-width
-                                   :persistent-key ::history-width
-                                   :axis           "x"
-                                   :key            "dragHandlerHistory"
-                                   :default        default-history-size
-                                   :props          {:className (:divisor-v css)}}
-              (dom/div))))
-        (when (fc/get-state this :render?)
-          (cm/pathom
-            (merge {:className   (:editor css)
-                    :style       {:width (str (or (fc/get-state this :query-width) default-query-size) "px")}
-                    :value       (or (str query) "")
-                    ::pc/indexes (if (map? indexes) (p/elide-not-found indexes))
-                    ::cm/options {::cm/extraKeys
-                                  {"Cmd-Enter"   run-query
-                                   "Ctrl-Enter"  run-query
-                                   "Shift-Enter" run-query
-                                   "Cmd-J"       "pathomJoin"
-                                   "Ctrl-Space"  "autocomplete"}}
-                    :onChange    #(fm/set-value! this ::query %)}
-              editor-props)))
-        (pvh/drag-resize this {:attribute      :query-width
-                               :persistent-key ::query-width
-                               :axis           "x"
-                               :default        default-query-size
-                               :props          {:className (:divisor-v css)}}
-          (dom/div))
-        (if (fc/get-state this :render?)
-          (cm/clojure
-            (merge {:className   (:result css)
-                    :value       result
-                    ::cm/options {::cm/readOnly    true
-                                  ::cm/lineNumbers true}}
-              editor-props))))
+            (pvh/drag-resize2
+              {:axis  "x"
+               :key   "dragHandlerHistory"
+               :state history-size
+               :props (ui/gc :.divisor-v)})))
 
-      (if trace
+        (cm/pathom
+          (merge {:className   (:editor css)
+                  :style       {:width (str @query-size "px")}
+                  :value       (or (str query) "")
+                  ::pc/indexes (if (map? indexes) (p/elide-not-found indexes))
+                  ::cm/options {::cm/extraKeys
+                                {"Cmd-Enter"   run-query
+                                 "Ctrl-Enter"  run-query
+                                 "Shift-Enter" run-query
+                                 "Cmd-J"       "pathomJoin"
+                                 "Ctrl-Space"  "autocomplete"}}
+                  :onChange    #(fm/set-value! this ::query %)}
+            editor-props))
+
+        (pvh/drag-resize2
+          {:axis  "x"
+           :state query-size
+           :props (ui/gc :.divisor-v)})
+
+        (cm/clojure
+          (merge {:className   (:result css)
+                  :value       result
+                  ::cm/options {::cm/readOnly    true
+                                ::cm/lineNumbers true}}
+            editor-props)))
+
+      (if (:com.wsscode.pathom/trace trace-viewer)
         (fc/fragment
-          (pvh/drag-resize this {:attribute      :trace-height
-                                 :persistent-key ::trace-height
-                                 :default        default-trace-size
-                                 :props          {:className (:divisor-h css)}}
-            (dom/div))
+          (pvh/drag-resize2
+            {:state trace-size
+             :props (ui/gc :.divisor-h)})
 
-          (dom/div :.trace {:style {:height (str (or (fc/get-state this :trace-height) default-trace-size) "px")}}
-            (pvt/d3-trace {::pvt/trace-data      trace
-                           ::pvt/on-show-details (fn [events]
-                                                   (plan-view/set-plan-view-graph! this plan-viewer
-                                                     (plan-view/events->plan events))
-                                                   (fc/transact! this [:ui/plan-viewer])
-                                                   (js/console.log "Attribute trace:" events))}))))
-
-      (if (::pcp/graph plan-viewer)
-        (fc/fragment
-          (pvh/drag-resize this {:attribute      :plan-height
-                                 :persistent-key ::plan-height
-                                 :default        default-plan-size
-                                 :props          {:className (:divisor-h css)}}
-            (dom/div))
-
-          (dom/div :.plan {:style {:height (str (or (fc/get-state this :plan-height) default-plan-size) "px")}}
-            (plan-view/plan-view-with-details plan-viewer)))))))
+          (dom/div :.trace {:style {:height (str @trace-size "px")}}
+            (trace+plan/trace-with-plan trace-viewer)))))))
 
 (def query-editor (fc/computed-factory QueryEditor))

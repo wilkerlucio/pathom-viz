@@ -356,11 +356,12 @@
                     current-normalized data-tree))
    :ident       ::id
    :query       [::id ::pcp/graph :ui/label-kind :ui/node-details]
-   :css-include [QueryPlanViz NodeDetails]}
-  (let [default-details-width (ls/get ::details-width 400)]
+   :css-include [QueryPlanViz NodeDetails]
+   :use-hooks?  true}
+  (let [details-width (pvh/use-persistent-state ::details-width 400)]
     (ui/row (ui/gc :.flex :.no-scrollbars)
       (ui/column {:classes [(if-not node-details (ui/css :.flex))]
-                  :style   {:width (str (or (fc/get-state this :details-width) default-details-width) "px")}}
+                  :style   {:width (str @details-width "px")}}
         (ui/toolbar {}
           (dom/label
             (dom/span {:style {:margin "0 5px"}} "Label kind:")
@@ -389,12 +390,10 @@
 
       (if node-details
         (fc/fragment
-          (pvh/drag-resize this {:attribute      :details-width
-                                 :persistent-key ::details-width
-                                 :axis           "x"
-                                 :default        default-details-width
-                                 :props          (ui/gc :.divisor-v)}
-            (dom/div))
+          (pvh/drag-resize2
+            {:state details-width
+             :axis  "x"
+             :props (ui/gc :.divisor-v)})
 
           (node-details-ui node-details))))))
 
