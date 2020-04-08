@@ -81,7 +81,6 @@
    => (? ::wap/channel)]
   (let [client-id (or (::client-id msg)
                       (::client-id env))]
-    (js/console.log "SEND to" client-id)
     (send-fn client-id [::message msg]))
   (wap/await! msg))
 
@@ -116,7 +115,7 @@
               :chsk/uidport-close
               (on-client-disconnect config' message)
               :chsk/ws-ping
-              (js/console.log "ws-ping from client:" client-id)
+              nil
 
               ; else
               (on-client-message config' message event-data)))))
