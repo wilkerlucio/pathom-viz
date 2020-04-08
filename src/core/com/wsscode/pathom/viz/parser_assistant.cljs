@@ -30,7 +30,7 @@
                                      ::singleton)]
                    (-> (merge {::assistant-id     (random-uuid)
                                ::cp/parser-id     parser-id
-                               ::ui/active-tab-id ::query
+                               ::ui/active-tab-id ::tab-query
                                :ui/query-editor   {}
                                :ui/index-explorer {}}
                          current-normalized data-tree)
@@ -49,14 +49,18 @@
     (ui/tab-nav {:classes           [:.border-collapse-bottom]
                  ::ui/active-tab-id active-tab-id
                  ::ui/target        this}
-      [{::ui/tab-id ::query} "Query"]
-      [{::ui/tab-id ::index-explorer} "Index Explorer"])
+      [{::ui/tab-id ::tab-query} "Query"]
+      [{::ui/tab-id ::tab-index-explorer} "Index Explorer"]
+      [{::ui/tab-id ::tab-requests} "Requests"])
     (case active-tab-id
-      ::query
+      ::tab-query
       (query.editor/query-editor query-editor)
 
-      ::index-explorer
+      ::tab-index-explorer
       (index.explorer/index-explorer index-explorer)
+
+      ::tab-requests
+      (dom/div "requests")
 
       (dom/div "Invalid page"))))
 
