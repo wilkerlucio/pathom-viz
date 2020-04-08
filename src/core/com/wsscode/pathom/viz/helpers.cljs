@@ -1,6 +1,6 @@
 (ns com.wsscode.pathom.viz.helpers
   (:require ["react-draggable" :refer [DraggableCore]]
-            ["react" :refer [useEffect useState useCallback useMemo]]
+            ["react" :refer [useEffect useLayoutEffect useState useCallback useMemo]]
             ["d3" :as d3]
             [cljs.core.async :refer [go <!]]
             [cljs.reader :refer [read-string]]
@@ -204,6 +204,12 @@
    (useEffect (wrap-effect f)))
   ([f args]
    (useEffect (wrap-effect f) (to-array args))))
+
+(defn use-layout-effect
+  ([f]
+   (useLayoutEffect (wrap-effect f)))
+  ([f args]
+   (useLayoutEffect (wrap-effect f) (to-array args))))
 
 (defn use-callback
   ([cb]
