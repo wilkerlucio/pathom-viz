@@ -23,8 +23,24 @@
 
 (defonce connected-clients* (atom #{}))
 
-(defn handle-client-message [server msg]
-  (js/console.log "NEW MSG"))
+(defn handle-client-message [server {::ws-server/keys [client-id]} msg]
+  (let [type (:com.wsscode.pathom.viz.ws-connector.core/type msg)]
+    (case type
+      :com.wsscode.pathom.viz.ws-connector.core/pathom-request
+      (message-renderer! server
+        (assoc msg
+          :com.wsscode.pathom.viz.electron.renderer.main/message-type
+          :com.wsscode.pathom.viz.electron.renderer.main/pathom-request
+          ::ws-server/client-id client-id))
+
+      :com.wsscode.pathom.viz.ws-connector.core/pathom-request-done
+      (message-renderer! server
+        (assoc msg
+          :com.wsscode.pathom.viz.electron.renderer.main/message-type
+          :com.wsscode.pathom.viz.electron.renderer.main/pathom-request-done
+          ::ws-server/client-id client-id))
+
+      (js/console.warn "WS client sent unknown message" (pr-str msg)))))
 
 (defn start-ws! [server]
   (ws-server/start-ws!
@@ -58,7 +74,7 @@
           client-id}))
 
      ::ws-server/on-client-message
-     handle-client-message}))
+     #(handle-client-message server % %3)}))
 
 (defn handle-renderer-message
   [server {::keys [type] :as message}]

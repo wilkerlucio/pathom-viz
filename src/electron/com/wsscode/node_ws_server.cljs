@@ -119,7 +119,7 @@
               (js/console.log "ws-ping from client:" client-id)
 
               ; else
-              (on-client-message config' message)))))
+              (on-client-message config' message event-data)))))
       (recur)))
 
   (log/info "Websocket Server Listening on port" port)

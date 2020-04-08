@@ -62,14 +62,22 @@
 
 (def parser-assistant-ui (fc/factory ParserAssistant {:keyfn ::assistant-id}))
 
+(defn parser-exists? [this p]
+  (-> (fc/component->state-map this)
+      (get ::assistant-id)
+      (contains? p)))
+
+(defn initialize-assistant [this client-id]
+  (merge/merge-component! (fc/any->app this) ParserAssistant
+    {::assistant-id client-id
+     ::cp/parser-id client-id}))
+
 (defn select-parser
   "Select the browser tab. In case the parser isn't initialized it will merge a new
   component, otherwise just switch to the active one."
   [this p]
   (fm/set-value! this ::ui/active-tab-id p)
-  (if (-> (fc/component->state-map this)
-          (get ::assistant-id)
-          (contains? p))
+  (if (parser-exists? this p)
     (fm/set-value! this :ui/parser-assistant [::assistant-id p])
     (merge/merge-component! (fc/any->app this) ParserAssistant
       {::assistant-id p

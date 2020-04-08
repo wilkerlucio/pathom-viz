@@ -3,6 +3,7 @@
   (:require [cljs.reader :refer [read-string]]
             [cljs.spec.alpha :as s]
             [clojure.core.async :as async :refer [go <! chan go-loop]]
+            [clojure.set :as set]
             [com.fulcrologic.fulcro-css.css-injection :as cssi]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [com.fulcrologic.fulcro.application :as fapp]
@@ -18,8 +19,7 @@
             [com.wsscode.pathom.viz.parser-assistant :as assistant]
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.wsscode.transit :as wsst]
-            [goog.object :as gobj]
-            [clojure.set :as set]))
+            [goog.object :as gobj]))
 
 (>def ::channel any?)
 (>def ::message-type qualified-keyword?)
@@ -52,8 +52,9 @@
         (catch :default e
           (js/console.error "response failed" e))))))
 
-(defn add-background-parser! [client-id]
-  (swap! local.parser/client-parsers assoc client-id (create-background-parser client-id)))
+(defn add-background-parser! [this client-id]
+  (swap! local.parser/client-parsers assoc client-id (create-background-parser client-id))
+  (assistant/initialize-assistant this client-id))
 
 (defn multi-parser-ref [this]
   (:ui/multi-parser (fc/component->state-map this)))
@@ -68,11 +69,17 @@
   (case message-type
     ::connect-client
     (do
-      (add-background-parser! client-id)
+      (add-background-parser! this client-id)
       (reload-parsers-ui! this))
 
     ::disconnect-client
     (js/console.log "Disconnect client")
+
+    ::pathom-request
+    (js/console.log "PATHOM REQ" msg)
+
+    ::pathom-request-done
+    (js/console.log "PATHOM REQ DONE" msg)
 
     (js/console.warn "Unknown message received" msg)))
 
@@ -90,7 +97,7 @@
             ;remove             (set/difference local-parsers background-parsers)
             ]
         (doseq [client-id missing]
-          (add-background-parser! client-id))
+          (add-background-parser! this client-id))
 
         #_
         (fc/transact! this
