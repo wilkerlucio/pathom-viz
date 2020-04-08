@@ -252,14 +252,16 @@
 
      [:.node-untouched {:opacity "0.6"}]
 
-     [:.line {:stroke       "#ef9d0e6b"
-              :stroke-width "2px"
-              :fill         "none"}
+     [:.line {:stroke         "#ef9d0e6b"
+              :stroke-width   "2px"
+              :fill           "none"
+              :pointer-events "none"}
       [:&.line-focus {:stroke "#ef9d0eff"}]]
 
-     [:.line-next {:stroke       "#0000006b"
-                   :stroke-width "2px"
-                   :fill         "none"}
+     [:.line-next {:stroke         "#0000006b"
+                   :stroke-width   "2px"
+                   :fill           "none"
+                   :pointer-events "none"}
       [:&.line-focus {:stroke "#000"}]]
 
      [:.line-focus {:stroke-width "3px"}]
@@ -393,7 +395,8 @@
             {:state     details-width
              :direction "right"})
 
-          (dom/div {:style {:width (str @details-width "px")}}
+          (dom/div {:style   {:width (str @details-width "px")}
+                    :classes [(ui/css :.scrollbars)]}
             (node-details-ui node-details)))))))
 
 (def plan-view-with-details (fc/factory PlanViewWithDetails {:keyfn ::id}))
