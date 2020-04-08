@@ -584,7 +584,7 @@
                                    :font-family ui/font-base
                                    :font-size   "1.1rem"}]
                     [:.graph-options {:font-size "0.9rem"}
-                     [(ui/component-class ui/ToggleAction :.container)
+                     [(str "." (ui/component-class ui/ToggleAction :.container))
                       {:margin "0 2px"}]]
                     [:.data-list {:white-space   "nowrap"
                                   ;:overflow      "auto"

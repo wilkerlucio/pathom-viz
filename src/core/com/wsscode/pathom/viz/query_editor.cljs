@@ -67,7 +67,6 @@
     (let [response (pvh/env-parser-response env)]
       (swap! state update-in ref assoc
         :ui/query-running? false
-        :com.wsscode.pathom/trace (get response :com.wsscode.pathom/trace)
         ::result (pvh/pprint (dissoc response :com.wsscode.pathom/trace)))
       (pvh/swap-in! env [:ui/trace-viewer] assoc
         :com.wsscode.pathom/trace (get response :com.wsscode.pathom/trace))
@@ -181,7 +180,7 @@
                           :overflow      "auto"
                           :padding       "5px"
                           :white-space   "pre"}
-          [:&:hover {:background "#9fdcff"}]]]}
+          [:&:hover {:background ui/color-highlight}]]]}
   (dom/div :.container
     (dom/div :.title "History")
     (for [query (rseq query-history)]
@@ -266,18 +265,6 @@
                    [:input {:margin-right "5px"}]]]
                  [:.flex {:flex "1"}]
                  [:.editor {:position "relative"}]
-                 [:.divisor-v {:width         "20px"
-                               :background    "#eee"
-                               :border        "1px solid #e0e0e0"
-                               :border-top    "0"
-                               :border-bottom "0"
-                               :z-index       "2"}]
-                 [:.divisor-h {:height       "20px"
-                               :background   "#eee"
-                               :border       "1px solid #e0e0e0"
-                               :border-left  "0"
-                               :border-right "0"
-                               :z-index      "2"}]
                  [:.result {:flex     "1"
                             :position "relative"}
                   [:$CodeMirror {:background "#f6f7f8"}]]

@@ -38,6 +38,8 @@
    :-ms-user-select       "none"
    :user-select           "none"})
 
+(def color-highlight "#9fdcff")
+
 ; endregion
 
 ; region helpers
@@ -639,6 +641,10 @@
                  [:.nowrap {:white-space "nowrap"}]
                  [:.height-100 {:height "100%"}]
                  [:.max-width-100 {:max-width "100%"}]
+                 [:.border-collapse-top {:border-top "none !important"}]
+                 [:.border-collapse-right {:border-right "none !important"}]
+                 [:.border-collapse-bottom {:border-bottom "none !important"}]
+                 [:.border-collapse-left {:border-left "none !important"}]
                  [:.divisor-v {:cursor         "ew-resize"
                                :width          "20px"
                                :background     "#eee"
@@ -689,7 +695,7 @@
   {:classes (mapv css k)})
 
 (defn component-class [class k]
-  (str "." (some-> class css/get-classnames (get-css k))))
+  (some-> class css/get-classnames (get-css k)))
 
 (defn ccss [component & k]
   (if-let [css-map (try
