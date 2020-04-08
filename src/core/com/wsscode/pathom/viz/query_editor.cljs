@@ -289,7 +289,7 @@
                                        :overflow   "auto"}]]
    :css-include [pvt/D3Trace Button HistoryView]
    :use-hooks?  true}
-  (pvh/use-effect #(init-query-editor this) [])
+  (pvh/use-layout-effect #(init-query-editor this) [])
   (let [run-query     (pvh/use-callback #(run-query! this))
         css           (css/get-classnames QueryEditor)
         show-history? (pvh/use-persistent-state ::show-history? true)
