@@ -572,6 +572,8 @@
 
 (def toolbar (fc/factory Toolbar))
 
+(>def ::direction #{"up" "down" "left" "right"})
+
 (fc/defsc DragResize
   [this {:keys [state direction props key]}]
   {:use-hooks? true}
