@@ -6,18 +6,18 @@
             [cljs.reader :refer [read-string]]
             [cljs.spec.alpha :as s]
             [clojure.pprint]
+            [clojure.string :as str]
             [clojure.walk :as walk]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [com.fulcrologic.fulcro.algorithms.tx-processing :as txn]
-            [com.fulcrologic.fulcro.components :as fp]
+            [com.fulcrologic.fulcro.components :as fc]
             [com.fulcrologic.fulcro.mutations :as fm]
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [com.wsscode.common.async-cljs :refer [<?maybe]]
             [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.viz.lib.local-storage :as ls]
             [edn-query-language.core :as eql]
-            [goog.object :as gobj]
-            [com.fulcrologic.fulcro.components :as fc]))
+            [goog.object :as gobj]))
 
 (>def ::path (s/coll-of keyword? :kind vector?))
 (>def ::path-map "The tree of maps" (s/map-of ::path map?))
@@ -107,12 +107,17 @@
 (defn update-value!
   "Helper to call transaction to update some key from current component."
   [component key fn & args]
-  (fp/transact! component [`(update-value {:key ~key :fn ~fn :args ~args})]))
+  (fc/transact! component [`(update-value {:key ~key :fn ~fn :args ~args})]))
 
 (defn safe-read [s]
   (try
-    (read-string {:readers {'error identity}} s)
-    (catch :default _ nil)))
+    (read-string {:readers {'error  identity
+                            'object nil}
+                  :default identity}
+      (str/replace s "TaggedValue:" "TaggedValue"))
+    (catch :default e
+      (js/console.warn "Safe read failed to read." s e)
+      nil)))
 
 (defn toggle-set-item [set item]
   (if (contains? set item)
@@ -128,7 +133,7 @@
 
 (defn remove-not-found [x]
   (p/transduce-maps
-    (remove (fn [[_ v]] (contains? #{::p/not-found ::fp/not-found} v)))
+    (remove (fn [[_ v]] (contains? #{::p/not-found ::fc/not-found} v)))
     x))
 
 (defn env-parser-response [env]
