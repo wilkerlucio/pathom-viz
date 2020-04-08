@@ -24,16 +24,3 @@
 
 (defn init []
   (electron/app.on "ready" create-window))
-
-(defn after-load []
-  (js/console.log "Done reloading"))
-
-(comment
-  (.send @web-contents* "event"
-    #js {:transit-message
-         (wsst/write
-           {:com.wsscode.pathom.viz.electron.renderer.main/message-type
-            :com.wsscode.pathom.viz.electron.renderer.main/connect-client
-
-            })})
-  ipcMain)

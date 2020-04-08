@@ -161,8 +161,3 @@
   (cssi/upsert-css "pathom-viz" {:component Root}))
 
 (init)
-
-;; After Load
-
-(defn after-load []
-  (js/console.log "Done reloading"))
