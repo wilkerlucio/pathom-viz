@@ -360,8 +360,7 @@
    :use-hooks?  true}
   (let [details-width (pvh/use-persistent-state ::details-width 400)]
     (ui/row (ui/gc :.flex :.no-scrollbars)
-      (ui/column {:classes [(if-not node-details (ui/css :.flex))]
-                  :style   {:width (str @details-width "px")}}
+      (ui/column {:classes [(ui/css :.flex)]}
         (ui/toolbar {}
           (dom/label
             (dom/span {:style {:margin "0 5px"}} "Label kind:")
@@ -390,11 +389,11 @@
 
       (if node-details
         (fc/fragment
-          (pvh/drag-resize2
-            {:state details-width
-             :axis  "x"
-             :props (ui/gc :.divisor-v)})
+          (ui/drag-resize
+            {:state     details-width
+             :direction "right"})
 
-          (node-details-ui node-details))))))
+          (dom/div {:style {:width (str @details-width "px")}}
+            (node-details-ui node-details)))))))
 
 (def plan-view-with-details (fc/factory PlanViewWithDetails {:keyfn ::id}))

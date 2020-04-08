@@ -204,10 +204,9 @@
   [this
    {::keys    [query result request-trace? query-history]
     ::pc/keys [indexes]
-    :ui/keys  [query-running? show-history? trace-viewer]}
+    :ui/keys  [query-running? trace-viewer]}
    {::keys [editor-props enable-trace?
             default-trace-size
-            default-plan-size
             default-query-size
             default-history-size]
     :or    {enable-trace? true}}]
@@ -317,17 +316,42 @@
                  :disabled query-running?}
           "Run query"))
 
+      #_(ui/resizable-row {:layout [250 nil 400]}
+          (if (and @show-history? (seq query-history))
+            (dom/div :.history-container
+              (history-view {::query-history query-history
+                             ::on-pick-query #(fm/set-value! this ::query %)})))
+
+          (cm/pathom
+            (merge {:className   (:editor css)
+                    :value       (or (str query) "")
+                    ::pc/indexes (if (map? indexes) (p/elide-not-found indexes))
+                    ::cm/options {::cm/extraKeys
+                                  {"Cmd-Enter"   run-query
+                                   "Ctrl-Enter"  run-query
+                                   "Shift-Enter" run-query
+                                   "Cmd-J"       "pathomJoin"
+                                   "Ctrl-Space"  "autocomplete"}}
+                    :onChange    #(fm/set-value! this ::query %)}
+              editor-props))
+
+          (cm/clojure
+            (merge {:className   (:result css)
+                    :value       result
+                    ::cm/options {::cm/readOnly    true
+                                  ::cm/lineNumbers true}}
+              editor-props)))
+
       (dom/div :.query-row
         (if (and @show-history? (seq query-history))
           (fc/fragment
             (dom/div :.history-container {:style {:width (str @history-size "px")}}
               (history-view {::query-history query-history
                              ::on-pick-query #(fm/set-value! this ::query %)}))
-            (pvh/drag-resize2
-              {:axis  "x"
-               :key   "dragHandlerHistory"
-               :state history-size
-               :props (ui/gc :.divisor-v)})))
+            (ui/drag-resize
+              {:direction "left"
+               :key       "dragHandlerHistory"
+               :state     history-size})))
 
         (cm/pathom
           (merge {:className   (:editor css)
@@ -343,10 +367,9 @@
                   :onChange    #(fm/set-value! this ::query %)}
             editor-props))
 
-        (pvh/drag-resize2
-          {:axis  "x"
-           :state query-size
-           :props (ui/gc :.divisor-v)})
+        (ui/drag-resize
+          {:direction "left"
+           :state     query-size})
 
         (cm/clojure
           (merge {:className   (:result css)
@@ -357,9 +380,9 @@
 
       (if (:com.wsscode.pathom/trace trace-viewer)
         (fc/fragment
-          (pvh/drag-resize2
-            {:state trace-size
-             :props (ui/gc :.divisor-h)})
+          (ui/drag-resize
+            {:direction "down"
+             :state     trace-size})
 
           (dom/div :.trace {:style {:height (str @trace-size "px")}}
             (trace+plan/trace-with-plan trace-viewer)))))))

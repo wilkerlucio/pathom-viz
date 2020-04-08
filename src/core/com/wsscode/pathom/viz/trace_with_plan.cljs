@@ -49,9 +49,9 @@
 
       (if (::pcp/graph plan-viewer)
         (fc/fragment
-          (pvh/drag-resize2
-            {:state plan-size
-             :props (ui/gc :.divisor-h)})
+          (ui/drag-resize
+            {:state     plan-size
+             :direction "down"})
 
           (dom/div :.plan {:style {:height (str @plan-size "px")}}
             (plan-view/plan-view-with-details plan-viewer)))))))

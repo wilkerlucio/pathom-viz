@@ -1,5 +1,6 @@
 (ns com.wsscode.pathom.viz.ui.kit
-  (:require [cljs.spec.alpha :as s]
+  (:require ["react-draggable" :refer [DraggableCore]]
+            [cljs.spec.alpha :as s]
             [com.fulcrologic.fulcro-css.css :as css]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [com.fulcrologic.fulcro.components :as fc]
@@ -571,6 +572,35 @@
 
 (def toolbar (fc/factory Toolbar))
 
+(fc/defsc DragResize
+  [this {:keys [state direction props key]}]
+  {:use-hooks? true}
+  (let [start      (h/use-atom-state nil)
+        start-size (h/use-atom-state nil)
+        axis       (get {"left"  "x"
+                         "right" "x"
+                         "up"    "y"
+                         "down"  "y"} direction "x")
+        invert?    (get {"left"  true
+                         "right" false
+                         "up"    true
+                         "down"  false} direction true)
+        css        (if (= "x" axis) (css :.divisor-v) (css :.divisor-h))]
+    (js/React.createElement DraggableCore
+      #js {:key     (or key "dragHandler")
+           :onStart (fn [e dd]
+                      (reset! start (gobj/get dd axis))
+                      (reset! start-size @state))
+           :onDrag  (fn [e dd]
+                      (let [start    @start
+                            size     @start-size
+                            value    (gobj/get dd axis)
+                            new-size (+ size (if invert? (- value start) (- start value)))]
+                        (reset! state new-size)))}
+      (dom/div (merge {:className css} props)))))
+
+(def drag-resize (fc/factory DragResize))
+
 ; endregion
 
 (fc/defsc UIKit [_ _]
@@ -580,18 +610,22 @@
                  [:.nowrap {:white-space "nowrap"}]
                  [:.height-100 {:height "100%"}]
                  [:.max-width-100 {:max-width "100%"}]
-                 [:.divisor-v {:width         "20px"
-                               :background    "#eee"
-                               :border        "1px solid #e0e0e0"
-                               :border-top    "0"
-                               :border-bottom "0"
-                               :z-index       "2"}]
-                 [:.divisor-h {:height       "20px"
-                               :background   "#eee"
-                               :border       "1px solid #e0e0e0"
-                               :border-left  "0"
-                               :border-right "0"
-                               :z-index      "2"}]]
+                 [:.divisor-v {:cursor         "ew-resize"
+                               :width          "20px"
+                               :background     "#eee"
+                               :border         "1px solid #e0e0e0"
+                               :border-top     "0"
+                               :border-bottom  "0"
+                               :pointer-events "all"
+                               :z-index        "2"}]
+                 [:.divisor-h {:cursor         "ns-resize"
+                               :height         "20px"
+                               :background     "#eee"
+                               :border         "1px solid #e0e0e0"
+                               :border-left    "0"
+                               :border-right   "0"
+                               :pointer-events "all"
+                               :z-index        "2"}]]
    :css-include [Button
                  CollapsibleBox
                  Column

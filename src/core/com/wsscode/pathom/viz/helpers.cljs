@@ -55,29 +55,6 @@
   (with-out-str
     (clojure.pprint/pprint x)))
 
-(defn drag-resize [this {:keys [attribute default axis props persistent-key key] :or {axis "y"}} child]
-  (let [default' (if persistent-key
-                   (ls/get persistent-key default)
-                   default)]
-    (js/React.createElement DraggableCore
-      #js {:key     (or key "dragHandler")
-           :onStart (fn [e dd]
-
-                      (gobj/set this "start" (gobj/get dd axis))
-                      (gobj/set this "startSize" (or (fp/get-state this attribute) default')))
-           :onDrag  (fn [e dd]
-                      (let [start    (gobj/get this "start")
-                            size     (gobj/get this "startSize")
-                            value    (gobj/get dd axis)
-                            new-size (+ size (if (= "x" axis) (- value start) (- start value)))]
-                        (if persistent-key
-                          (ls/set! persistent-key new-size))
-                        (fp/set-state! this {attribute new-size})))}
-      (dom/div (merge {:style {:pointerEvents "all"
-                               :cursor        (if (= "x" axis) "ew-resize" "ns-resize")}}
-                 props)
-        child))))
-
 (defn resolve-path
   "Walks a db path, when find an ident it resets the path to that ident. Use to realize paths of relations."
   [state path]
@@ -299,28 +276,3 @@
                                      (.on "zoom" apply-zoom))]
                     (.call svg zoom)) [])
      svg-transform)))
-
-;; visual helpers
-
-(fc/defsc DragResize2
-  [this {:keys [state axis props key] :or {axis "y"}}]
-  {:use-hooks? true}
-  (let [start      (use-atom-state nil)
-        start-size (use-atom-state nil)]
-    (js/React.createElement DraggableCore
-      #js {:key     (or key "dragHandler")
-           :onStart (fn [e dd]
-                      (reset! start (gobj/get dd axis))
-                      (reset! start-size @state))
-           :onDrag  (fn [e dd]
-                      (let [start    @start
-                            size     @start-size
-                            value    (gobj/get dd axis)
-                            new-size (+ size (if (= "x" axis) (- value start) (- start value)))]
-                        (reset! state new-size)))}
-      (dom/div (merge {:style {:pointerEvents "all"
-                               :cursor        (if (= "x" axis) "ew-resize" "ns-resize")}}
-                 props)
-        (dom/div)))))
-
-(def drag-resize2 (fc/factory DragResize2))
