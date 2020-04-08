@@ -1,6 +1,6 @@
 (ns com.wsscode.pathom.viz.helpers
   (:require ["react-draggable" :refer [DraggableCore]]
-            ["react" :refer [useEffect useState useCallback]]
+            ["react" :refer [useEffect useState useCallback useMemo]]
             ["d3" :as d3]
             [cljs.core.async :refer [go <!]]
             [cljs.reader :refer [read-string]]
@@ -203,6 +203,12 @@
   ([cb args]
    (useCallback cb (to-array args))))
 
+(defn use-memo
+  ([cb]
+   (useMemo cb))
+  ([cb args]
+   (useMemo cb (to-array args))))
+
 (defn use-state
   "A simple wrapper around React/useState. Returns a cljs vector for easy destructuring"
   [initial-value]
@@ -239,7 +245,7 @@
   (-swap! [a f x y more] (fm/set-value! comp prop (apply f @a x y more))))
 
 (defn use-component-prop [comp prop]
-  (->FulcroComponentProp comp prop))
+  (use-memo (->FulcroComponentProp comp prop) [(-> comp fc/props (get prop))]))
 
 ;; hooks
 
