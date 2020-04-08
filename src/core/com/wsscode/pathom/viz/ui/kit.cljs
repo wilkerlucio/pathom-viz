@@ -575,6 +575,33 @@
 (>def ::direction #{"up" "down" "left" "right"})
 
 (fc/defsc DragResize
+  "Creates a visual component that can be dragged to control the size of another component.
+
+  The :state prop should be an `atom-like` state and will reflect the current size.
+
+  The :direction can be up, down, left or right, think about it as what is the position
+  of the element being resized, relative to the drag handler (which is this component).
+
+  Row example:
+    -------------------------
+    | DIV1 | HANDLER | DIV2 |
+    -------------------------
+
+  In the row setting in the example before, if you want the size to apply into DIV1, use
+  the \"left\" direction. For DIV2 use \"right\".
+
+  Column example:
+    -----------
+    | DIV1    |
+    -----------
+    | HANDLER |
+    -----------
+    | DIV2    |
+    -----------
+
+  In this column example, use \"up\" if you want to control the DIV1, and \"down\" if
+  you want to control the size of DIV2.
+  "
   [this {:keys [state direction props key]}]
   {:use-hooks? true}
   (let [start      (h/use-atom-state nil)
