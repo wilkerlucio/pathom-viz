@@ -87,6 +87,12 @@
 
 (def request-item (fc/computed-factory RequestItem {:keyfn ::request-id}))
 
+(fm/defmutation clear-history [_]
+  (action [{:keys [state ref]}]
+    (swap! state update-in ref assoc
+      ::requests []
+      :ui/active-request nil)))
+
 (fc/defsc RequestHistory
   [this {::keys   [requests]
          :ui/keys [active-request]}]
@@ -114,6 +120,10 @@
     (ui/column {:classes [(ui/component-class RequestHistory :.container)]}
       (if (seq requests)
         (fc/fragment
+          (ui/toolbar {}
+            (dom/div (ui/gc :.flex))
+            (dom/button {:onClick #(fc/transact! this [(clear-history {})])} "Clear"))
+
           (dom/div (ui/gc :.flex :.scrollbars)
             (for [req requests]
               (request-item req
