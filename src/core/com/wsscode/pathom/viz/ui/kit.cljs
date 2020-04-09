@@ -277,6 +277,46 @@
 
 (def raw-collapsible (fc/factory RawCollapsible))
 
+(fc/defsc Modal
+  [this {::keys []}]
+  {:css        [[:.outer-container
+                 {:background      "rgba(0,0,0,0.6)"
+                  :position        "fixed"
+                  :left            "0"
+                  :top             "0"
+                  :right           "0"
+                  :bottom          "0"
+                  :display         "flex"
+                  :align-items     "center"
+                  :justify-content "center"
+                  :z-index         "10"}]
+                [:.container {:background "#fff"
+                              :border     "1px solid #ddd"
+                              :padding    "10px"}]]
+   :use-hooks? true}
+  (dom/div :.outer-container
+    (dom/div :.container
+      (fc/children this))))
+
+(def modal (fc/factory Modal {}))
+
+(defn input [{:keys [state] :as props}]
+  (let [props (dissoc props :state)]
+    (dom/input (assoc props :value @state :onChange #(reset! state (event-value %))))))
+
+(fc/defsc PromptModal
+  [this {:keys [prompt value on-finish]}]
+  {:use-hooks? true}
+  (let [text (h/use-atom-state (or value ""))]
+    (modal {}
+      (dom/div (str prompt))
+      (dom/div (input {:state text}))
+      (dom/div
+        (dom/button {:onClick #(on-finish @text)} "Ok")
+        (dom/button {:onClick #(on-finish nil)} "Cancel")))))
+
+(def prompt-modal (fc/factory PromptModal))
+
 (fc/defsc TextField
   [this {:keys  [value]
          ::keys [on-clear left-icon]
@@ -664,6 +704,7 @@
    :css-include [Button
                  CollapsibleBox
                  Column
+                 Modal
                  NumberInput
                  Panel
                  PanelBlock

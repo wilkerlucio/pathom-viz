@@ -5,11 +5,13 @@
             [com.fulcrologic.fulcro.data-fetch :as df]
             [com.fulcrologic.fulcro.mutations :as fm]
             [com.wsscode.pathom.viz.client-parser :as cp]
+            [com.wsscode.async.async-cljs :refer [go-promise <?]]
             [com.wsscode.pathom.viz.index-explorer :as index-explorer]
             [com.wsscode.pathom.viz.query-editor :as query-editor]
             [com.wsscode.pathom.viz.request-history :as request-history]
             [com.wsscode.pathom.viz.ui.kit :as ui]
-            [com.wsscode.pathom.viz.helpers :as pvh]))
+            [com.wsscode.pathom.viz.helpers :as h]
+            [clojure.core.async :as async]))
 
 (defn initialize-parser-assistant [this]
   (let [{::cp/keys [parser-id] :as props} (fc/props this)]
@@ -46,7 +48,7 @@
                 {:ui/index-explorer (fc/get-query index-explorer/IndexExplorer)}
                 {:ui/request-history (fc/get-query request-history/RequestHistory)}]
    :use-hooks? true}
-  (pvh/use-effect #(initialize-parser-assistant this) [])
+  (h/use-effect #(initialize-parser-assistant this) [])
 
   (ui/tab-container {}
     (ui/tab-nav {:classes           [:.border-collapse-bottom]
@@ -115,13 +117,28 @@
      {:focus [::cp/available-parsers
               ::manager-id]})))
 
+(defn prompt [this message initial]
+  (let [ch (async/promise-chan)]
+    (fc/with-parent-context this
+      (let [el (js/document.createElement "div")]
+        (js/document.body.appendChild el)
+        (js/ReactDOM.render
+          (ui/prompt-modal {:prompt    message
+                            :value     initial
+                            :on-finish #(do
+                                          (if % (async/put! ch %) (async/close! ch))
+                                          (js/document.body.removeChild el))})
+          el)))
+    ch))
+
 (defn add-from-url! [this]
-  (when-let [parser-url (js/prompt "Type the URL for the parser you want to add." "https://")]
-    (fc/transact! this [(add-parser-from-url {::cp/url parser-url})])
-    (reload-available-parsers this)))
+  (go-promise
+    (when-let [parser-url (<? (prompt this "Type the URL for the parser you want to add." "https://"))]
+      (fc/transact! this [(add-parser-from-url {::cp/url parser-url})])
+      (reload-available-parsers this))))
 
 (fc/defsc MultiParserManager
-  [this {:ui/keys  [parser-assistant parser-url]
+  [this {:ui/keys  [parser-assistant]
          ::cp/keys [available-parsers]
          ::ui/keys [active-tab-id]}]
   {:pre-merge  (fn [{:keys [current-normalized data-tree]}]
@@ -129,13 +146,11 @@
                                      (::cp/parser-id current-normalized)
                                      ::singleton)]
                    (merge {::manager-id           (random-uuid)
-                           :ui/parser-url         ""
                            ::cp/parser-id         parser-id
                            ::cp/available-parsers #{}}
                      current-normalized data-tree)))
    :ident      ::manager-id
    :query      [::manager-id
-                :ui/parser-url
                 ::cp/available-parsers
                 ::ui/active-tab-id
                 {:ui/parser-assistant (fc/get-query ParserAssistant)}]
@@ -145,25 +160,16 @@
                           :align-items     "center"
                           :justify-content "center"}]]
    :use-hooks? true}
-  (let [reload (pvh/use-callback #(reload-available-parsers this))]
-    (pvh/use-effect reload [])
+  (let [reload       (h/use-callback #(reload-available-parsers this))
+        add-from-url (h/use-callback #(add-from-url! this))]
+    (h/use-effect reload [])
 
     (ui/column (ui/gc :.flex)
-      #_(ui/row {}
-          (dom/input {:placeholder "http://localhost/graph"
-                      :style       {:width "300px"}
-                      :value       parser-url
-                      :onChange    #(fm/set-string! this :ui/parser-url :event %)})
-          (ui/button {:onClick #(do
-                                  (fc/transact! this [(add-parser-from-url {::cp/url parser-url})])
-                                  (reload-available-parsers this))}
-            "Add parser from URL"))
       (ui/tab-container {}
         (ui/tab-nav {:classes             [(if parser-assistant :.border-collapse-bottom)]
                      ::ui/active-tab-id   active-tab-id
-                     ::ui/tab-right-tools (ui/row {:classes [:.center]}
-                                            (ui/button {:onClick (pvh/use-callback reload)} "Reload parsers")
-                                            (ui/button {:onClick (pvh/use-callback #(add-from-url! this))} "+"))}
+                     ::ui/tab-right-tools (ui/button {:onClick add-from-url}
+                                            "+")}
           (for [p available-parsers]
             [{::ui/tab-id       p
               ::ui/on-tab-close #(fc/transact! this [(remove-parser {::cp/parser-id p})])
