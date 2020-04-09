@@ -158,7 +158,9 @@
                           :background      "#ccc"
                           :display         "flex"
                           :align-items     "center"
-                          :justify-content "center"}]]
+                          :justify-content "center"}
+                 ui/text-sans-13
+                 {:font-size "21px"}]]
    :use-hooks? true}
   (let [reload       (h/use-callback #(reload-available-parsers this))
         add-from-url (h/use-callback #(add-from-url! this))]
@@ -178,6 +180,9 @@
 
         (if parser-assistant
           (parser-assistant-ui parser-assistant)
-          (dom/div :.blank "Select a parser"))))))
+          (dom/div :.blank
+            (if (seq available-parsers)
+              "Select a parser"
+              "Connect a parser")))))))
 
 (def multi-parser-manager (fc/computed-factory MultiParserManager {:keyfn ::manager-id}))
