@@ -28,6 +28,19 @@ npm install
 npx electron .
 ----
 
+=== Creating Electron app
+
+To package the app do the following:
+
+[source]
+----
+shadow-cljs release electron-background electron-renderer
+cd shells/electron
+npm run pack
+----
+
+The builds will be available at the `dist` directory.
+
 == Available tools
 
 === Workspaces Pathom card
