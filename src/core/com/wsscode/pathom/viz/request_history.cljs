@@ -8,14 +8,16 @@
             [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]))
 
 (defn pre-merge-request [{:keys [current-normalized data-tree]}]
-  (let [id    (or (::request-id data-tree)
-                  (::request-id current-normalized)
-                  (random-uuid))
-        trace (-> data-tree ::response :com.wsscode.pathom/trace)]
-    (merge {::request-id   id
-            ::trace-viewer (if trace
-                             {::trace+plan/id           id
-                              :com.wsscode.pathom/trace trace})}
+  (let [id        (or (::request-id data-tree)
+                      (::request-id current-normalized)
+                      (random-uuid))
+        trace     (-> data-tree ::response :com.wsscode.pathom/trace)
+        data-tree (cond-> data-tree
+                    trace
+                    (assoc ::trace-viewer
+                           {::trace+plan/id           id
+                            :com.wsscode.pathom/trace trace}))]
+    (merge {::request-id id}
       current-normalized data-tree)))
 
 (fc/defsc RequestView
@@ -42,7 +44,7 @@
           (cm/clojure {::cm/options {::cm/readOnly true}
                        :style       {:flex     "1"
                                      :overflow "auto"
-                                     :height   (if trace-viewer (str @trace-size "px") "100%")}
+                                     :position "relative"}
                        :value       (pvh/pprint request)}))
         (ui/drag-resize {:state response-size :direction "right"})
         (ui/column {:style {:width (str @response-size "px")}}
@@ -50,13 +52,13 @@
           (cm/clojure {::cm/options {::cm/readOnly true}
                        :style       {:flex     "1"
                                      :overflow "auto"
-                                     :height   (if trace-viewer (str @trace-size "px") "100%")}
+                                     :position "relative"}
                        :value       (pvh/pprint (dissoc response :com.wsscode.pathom/trace))})))
       (if trace-viewer
         (fc/fragment
-          (ui/drag-resize {:state trace-size :direction "up"})
+          (ui/drag-resize {:state trace-size :direction "down"})
           (dom/div :.header "Trace")
-          (dom/div :.trace
+          (dom/div :.trace {:style {:height (str @trace-size "px")}}
             (trace+plan/trace-with-plan trace-viewer)))))))
 
 (def request-view (fc/factory RequestView {:keyfn ::request-id}))
@@ -99,23 +101,32 @@
                                :display        "flex"
                                :flex-direction "column"
                                :flex           "1"
-                               :max-width      "100%"}]]
+                               :max-width      "100%"}]
+                 [:.blank {:background      "#ccc"
+                           :flex            "1"
+                           :display         "flex"
+                           :align-items     "center"
+                           :justify-content "center"}
+                  ui/text-sans-13]]
    :css-include [RequestItem ui/UIKit]
    :use-hooks?  true}
   (let [select-item  (pvh/use-callback #(fm/set-value! this :ui/active-request [::request-id %]))
         request-size (pvh/use-persistent-state ::request-size 300)]
     (ui/column {:classes [(ui/component-class RequestHistory :.container)]}
-      (dom/div (ui/gc :.flex)
-        (for [req requests]
-          (request-item req
-            {::on-select select-item
-             ::selected? (= (::request-id req) (::request-id active-request))})))
-
-      (if active-request
+      (if (seq requests)
         (fc/fragment
-          (ui/drag-resize {:state request-size :direction "down"})
-          (ui/column {:classes [(ui/css :.scrollbars)]
-                      :style   {:height (str @request-size "px")}}
-            (request-view active-request)))))))
+          (dom/div (ui/gc :.flex)
+            (for [req requests]
+              (request-item req
+                {::on-select select-item
+                 ::selected? (= (::request-id req) (::request-id active-request))})))
+
+          (if active-request
+            (fc/fragment
+              (ui/drag-resize {:state request-size :direction "down"})
+              (ui/column {:classes [(ui/css :.scrollbars)]
+                          :style   {:height (str @request-size "px")}}
+                (request-view active-request)))))
+        (dom/div :.blank "No request tracked yet.")))))
 
 (def request-history (fc/factory RequestHistory {:keyfn ::id}))

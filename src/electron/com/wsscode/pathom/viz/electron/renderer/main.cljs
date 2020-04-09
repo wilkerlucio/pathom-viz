@@ -6,6 +6,7 @@
             [clojure.set :as set]
             [com.fulcrologic.fulcro-css.css-injection :as cssi]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
+            [com.fulcrologic.fulcro.algorithms.merge :as merge]
             [com.fulcrologic.fulcro.application :as fapp]
             [com.fulcrologic.fulcro.components :as fc]
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
@@ -17,6 +18,7 @@
             [com.wsscode.pathom.viz.helpers :as pvh]
             [com.wsscode.pathom.viz.local-parser :as local.parser]
             [com.wsscode.pathom.viz.parser-assistant :as assistant]
+            [com.wsscode.pathom.viz.request-history :as request-history]
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.wsscode.transit :as wsst]
             [goog.object :as gobj]))
@@ -76,10 +78,17 @@
     (js/console.log "Disconnect client")
 
     ::pathom-request
-    (js/console.log "PATHOM REQ" msg)
+    (let [{:com.wsscode.pathom.viz.ws-connector.core/keys [request-id tx]} msg]
+      (merge/merge-component! this request-history/RequestView
+        {::request-history/request-id request-id
+         ::request-history/request    tx}
+        :append [::request-history/id client-id ::request-history/requests]))
 
     ::pathom-request-done
-    (js/console.log "PATHOM REQ DONE" msg)
+    (let [{:com.wsscode.pathom.viz.ws-connector.core/keys [request-id response]} msg]
+      (merge/merge-component! this request-history/RequestView
+        {::request-history/request-id request-id
+         ::request-history/response   response}))
 
     (js/console.warn "Unknown message received" msg)))
 
