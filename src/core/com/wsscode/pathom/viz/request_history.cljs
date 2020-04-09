@@ -81,8 +81,7 @@
                  [:&:hover {:background ui/color-highlight
                             :color      "#000"}]
                  [:&.selected {:background "#cae9fb"}]]
-                [:.code {:white-space "pre"}]]
-   :use-hooks? true}
+                [:.code {:white-space "pre"}]]}
   (dom/div :.container {:classes [(if selected? :.selected)] :onClick #(on-select request-id)}
     (pvh/pprint request)))
 
@@ -115,7 +114,7 @@
     (ui/column {:classes [(ui/component-class RequestHistory :.container)]}
       (if (seq requests)
         (fc/fragment
-          (dom/div (ui/gc :.flex)
+          (dom/div (ui/gc :.flex :.scrollbars)
             (for [req requests]
               (request-item req
                 {::on-select select-item
