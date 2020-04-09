@@ -675,7 +675,15 @@
 ; endregion
 
 (fc/defsc UIKit [_ _]
-  {:css         [[:.flex {:flex "1"}]
+  {:css         [[:$CodeMirror {:height   "100% !important"
+                                :width    "100% !important"
+                                :position "absolute !important"
+                                :z-index  "1"}
+                  [:$cm-atom-composite {:color "#ab890d"}]
+                  [:$cm-atom-ident {:color       "#219"
+                                    :font-weight "bold"}]]
+                 [:$CodeMirror-hint {:font-size "10px"}]
+                 [:.flex {:flex "1"}]
                  [:.scrollbars {:overflow "auto"}]
                  [:.no-scrollbars {:overflow "hidden"}]
                  [:.nowrap {:white-space "nowrap"}]

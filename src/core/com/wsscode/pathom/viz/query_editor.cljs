@@ -235,15 +235,7 @@
                  :ui/show-history?
                  :com.wsscode.pathom/trace
                  {:ui/trace-viewer (fc/get-query trace+plan/TraceWithPlan)}]
-   :css         [[:$CodeMirror {:height   "100% !important"
-                                :width    "100% !important"
-                                :position "absolute !important"
-                                :z-index  "1"}
-                  [:$cm-atom-composite {:color "#ab890d"}]
-                  [:$cm-atom-ident {:color       "#219"
-                                    :font-weight "bold"}]]
-                 [:$CodeMirror-hint {:font-size "10px"}]
-                 [:.container {:border         "1px solid #ddd"
+   :css         [[:.container {:border         "1px solid #ddd"
                                :display        "flex"
                                :flex-direction "column"
                                :flex           "1"
