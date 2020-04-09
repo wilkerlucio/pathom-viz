@@ -11,14 +11,12 @@
   (let [id    (or (::request-id data-tree)
                   (::request-id current-normalized)
                   (random-uuid))
-        trace (-> data-tree ::response :com.wsscode.pathom/trace)
-        res   (merge {::request-id   id
-                      ::trace-viewer (if trace
-                                       {::trace+plan/id           id
-                                        :com.wsscode.pathom/trace trace})}
-                current-normalized data-tree)]
-    (js/console.log "START" res)
-    res))
+        trace (-> data-tree ::response :com.wsscode.pathom/trace)]
+    (merge {::request-id   id
+            ::trace-viewer (if trace
+                             {::trace+plan/id           id
+                              :com.wsscode.pathom/trace trace})}
+      current-normalized data-tree)))
 
 (fc/defsc RequestView
   [this {::keys [request response trace-viewer]}]
@@ -53,7 +51,7 @@
                        :style       {:flex     "1"
                                      :overflow "auto"
                                      :height   (if trace-viewer (str @trace-size "px") "100%")}
-                       :value       (pvh/pprint response)})))
+                       :value       (pvh/pprint (dissoc response :com.wsscode.pathom/trace))})))
       (if trace-viewer
         (fc/fragment
           (ui/drag-resize {:state trace-size :direction "up"})
