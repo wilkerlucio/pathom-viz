@@ -31,34 +31,6 @@
         (dom/button {:onClick #(set-count! inc)}
           (str "Counter: " count))))))
 
-(ws/defcard use-atom-state-card
-  (hook-demo-card
-    (fn []
-      (let [count* (h/use-atom-state 0)]
-        (dom/button {:onClick #(swap! count* inc)}
-          (str "Counter: " @count*))))))
-
-(ws/defcard use-atom-state-lazy-card
-  (hook-demo-card
-    (fn []
-      (let [count* (h/use-atom-state (fn [] 0))]
-        (dom/button {:onClick #(swap! count* inc)}
-          (str "Counter: " @count*))))))
-
-(ws/defcard use-atom-state-card
-  (hook-demo-card
-    (fn []
-      (let [count* (h/use-atom-state 0)]
-        (dom/button {:onClick #(swap! count* inc)}
-          (str "Counter: " @count*))))))
-
-(ws/defcard use-persistent-state-card
-  (hook-demo-card
-    (fn []
-      (let [count* (h/use-persistent-state ::counter 0)]
-        (dom/button {:onClick #(reset! count* (inc @count*))}
-          (str "Counter: " @count*))))))
-
 (ws/defcard use-effect-card
   (hook-demo-card
     (fn []
@@ -184,3 +156,35 @@
                                          (js/console.log "<<<< Layout Effect")))
                   [])]
         (dom/div "Check console")))))
+
+(ws/defcard use-debug-value-card
+  (hook-demo-card
+    (fn []
+      (let [[count set-count!] (h/use-state (fn [] 0))]
+        (h/use-debug-value (if (< count 5) "Small" "Large"))
+        (h/use-debug-value (if (< count 5) "Small" "Large") cljs.core/count)
+        (dom/button {:onClick #(set-count! inc)}
+          (str "Counter: " count))))))
+
+;; other extensions
+
+(ws/defcard use-atom-state-card
+  (hook-demo-card
+    (fn []
+      (let [count* (h/use-atom-state 0)]
+        (dom/button {:onClick #(swap! count* inc)}
+          (str "Counter: " @count*))))))
+
+(ws/defcard use-atom-state-lazy-card
+  (hook-demo-card
+    (fn []
+      (let [count* (h/use-atom-state (fn [] 0))]
+        (dom/button {:onClick #(swap! count* inc)}
+          (str "Counter: " @count*))))))
+
+(ws/defcard use-persistent-state-card
+  (hook-demo-card
+    (fn []
+      (let [count* (h/use-persistent-state ::counter 0)]
+        (dom/button {:onClick #(reset! count* (inc @count*))}
+          (str "Counter: " @count*))))))

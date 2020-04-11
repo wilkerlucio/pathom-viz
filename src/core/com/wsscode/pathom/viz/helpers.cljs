@@ -303,8 +303,10 @@
   "A simple wrapper around React/useDebugValue.
 
   React docs: https://reactjs.org/docs/hooks-reference.html#uselayouteffect"
-  [value]
-  (react/useDebugValue value))
+  ([value]
+   (react/useDebugValue value))
+  ([value formatter]
+   (react/useDebugValue value formatter)))
 
 (deftype FulcroReactAtomState [value set-value!]
   IDeref
