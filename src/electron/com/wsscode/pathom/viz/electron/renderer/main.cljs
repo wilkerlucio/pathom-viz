@@ -118,7 +118,8 @@
 
         (reload-parsers-ui! this))
       (catch :default e
-        (js/console.error "Error syncing background parsers" e)))))
+        (js/console.error "Error syncing background parsers" e))))
+  js/undefined)
 
 ;; App Root Container
 

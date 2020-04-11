@@ -213,16 +213,19 @@
   (into-array (react/useState initial-value)))
 
 (defn use-effect
+  "A simple wrapper around React/useEffect."
   ([f]
-   (react/useEffect (wrap-effect f)))
+   (react/useEffect f))
   ([f args]
-   (react/useEffect (wrap-effect f) (to-array args))))
+   (react/useEffect f (to-array args))))
 
 (defn use-context
+  "A simple wrapper around React/useContext."
   [ctx]
   (react/useContext ctx))
 
 (defn use-reducer
+  "A simple wrapper around React/useReducer. Returns a cljs vector for easy destructuring"
   ([reducer initial-arg]
    (into-array (react/useReducer reducer initial-arg)))
   ([reducer initial-arg init]
@@ -308,5 +311,6 @@
                                           :k (gobj/get transform "k")})))
                         zoom       (doto (.zoom d3)
                                      (.on "zoom" apply-zoom))]
-                    (.call svg zoom)) [])
+                    (.call svg zoom)
+                    js/undefined) [])
      svg-transform)))

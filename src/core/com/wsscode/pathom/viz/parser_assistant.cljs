@@ -18,7 +18,8 @@
     (query-editor/load-indexes this {::query-editor/id (-> props :ui/query-editor ::query-editor/id)
                                      ::cp/parser-id    parser-id})
     (index-explorer/load-indexes this {::index-explorer/id (-> props :ui/index-explorer ::index-explorer/id)
-                                       ::cp/parser-id      parser-id})))
+                                       ::cp/parser-id      parser-id}))
+  js/undefined)
 
 (defn assoc-child [m path value]
   (if (map? (get-in m (butlast path)))
@@ -115,7 +116,8 @@
   ([app ref]
    (df/load! app ref MultiParserManager
      {:focus [::cp/available-parsers
-              ::manager-id]})))
+              ::manager-id]})
+   js/undefined))
 
 (defn prompt [this message initial]
   (let [ch (async/promise-chan)]

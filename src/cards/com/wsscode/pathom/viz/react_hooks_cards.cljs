@@ -71,14 +71,21 @@
   (hook-demo-card
     (fn []
       (let [count* (h/use-atom-state 0)]
-        (h/use-effect (fn [] (js/console.log ">>>> Empty Deps")
+        (h/use-effect (fn []
+                        (js/console.log ">>>> Only In")
+                        js/undefined)
+          [])
+        (h/use-effect (fn []
+                        (js/console.log ">>>> Empty Deps")
                         (fn []
                           (js/console.log "<<<< Empty Deps")))
           [])
-        (h/use-effect (fn [] (js/console.log ">>>> No deps")
+        (h/use-effect (fn []
+                        (js/console.log ">>>> No deps")
                         (fn []
                           (js/console.log "<<<< No Deps"))))
-        (h/use-effect (fn [] (js/console.log ">>>> Count Dep")
+        (h/use-effect (fn []
+                        (js/console.log ">>>> Count Dep")
                         (fn []
                           (js/console.log "<<<< Count Dep")))
           [@count*])
