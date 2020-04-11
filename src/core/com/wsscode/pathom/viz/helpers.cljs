@@ -204,6 +204,9 @@
         res
         js/undefined))))
 
+(defn create-context [default]
+  (react/createContext default))
+
 (defn use-state
   "A simple wrapper around React/useState. Returns a cljs vector for easy destructuring"
   [initial-value]
