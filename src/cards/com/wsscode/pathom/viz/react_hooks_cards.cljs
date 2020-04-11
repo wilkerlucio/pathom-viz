@@ -121,3 +121,20 @@
   (hook-demo-card
     (fn []
       (context-demo-app {}))))
+
+(defn sample-reducer [state {:keys [type] :as action}]
+  (case type
+    ::increment
+    (update state :count inc)
+
+    ::decrement
+    (update state :count dec)))
+
+(ws/defcard use-reducer-card
+  (hook-demo-card
+    (fn []
+      (let [[state dispatch] (h/use-reducer sample-reducer {:count 0})]
+        (dom/div
+          (dom/div "Count: " (:count state))
+          (dom/button {:onClick #(dispatch {:type ::decrement})} "-")
+          (dom/button {:onClick #(dispatch {:type ::increment})} "+"))))))

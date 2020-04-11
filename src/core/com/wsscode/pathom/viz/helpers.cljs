@@ -223,8 +223,10 @@
   (react/useContext ctx))
 
 (defn use-reducer
-  [reducer initial-arg init]
-  #_(into-array (useReducer)))
+  ([reducer initial-arg]
+   (into-array (react/useReducer reducer initial-arg)))
+  ([reducer initial-arg init]
+   (into-array (react/useReducer reducer initial-arg init))))
 
 (defn use-callback
   ([cb]
