@@ -145,3 +145,13 @@
           (dom/div "Count: " (:count state))
           (dom/button {:onClick #(dispatch {:type ::decrement})} "-")
           (dom/button {:onClick #(dispatch {:type ::increment})} "+"))))))
+
+(ws/defcard use-callback-card
+  (hook-demo-card
+    (fn []
+      (let [state*   (h/use-atom-state 0)
+            callback (h/use-callback #(swap! state* inc))]
+        (dom/div
+          (dom/div "FN Hash" (hash callback))
+          (dom/button {:onClick callback}
+            (str "Counter: " @state*)))))))
