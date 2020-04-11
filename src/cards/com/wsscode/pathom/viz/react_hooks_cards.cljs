@@ -165,3 +165,12 @@
           (dom/div "FN Hash" (hash callback))
           (dom/button {:onClick callback}
             (str "Counter: " @state*)))))))
+
+(ws/defcard use-ref-card
+  (hook-demo-card
+    (fn []
+      (let [ref (h/use-ref nil)
+            cb  (h/use-callback #(.focus (h/ref-current ref)))]
+        (dom/div
+          (dom/input {:ref ref :type "text"})
+          (dom/button {:onClick cb} "Focus the input"))))))
