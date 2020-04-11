@@ -253,20 +253,33 @@
    (into-array (react/useReducer reducer initial-arg init))))
 
 (defn use-callback
+  "A simple wrapper around React/useCallback. Converts args to js array before send.
+
+  React docs: https://reactjs.org/docs/hooks-reference.html#usecallback"
   ([cb]
    (react/useCallback cb #js []))
   ([cb args]
    (react/useCallback cb (to-array args))))
 
 (defn use-memo
+  "A simple wrapper around React/useMemo. Converts args to js array before send.
+
+  React docs: https://reactjs.org/docs/hooks-reference.html#usememo"
   ([cb]
    (react/useMemo cb))
   ([cb args]
    (react/useMemo cb (to-array args))))
 
 (defn use-ref
+  "A simple wrapper around React/useRef.
+
+  React docs: https://reactjs.org/docs/hooks-reference.html#useref"
   ([] (react/useRef nil))
   ([value] (react/useRef value)))
+
+(defn ref-current
+  "Helper to get current value from a React ref"
+  [ref] (gobj/get ref "current"))
 
 (defn use-imperative-handler [ref f]
   (react/useImperativeHandler ref f))
