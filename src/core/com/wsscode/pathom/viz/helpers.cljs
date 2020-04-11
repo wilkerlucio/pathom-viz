@@ -261,11 +261,16 @@
 (defn use-callback
   "A simple wrapper around React/useCallback. Converts args to js array before send.
 
+  Different from React, with a single argument this will use an empty js array as deps,
+  making run only once. To recompute on every render use `nil` as `args.
+
   React docs: https://reactjs.org/docs/hooks-reference.html#usecallback"
   ([cb]
    (react/useCallback cb #js []))
   ([cb args]
-   (react/useCallback cb (to-array args))))
+   (if args
+     (react/useCallback cb (to-array args))
+     (react/useCallback cb))))
 
 (defn use-memo
   "A simple wrapper around React/useMemo. Converts args to js array before send.
@@ -287,8 +292,12 @@
   "Helper to get current value from a React ref."
   [ref] (gobj/get ref "current"))
 
-(defn use-imperative-handler [ref f]
-  (react/useImperativeHandler ref f))
+(defn use-imperative-handle
+  "A simple wrapper around React/useImperativeHandle.
+
+  React docs: https://reactjs.org/docs/hooks-reference.html#useimperativehandle"
+  [ref f]
+  (js/React.useImperativeHandle ref f))
 
 (defn use-layout-effect
   "A simple wrapper around React/useLayoutEffect.
