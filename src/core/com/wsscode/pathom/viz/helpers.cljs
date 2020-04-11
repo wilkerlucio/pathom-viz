@@ -229,12 +229,16 @@
   (apply react/createElement (context-provider Context) (clj->js props) children))
 
 (defn use-state
-  "A simple wrapper around React/useState. Returns a cljs vector for easy destructuring"
+  "A simple wrapper around React/useState. Returns a cljs vector for easy destructuring.
+
+  React docs: https://reactjs.org/docs/hooks-reference.html#usestate"
   [initial-value]
   (into-array (react/useState initial-value)))
 
 (defn use-effect
-  "A simple wrapper around React/useEffect."
+  "A simple wrapper around React/useEffect.
+
+  React docs: https://reactjs.org/docs/hooks-reference.html#useeffect"
   ([f]
    (react/useEffect f))
   ([f args]
@@ -246,7 +250,9 @@
   (react/useContext ctx))
 
 (defn use-reducer
-  "A simple wrapper around React/useReducer. Returns a cljs vector for easy destructuring"
+  "A simple wrapper around React/useReducer. Returns a cljs vector for easy destructuring
+
+  React docs: https://reactjs.org/docs/hooks-reference.html#usecontext"
   ([reducer initial-arg]
    (into-array (react/useReducer reducer initial-arg)))
   ([reducer initial-arg init]
@@ -278,19 +284,26 @@
   ([value] (react/useRef value)))
 
 (defn ref-current
-  "Helper to get current value from a React ref"
+  "Helper to get current value from a React ref."
   [ref] (gobj/get ref "current"))
 
 (defn use-imperative-handler [ref f]
   (react/useImperativeHandler ref f))
 
 (defn use-layout-effect
+  "A simple wrapper around React/useLayoutEffect.
+
+  React docs: https://reactjs.org/docs/hooks-reference.html#uselayouteffect"
   ([f]
    (react/useLayoutEffect (wrap-effect f)))
   ([f args]
    (react/useLayoutEffect (wrap-effect f) (to-array args))))
 
-(defn use-debug-value [value]
+(defn use-debug-value
+  "A simple wrapper around React/useDebugValue.
+
+  React docs: https://reactjs.org/docs/hooks-reference.html#uselayouteffect"
+  [value]
   (react/useDebugValue value))
 
 (deftype FulcroReactAtomState [value set-value!]
