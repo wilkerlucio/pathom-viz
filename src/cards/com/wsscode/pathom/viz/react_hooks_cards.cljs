@@ -174,3 +174,13 @@
         (dom/div
           (dom/input {:ref ref :type "text"})
           (dom/button {:onClick cb} "Focus the input"))))))
+
+(ws/defcard use-layout-effect-card
+  (hook-demo-card
+    (fn []
+      (let [ref (h/use-layout-effect (fn []
+                                       (js/console.log ">>>> Layout Effect")
+                                       (fn []
+                                         (js/console.log "<<<< Layout Effect")))
+                  [])]
+        (dom/div "Check console")))))
