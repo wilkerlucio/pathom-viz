@@ -1,5 +1,11 @@
 # Change Log
 
+## [1.0.8]
+- Replace ghostwheel with guardrails
+- Ensure index-io is present to compute completions
+- Add flag to enable/disable trace support on query editor
+- Query editor supports sync and async parsers
+
 ## [1.0.7]
 - Fix graph comm in attribute graph panel
 
