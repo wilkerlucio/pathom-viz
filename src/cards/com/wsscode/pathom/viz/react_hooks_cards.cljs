@@ -42,7 +42,7 @@
 (ws/defcard use-effect-deps-card
   (hook-demo-card
     (fn []
-      (let [count* (h/use-atom-state 0)]
+      (let [[counter set-counter!] (h/use-state 0)]
         (h/use-effect (fn []
                         (js/console.log ">>>> Only In")
                         js/undefined)
@@ -60,9 +60,9 @@
                         (js/console.log ">>>> Count Dep")
                         (fn []
                           (js/console.log "<<<< Count Dep")))
-          [@count*])
-        (dom/button {:onClick #(reset! count* (inc @count*))}
-          (str "Click and check console: " @count*))))))
+          [counter])
+        (dom/button {:onClick #(set-counter! inc)}
+          (str "Click and check console: " counter))))))
 
 (def themes
   {:light {:background "#fff"
