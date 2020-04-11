@@ -155,3 +155,13 @@
           (dom/div "FN Hash" (hash callback))
           (dom/button {:onClick callback}
             (str "Counter: " @state*)))))))
+
+(ws/defcard use-memo-card
+  (hook-demo-card
+    (fn []
+      (let [state*   (h/use-atom-state 0)
+            callback (h/use-memo (fn [] #(swap! state* inc)) [])]
+        (dom/div
+          (dom/div "FN Hash" (hash callback))
+          (dom/button {:onClick callback}
+            (str "Counter: " @state*)))))))
