@@ -119,7 +119,7 @@
 (fc/defsc ContextDemoApp
   [this {::keys []}]
   {:use-hooks? true}
-  (dom/create-element (.-Provider SampleContext) #js {:value (:dark themes)}
+  (h/create-context-provider SampleContext {:value (:dark themes)}
     (context-demo-toolbar {})))
 
 (def context-demo-app (fc/factory ContextDemoApp))

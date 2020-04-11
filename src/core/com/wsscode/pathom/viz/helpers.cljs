@@ -204,8 +204,29 @@
         res
         js/undefined))))
 
-(defn create-context [default]
+(defn create-context
+  "A simple wrapper around React/createContext."
+  [default]
   (react/createContext default))
+
+(defn context-provider
+  "Helper to get the context provider from a React context."
+  [Context]
+  (gobj/get Context "Provider"))
+
+(defn create-context-provider
+  "Helper to create a context provider element from a react context.
+
+  Example:
+
+      ; define context
+      (def ThemeContext (create-context light-theme))
+
+      ; on some render
+      (create-context-provider ThemeContext {:value dark-theme}
+        (dom/div ...))"
+  [Context props & children]
+  (apply react/createElement (context-provider Context) (clj->js props) children))
 
 (defn use-state
   "A simple wrapper around React/useState. Returns a cljs vector for easy destructuring"
