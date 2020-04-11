@@ -1,12 +1,12 @@
 (ns com.wsscode.pathom.viz.codemirror
   (:require [cljs.reader :refer [read-string]]
-            [com.wsscode.fuzzy :as fuzzy]
             [cljs.spec.alpha :as s]
-            [clojure.string :as str]
             [cljsjs.codemirror]
+            [clojure.string :as str]
+            [com.wsscode.fuzzy :as fuzzy]
             [com.wsscode.pathom.connect :as pc]
-            [fulcro.client.dom :as dom]
-            [fulcro.client.primitives :as fp]
+            [com.fulcrologic.fulcro-css.localized-dom :as dom]
+            [com.fulcrologic.fulcro.components :as fc]
             [goog.object :as gobj]
 
             ["codemirror/mode/clojure/clojure"]
@@ -49,7 +49,7 @@
   (s/map-of string? (s/or :str string? :fn fn?)))
 
 (defn prop-call [comp name & args]
-  (when-let [f (-> comp fp/props name)]
+  (when-let [f (-> comp fc/props name)]
     (apply f args)))
 
 (defn html-props [props]
@@ -62,58 +62,59 @@
 
 (declare autocomplete)
 
-(fp/defui ^:once Editor
-  Object
-  (componentDidMount [this]
-    (let [textarea   (gobj/get this "textNode")
-          options    (-> this fp/props ::options (or {}) clj->js)
-          process    (-> this fp/props ::process)
-          codemirror (js/CodeMirror.fromTextArea textarea options)]
-      (reset! pathom-cache {})
+(fc/defsc Editor
+  [this props]
+  {:componentDidMount
+   (fn [this]
+     (let [textarea   (gobj/get this "textNode")
+           options    (-> this fc/props ::options (or {}) clj->js)
+           process    (-> this fc/props ::process)
+           codemirror (js/CodeMirror.fromTextArea textarea options)]
+       (reset! pathom-cache {})
 
-      (try
-        (.on codemirror "change" #(when (not= (gobj/get % "origin") "setValue")
-                                    (js/clearTimeout (gobj/get this "editorHold"))
-                                    (gobj/set this "editorHold"
-                                      (js/setTimeout
-                                        (fn []
-                                          (gobj/set this "editorHold" false))
-                                        300))
-                                    (prop-call this :onChange (.getValue %))))
-        (.setValue codemirror (-> this fp/props :value))
-        (if process (process codemirror))
-        (catch :default e (js/console.warn "Error setting up CodeMirror" e)))
-      (gobj/set this "codemirror" codemirror)))
+       (try
+         (.on codemirror "change" #(when (not= (gobj/get % "origin") "setValue")
+                                     (js/clearTimeout (gobj/get this "editorHold"))
+                                     (gobj/set this "editorHold"
+                                       (js/setTimeout
+                                         (fn []
+                                           (gobj/set this "editorHold" false))
+                                         300))
+                                     (prop-call this :onChange (.getValue %))))
+         (.setValue codemirror (-> this fc/props :value))
+         (if process (process codemirror))
+         (catch :default e (js/console.warn "Error setting up CodeMirror" e)))
+       (gobj/set this "codemirror" codemirror)))
 
-  (componentWillReceiveProps [this {:keys     [value force-index-update?]
-                                    ::pc/keys [indexes]}]
-    (let [cm        (gobj/get this "codemirror")
-          cur-index (gobj/getValueByKeys cm #js ["options" "pathomIndex"])]
-      (when (and cur-index (or force-index-update? (not= indexes @cur-index)))
-        (reset! pathom-cache {})
-        (reset! cur-index indexes)
-        (gobj/set (gobj/getValueByKeys cm #js ["options" "hintOptions"]) "hint" (partial autocomplete indexes)))
+   :UNSAFE_componentWillReceiveProps
+   (fn [this {:keys     [value force-index-update?]
+              ::pc/keys [indexes]}]
+     (let [cm        (gobj/get this "codemirror")
+           cur-index (gobj/getValueByKeys cm #js ["options" "pathomIndex"])]
+       (when (and cur-index (or force-index-update? (not= indexes @cur-index)))
+         (reset! pathom-cache {})
+         (reset! cur-index indexes)
+         (gobj/set (gobj/getValueByKeys cm #js ["options" "hintOptions"]) "hint" (partial autocomplete indexes)))
 
-      ; there is a race condition that happens when user types something, react updates state and try to update
-      ; the state back to the editor, which moves the cursor in the editor in weird ways. the workaround is to
-      ; stop accepting external values after a short period after user key strokes.
-      (if-not (gobj/get this "editorHold")
-        (let [cur-value (.getValue cm)]
-          (if (and cm value (not= value cur-value))
-            (.setValue cm value))))))
+       ; there is a race condition that happens when user types something, react updates state and try to update
+       ; the state back to the editor, which moves the cursor in the editor in weird ways. the workaround is to
+       ; stop accepting external values after a short period after user key strokes.
+       (if-not (gobj/get this "editorHold")
+         (let [cur-value (.getValue cm)]
+           (if (and cm value (not= value cur-value))
+             (.setValue cm value))))))
 
-  (componentWillUnmount [this]
-    (if-let [cm (gobj/get this "codemirror")]
-      (.toTextArea cm)))
+   :componentWillUnmount
+   (fn [this]
+     (if-let [cm (gobj/get this "codemirror")]
+       (.toTextArea cm)))}
 
-  (render [this]
-    (let [props (fp/props this)]
-      (dom/div (-> props (dissoc :value :onChange :force-index-update?) (html-props))
-        (js/React.createElement "textarea"
-          #js {:ref          #(gobj/set this "textNode" %)
-               :defaultValue (:value props)})))))
+  (dom/div (-> props (dissoc :value :onChange :force-index-update?) (html-props))
+    (js/React.createElement "textarea"
+      #js {:ref          #(gobj/set this "textNode" %)
+           :defaultValue (:value props)})))
 
-(def editor (fp/factory Editor))
+(def editor (fc/factory Editor))
 
 (defn escape-re [input]
   (let [re (js/RegExp. "([.*+?^=!:${}()|[\\]\\/\\\\])" "g")]

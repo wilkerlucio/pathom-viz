@@ -5,36 +5,40 @@
             [cljs.spec.alpha :as s]
             [clojure.string :as str]
             [clojure.test.check.generators :as gen]
+            [com.fulcrologic.fulcro-css.css :as css]
+            [com.fulcrologic.fulcro-css.localized-dom :as dom]
+            [com.fulcrologic.fulcro.algorithms.merge :as merge]
+            [com.fulcrologic.fulcro.application :as fa]
+            [com.fulcrologic.fulcro.components :as fc]
+            [com.fulcrologic.fulcro.mutations :as fm]
+            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
+            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [com.wsscode.fuzzy :as fuzzy]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.core :as p]
-            [com.wsscode.pathom.viz.helpers :as h]
+            [com.wsscode.pathom.viz.helpers :as pvh]
+            [com.wsscode.pathom.viz.ui.context :as uic]
             [com.wsscode.pathom.viz.ui.expandable-tree :as ex-tree]
             [com.wsscode.pathom.viz.ui.kit :as ui]
-            [com.wsscode.pathom.viz.ui.context :as uic]
             [com.wsscode.spec-inspec :as si]
             [edn-query-language.core :as eql]
-            [fulcro-css.css :as css]
-            [fulcro.client.localized-dom :as dom]
-            [fulcro.client.mutations :as fm]
-            [fulcro.client.primitives :as fp]
-            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
-            [goog.object :as gobj]))
+            [goog.object :as gobj]
+            [com.wsscode.pathom.viz.client-parser :as cp]))
 
 ; region specs
 
-(s/def ::weight nat-int?)
-(s/def ::reach nat-int?)
-(s/def ::resolvers ::pc/attributes-set)
+(>def ::weight nat-int?)
+(>def ::reach nat-int?)
+(>def ::resolvers ::pc/attributes-set)
 
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-node/attribute string?)
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-node/multiNode boolean?)
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-node/mainNode boolean?)
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-node/weight ::weight)
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-node/reach ::reach)
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-node/radius (s/and double? pos?))
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-node/attribute string?)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-node/multiNode boolean?)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-node/mainNode boolean?)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-node/weight ::weight)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-node/reach ::reach)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-node/radius (s/and double? pos?))
 
-(s/def ::attribute-node
+(>def ::attribute-node
   (s/keys :req-un [:com.wsscode.pathom.viz.index-explorer.attribute-node/attribute
                    :com.wsscode.pathom.viz.index-explorer.attribute-node/multiNode
                    :com.wsscode.pathom.viz.index-explorer.attribute-node/mainNode
@@ -42,27 +46,27 @@
                    :com.wsscode.pathom.viz.index-explorer.attribute-node/reach
                    :com.wsscode.pathom.viz.index-explorer.attribute-node/radius]))
 
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-link/source string?)
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-link/weight ::weight)
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-link/resolvers string?)
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-link/target string?)
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-link/deep boolean?)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-link/source string?)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-link/weight ::weight)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-link/resolvers string?)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-link/target string?)
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-link/deep boolean?)
 
-(s/def ::attribute-link
+(>def ::attribute-link
   (s/keys :req-un [:com.wsscode.pathom.viz.index-explorer.attribute-link/source
                    :com.wsscode.pathom.viz.index-explorer.attribute-link/weight
                    :com.wsscode.pathom.viz.index-explorer.attribute-link/resolvers
                    :com.wsscode.pathom.viz.index-explorer.attribute-link/target
                    :com.wsscode.pathom.viz.index-explorer.attribute-link/deep]))
 
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-graph/nodes (s/coll-of ::attribute-node))
-(s/def :com.wsscode.pathom.viz.index-explorer.attribute-graph/links (s/coll-of ::attribute-link))
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-graph/nodes (s/coll-of ::attribute-node))
+(>def :com.wsscode.pathom.viz.index-explorer.attribute-graph/links (s/coll-of ::attribute-link))
 
-(s/def ::attribute-graph
+(>def ::attribute-graph
   (s/keys :req-un [:com.wsscode.pathom.viz.index-explorer.attribute-graph/nodes
                    :com.wsscode.pathom.viz.index-explorer.attribute-graph/links]))
 
-(s/def ::maybe-nested-input (s/or :direct set? :nested vector?))
+(>def ::maybe-nested-input (s/or :direct set? :nested vector?))
 
 ; endregion
 
@@ -72,25 +76,25 @@
 
 (>defn call-graph-comm [comp f k]
   [any? string? any? => any?]
-  (if-let [settings (or (some-> (fp/get-state comp :graph-comm) deref)
-                        (some-> comp fp/props fp/get-computed ::graph-comm deref))]
+  (if-let [settings (or (some-> (fc/get-state comp :graph-comm) deref)
+                        (some-> comp fc/props fc/get-computed ::graph-comm deref))]
     ((gobj/get settings f) (str k))))
 
 (defn attribute-graph-events [this k]
-  (let [on-select-attribute (-> this fp/props fp/get-computed ::on-select-attribute)]
+  (let [on-select-attribute (-> this fc/props fc/get-computed ::on-select-attribute)]
     {:onClick      #(on-select-attribute k)
      :onMouseEnter #(call-graph-comm this "highlightNode" k)
      :onMouseLeave #(call-graph-comm this "unhighlightNode" k)}))
 
 (defn resolver-graph-events [this k]
-  (let [on-select-resolver (-> this fp/props fp/get-computed ::on-select-resolver)]
+  (let [on-select-resolver (-> this fc/props fc/get-computed ::on-select-resolver)]
     {:onClick      #(on-select-resolver k)
      :onMouseEnter #(call-graph-comm this "highlightEdge" k)
      :onMouseLeave #(call-graph-comm this "unhighlightEdge" k)}))
 
 (def color-attribute "#9a45b1")
 
-(fp/defsc AttributeLink
+(fc/defsc AttributeLink
   [this {::pc/keys [attribute] ::ui/keys [render] :as props}]
   {:css [[:.container {:cursor      "pointer"
                        :color       color-attribute
@@ -100,11 +104,11 @@
   (dom/div :.container (ui/dom-props (merge (attribute-graph-events this attribute) props))
     (if render (render props) (pr-str attribute))))
 
-(def attribute-link (fp/computed-factory AttributeLink {:keyfn (comp pr-str ::pc/attribute)}))
+(def attribute-link (fc/computed-factory AttributeLink {:keyfn (comp pr-str ::pc/attribute)}))
 
 (def color-resolver "#467cb7")
 
-(fp/defsc ResolverLink
+(fc/defsc ResolverLink
   [this {::pc/keys [sym] ::ui/keys [render] :as props}]
   {:css [[:.container {:cursor      "pointer"
                        :color       color-resolver
@@ -114,22 +118,22 @@
   (dom/div :.container (ui/dom-props (merge (resolver-graph-events this sym) props))
     (if render (render props) (pr-str sym))))
 
-(def resolver-link (fp/computed-factory ResolverLink {:keyfn (comp pr-str ::pc/sym)}))
+(def resolver-link (fc/computed-factory ResolverLink {:keyfn (comp pr-str ::pc/sym)}))
 
 (def color-mutation "#ef6c00")
 
-(fp/defsc MutationLink
+(fc/defsc MutationLink
   [this {::pc/keys [sym] ::ui/keys [render] :as props}]
   {:css [[:.container {:cursor      "pointer"
                        :color       color-mutation
                        :font-size   "14px"
                        :line-height "1.4em"}
           ui/text-base]]}
-  (let [on-select-mutation (-> this fp/props fp/get-computed ::on-select-mutation)]
+  (let [on-select-mutation (-> this fc/props fc/get-computed ::on-select-mutation)]
     (dom/div :.container (ui/dom-props (merge {:onClick #(on-select-mutation sym)} props))
       (if render (render props) (pr-str sym)))))
 
-(def mutation-link (fp/computed-factory MutationLink {:keyfn (comp pr-str ::pc/sym)}))
+(def mutation-link (fc/computed-factory MutationLink {:keyfn (comp pr-str ::pc/sym)}))
 
 ;endregion
 
@@ -172,7 +176,7 @@
 (>defn compute-nodes-links [{::keys [attributes]}]
   [(s/keys :req [::attributes]) => ::attribute-graph]
   (let [attributes (filter ::pc/attribute attributes)
-        index      (h/index-by ::pc/attribute attributes)]
+        index      (pvh/index-by ::pc/attribute attributes)]
     {:nodes (into [] (map attribute->node) attributes)
      :links (mapcat
               (fn [{::pc/keys [attribute attr-provides]}]
@@ -196,7 +200,7 @@
               attributes)}))
 
 (defn render-attribute-graph [this]
-  (let [{::keys [on-show-details on-click-edge graph-comm] :as props} (-> this fp/props)
+  (let [{::keys [on-show-details on-click-edge graph-comm] :as props} (-> this fc/props)
         on-show-details (or on-show-details identity)
         on-click-edge   (or on-click-edge identity)
         current         (gobj/get this "renderedData")
@@ -217,7 +221,7 @@
       (if graph-comm (reset! graph-comm render-settings))
       (gobj/set this "renderedData" render-settings))))
 
-(fp/defsc AttributeGraph
+(fc/defsc AttributeGraph
   [this {::keys []}]
   {:css
    [[:.container {:flex      1
@@ -272,29 +276,29 @@
      [:text {:font "bold 18px Verdana, Helvetica, Arial, sans-serif"}]]]
 
    :componentDidMount
-   (fn []
+   (fn [this]
      (render-attribute-graph this)
      #_(addResizeListener (gobj/get this "svgContainer") #(recompute-trace-size this)))
 
    :componentDidUpdate
-   (fn [prev-props _]
-     (when (not= prev-props (-> this fp/props))
+   (fn [this prev-props _]
+     (when (not= prev-props (-> this fc/props))
        (render-attribute-graph this)))
 
    :componentWillUnmount
-   (fn []
+   (fn [this]
      (if-let [settings (gobj/get this "renderedData")]
        ((gobj/get settings "dispose"))))
 
    :componentDidCatch
-   (fn [error info]
-     (fp/set-state! this {::error-catch? true}))}
+   (fn [this error info]
+     (fc/set-state! this {::error-catch? true}))}
   (dom/div :.container {:ref #(gobj/set this "svgContainer" %)}
-    (if (fp/get-state this ::error-catch?)
+    (if (fc/get-state this ::error-catch?)
       (dom/div "Error rendering trace, check console for details")
       (dom/svg {:ref #(gobj/set this "svg" %)}))))
 
-(def attribute-graph (fp/factory AttributeGraph))
+(def attribute-graph (fc/factory AttributeGraph))
 
 (>defn pull-attr
   "Get attribute from index, remove provides when interconnections is falsy."
@@ -318,7 +322,7 @@
     :as    options} source]
   (if (contains? attr-visited source)
     sub-index
-    (let [index    (or attr-index (h/index-by ::pc/attribute attributes))
+    (let [index    (or attr-index (pvh/index-by ::pc/attribute attributes))
           base     (merge sub-index (select-keys index [source]))
           {::pc/keys [attr-reach-via attr-provides]} (get index source)
           options' (assoc options ::attr-index index
@@ -369,7 +373,7 @@
   (if (vector? x) (first x) x))
 
 (>defn attr-provides->path-map [attr-provides]
-  [::pc/attr-provides => ::h/path-map]
+  [::pc/attr-provides => ::pvh/path-map]
   (into {}
         (comp (map #(update % 0 (fn [x] (if (keyword? x) [x] x))))
               (map (fn [[path resolvers]]
@@ -381,17 +385,17 @@
   [::pc/attr-provides => ::ex-tree/root]
   (-> attr-provides
       attr-provides->path-map
-      h/path-map->tree))
+      pvh/path-map->tree))
 
 (defn render-plugin-extension [this view]
   (let [plugins (-> (gobj/get this "context") ::plugins)
-        data    (-> this fp/get-reconciler fp/app-state deref (get-in (fp/get-ident this)))]
+        data    (-> this fa/current-state (get-in (fc/get-ident this)))]
     (for [{::keys [plugin-id] :as plugin} plugins
           :when (contains? plugin view)]
       (dom/div {:key (pr-str plugin-id)}
         ((get plugin view) data)))))
 
-(fp/defsc AttributeInfoReachVia
+(fc/defsc AttributeInfoReachVia
   [this {::pc/keys [attr-reach-via]} computed]
   {:ident [::pc/attribute ::pc/attribute]
    :query [::pc/attribute ::pc/attr-reach-via]}
@@ -421,9 +425,9 @@
                                    :style         {:marginLeft (str (* i 10) "px")}}
                     computed))))))))))
 
-(def attribute-info-reach-via (fp/computed-factory AttributeInfoReachVia))
+(def attribute-info-reach-via (fc/computed-factory AttributeInfoReachVia))
 
-(fp/defsc AttributeInfoMutationParamIn
+(fc/defsc AttributeInfoMutationParamIn
   [this {::pc/keys [attr-mutation-param-in]} computed]
   {:ident [::pc/attribute ::pc/attribute]
    :query [::pc/attribute ::pc/attr-mutation-param-in]}
@@ -432,9 +436,9 @@
     (for [sym (sort attr-mutation-param-in)]
       (mutation-link {::pc/sym sym} computed))))
 
-(def attribute-info-mutation-param-in (fp/computed-factory AttributeInfoMutationParamIn))
+(def attribute-info-mutation-param-in (fc/computed-factory AttributeInfoMutationParamIn))
 
-(fp/defsc AttributeInfoMutationOutputIn
+(fc/defsc AttributeInfoMutationOutputIn
   [this {::pc/keys [attr-mutation-output-in]} computed]
   {:ident [::pc/attribute ::pc/attribute]
    :query [::pc/attribute ::pc/attr-mutation-output-in]}
@@ -443,9 +447,9 @@
     (for [sym (sort attr-mutation-output-in)]
       (mutation-link {::pc/sym sym} computed))))
 
-(def attribute-info-mutation-output-in (fp/computed-factory AttributeInfoMutationOutputIn))
+(def attribute-info-mutation-output-in (fc/computed-factory AttributeInfoMutationOutputIn))
 
-(fp/defsc ExamplesPanel
+(fc/defsc ExamplesPanel
   [this {::pc/keys [attribute]}]
   {:css [[:.examples {:font-family ui/font-code}]
          [:.error {:color "#f44336"}]]}
@@ -453,7 +457,7 @@
              (ui/row {:classes [:.center]}
                (dom/div "Examples")
                (dom/div (ui/gc :.flex))
-               (ui/button {:onClick #(fp/set-state! this {:seed (rand)})} (dom/i {:classes ["fa" "fa-sync-alt"]})))}
+               (ui/button {:onClick #(fc/set-state! this {:seed (rand)})} (dom/i {:classes ["fa" "fa-sync-alt"]})))}
     (dom/div :.examples
       (try
         (let [samples (vec (distinct (gen/sample (s/gen attribute))))
@@ -467,9 +471,9 @@
             "Error generating samples:"
             (dom/pre :.error (ex-message ex))))))))
 
-(def examples-panel (fp/computed-factory ExamplesPanel))
+(def examples-panel (fc/computed-factory ExamplesPanel))
 
-(fp/defsc AttributeGraphPanel
+(fc/defsc AttributeGraphPanel
   [this {::pc/keys [attribute]
          ::keys    [attr-depth direct-reaches? nested-reaches? direct-provides?
                     nested-provides? interconnections?]}
@@ -521,18 +525,18 @@
         (attribute-graph
           (merge {::attributes      (attribute-network
                                       (merge {::attr-depth attr-depth
-                                              ::attr-index (h/index-by ::pc/attribute attributes)
+                                              ::attr-index (pvh/index-by ::pc/attribute attributes)
                                               ::attributes attributes}
                                         shared-options)
                                       attribute)
                   ::on-show-details on-select-attribute
-                  ::on-click-edge   (fp/get-state this :select-resolver)
+                  ::on-click-edge   (fc/get-state this :select-resolver)
                   ::graph-comm      graph-comm}
             shared-options))))))
 
-(def attribute-graph-panel (fp/computed-factory AttributeGraphPanel))
+(def attribute-graph-panel (fc/computed-factory AttributeGraphPanel))
 
-(fp/defsc AttributeView
+(fc/defsc AttributeView
   [this {::pc/keys [attr-combinations attribute attr-reach-via attr-provides
                     attr-input-in attr-output-in
                     attr-mutation-param-in attr-mutation-output-in]
@@ -561,11 +565,11 @@
                     ::pc/attr-output-in ::pc/attr-mutation-param-in
                     ::pc/attr-mutation-output-in
                     ::show-graph? ::pc/attr-reach-via ::pc/attr-provides
-                    {:>/graph-panel (fp/get-query AttributeGraphPanel)}
-                    {:>/reach-via (fp/get-query AttributeInfoReachVia)}
-                    {:>/mutation-param-in (fp/get-query AttributeInfoMutationParamIn)}
-                    {:>/mutation-output-in (fp/get-query AttributeInfoMutationOutputIn)}
-                    {:ui/provides-tree (fp/get-query ex-tree/ExpandableTree)}
+                    {:>/graph-panel (fc/get-query AttributeGraphPanel)}
+                    {:>/reach-via (fc/get-query AttributeInfoReachVia)}
+                    {:>/mutation-param-in (fc/get-query AttributeInfoMutationParamIn)}
+                    {:>/mutation-output-in (fc/get-query AttributeInfoMutationOutputIn)}
+                    {:ui/provides-tree (fc/get-query ex-tree/ExpandableTree)}
                     :ui/provides-tree-source]
    :css            [[:.container {:flex           "1"
                                   :flex-direction "column"
@@ -580,7 +584,7 @@
                                    :font-family ui/font-base
                                    :font-size   "1.1rem"}]
                     [:.graph-options {:font-size "0.9rem"}
-                     [(ui/component-class ui/ToggleAction :.container)
+                     [(str "." (ui/component-class ui/ToggleAction :.container))
                       {:margin "0 2px"}]]
                     [:.data-list {:white-space   "nowrap"
                                   ;:overflow      "auto"
@@ -605,11 +609,12 @@
                     [:.links-display {:display     "none"
                                       :margin-left "16px"}]]
    :css-include    [AttributeGraph ui/ToggleAction ExamplesPanel]
-   :initLocalState (fn [] {:graph-comm      (atom nil)
-                           :select-resolver (fn [{::keys [resolvers]}]
-                                              (let [{::keys [on-select-resolver]} (fp/get-computed (fp/props this))]
-                                                (on-select-resolver (first resolvers))))})}
-  (let [computed (assoc computed ::graph-comm (fp/get-state this :graph-comm))]
+   :initLocalState (fn [this]
+                     {:graph-comm      (atom nil)
+                      :select-resolver (fn [{::keys [resolvers]}]
+                                         (let [{::keys [on-select-resolver]} (fc/get-computed (fc/props this))]
+                                           (on-select-resolver (first resolvers))))})}
+  (let [computed (assoc computed ::graph-comm (fc/get-state this :graph-comm))]
     (dom/div :.container
       (dom/div :.toolbar
         (dom/h1 :.title (ui/gc :.flex) (pr-str attribute))
@@ -654,13 +659,13 @@
               (attribute-graph
                 (merge {::attributes      (attribute-network
                                             (merge {::attr-depth attr-depth
-                                                    ::attr-index (h/index-by ::pc/attribute attributes)
+                                                    ::attr-index (pvh/index-by ::pc/attribute attributes)
                                                     ::attributes attributes}
                                               shared-options)
                                             attribute)
                         ::on-show-details on-select-attribute
-                        ::on-click-edge   (fp/get-state this :select-resolver)
-                        ::graph-comm      (fp/get-state this :graph-comm)}
+                        ::on-click-edge   (fc/get-state this :select-resolver)
+                        ::graph-comm      (fc/get-state this :graph-comm)}
                   shared-options))))))
 
       (dom/div :.columns$scrollbars
@@ -677,7 +682,7 @@
           (if (seq attr-combinations)
             (ui/panel {::ui/panel-title "Input Combinations"
                        ::ui/panel-tag   (count attr-combinations)}
-              (for [input (sort-by (comp vec sort) h/vector-compare (map #(into (sorted-set) %) attr-combinations))]
+              (for [input (sort-by (comp vec sort) pvh/vector-compare (map #(into (sorted-set) %) attr-combinations))]
                 (attribute-link {::pc/attribute input} computed))))
 
           (if (seq attr-mutation-param-in)
@@ -687,7 +692,7 @@
             (attribute-info-mutation-output-in mutation-output-in computed))
 
           (if-let [form (si/safe-form attribute)]
-            (fp/fragment
+            (fc/fragment
               (ui/panel {::ui/panel-title "Spec"}
                 (pr-str form))
 
@@ -717,7 +722,7 @@
 
 (gobj/set AttributeView "contextType" ExtensionContext)
 
-(def attribute-view (fp/computed-factory AttributeView {:keyfn ::pc/attribute}))
+(def attribute-view (fc/computed-factory AttributeView {:keyfn ::pc/attribute}))
 
 (>defn out-all-attributes [{:keys [children]} input]
   [:edn-query-language.ast/node ::pc/input
@@ -730,7 +735,7 @@
     #{}
     children))
 
-(fp/defsc ResolverView
+(fc/defsc ResolverView
   [this {::pc/keys [sym input output batch?]
          :ui/keys  [output-tree]}
    {::keys [on-select-attribute attributes] :as computed}
@@ -742,23 +747,23 @@
                        data-tree))
    :ident          [::pc/sym ::pc/sym]
    :query          [::pc/sym ::pc/input ::pc/output ::pc/batch?
-                    {:ui/output-tree (fp/get-query ex-tree/ExpandableTree)}]
+                    {:ui/output-tree (fc/get-query ex-tree/ExpandableTree)}]
    :css            [[:.title {:color color-resolver}
                      ui/css-header
                      ui/text-base]
                     [:.menu {:white-space   "nowrap"
                              :padding-right "12px"
                              :overflow      "auto"}]]
-   :initLocalState (fn [] {:graph-comm      (atom nil)
-                           :select-resolver (fn [{::keys [resolvers]}]
-                                              (let [{::keys [on-select-resolver]} (fp/get-computed (fp/props this))]
-                                                (on-select-resolver (first resolvers))))
-                           :render          (fn [{:keys [key]}]
-                                              (let [computed (-> this fp/props fp/get-computed)
-                                                    computed (assoc computed ::graph-comm (fp/get-state this :graph-comm))]
-                                                (attribute-link {::pc/attribute key} computed)))})}
+   :initLocalState (fn [this] {:graph-comm      (atom nil)
+                               :select-resolver (fn [{::keys [resolvers]}]
+                                                  (let [{::keys [on-select-resolver]} (fc/get-computed (fc/props this))]
+                                                    (on-select-resolver (first resolvers))))
+                               :render          (fn [{:keys [key]}]
+                                                  (let [computed (-> this fc/props fc/get-computed)
+                                                        computed (assoc computed ::graph-comm (fc/get-state this :graph-comm))]
+                                                    (attribute-link {::pc/attribute key} computed)))})}
   (let [input'   (if (= 1 (count input)) (first input) input)
-        computed (assoc computed ::graph-comm (fp/get-state this :graph-comm))]
+        computed (assoc computed ::graph-comm (fc/get-state this :graph-comm))]
     (ui/column (ui/gc :.flex)
       (dom/h1 :.title (str sym))
       (ui/row (ui/gc :.flex :.no-scrollbars)
@@ -777,27 +782,27 @@
                 {::ex-tree/root    (-> (eql/query->ast output)
                                        (update :children
                                          #(remove (comp input :key) %)))
-                 ::ex-tree/render  (fp/get-state this :render)
+                 ::ex-tree/render  (fc/get-state this :render)
                  ::ex-tree/sort-by :key})))
 
           (render-plugin-extension this ::plugin-render-to-resolver-menu))
 
         (if input
           (let [resolver-attrs (conj (out-all-attributes (->> output eql/query->ast) input) input')
-                attrs          (-> (h/index-by ::pc/attribute attributes)
+                attrs          (-> (pvh/index-by ::pc/attribute attributes)
                                    (select-keys resolver-attrs)
                                    (update input' assoc ::center? true)
                                    vals)]
             (attribute-graph {::attributes      attrs
-                              ::graph-comm      (fp/get-state this :graph-comm)
+                              ::graph-comm      (fc/get-state this :graph-comm)
                               ::on-show-details on-select-attribute
-                              ::on-click-edge   (fp/get-state this :select-resolver)})))))))
+                              ::on-click-edge   (fc/get-state this :select-resolver)})))))))
 
 (gobj/set ResolverView "contextType" ExtensionContext)
 
-(def resolver-view (fp/factory ResolverView {:keyfn ::pc/sym}))
+(def resolver-view (fc/factory ResolverView {:keyfn ::pc/sym}))
 
-(fp/defsc MutationView
+(fc/defsc MutationView
   [this {::pc/keys [sym params output]
          :ui/keys  [mutation-params-tree mutation-output-tree]}]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
@@ -808,13 +813,14 @@
                        data-tree))
    :ident          [::mutation-sym ::mutation-sym]
    :query          [::mutation-sym ::pc/sym ::pc/params ::pc/output
-                    {:ui/mutation-params-tree (fp/get-query ex-tree/ExpandableTree)}
-                    {:ui/mutation-output-tree (fp/get-query ex-tree/ExpandableTree)}]
+                    {:ui/mutation-params-tree (fc/get-query ex-tree/ExpandableTree)}
+                    {:ui/mutation-output-tree (fc/get-query ex-tree/ExpandableTree)}]
    :css            [[:.title {:color color-mutation}
                      ui/css-header
                      ui/text-base]]
-   :initLocalState (fn [] {:render (fn [{:keys [key]}]
-                                     (attribute-link {::pc/attribute key} (-> this fp/props fp/get-computed)))})}
+   :initLocalState (fn [this]
+                     {:render (fn [{:keys [key]}]
+                                (attribute-link {::pc/attribute key} (-> this fc/props fc/get-computed)))})}
   (ui/column (ui/gc :.flex)
     (dom/h1 :.title (str sym))
     (ui/row (ui/gc :.flex :.scrollbars :.nowrap)
@@ -823,7 +829,7 @@
           (ui/panel {::ui/panel-title "Params"}
             (ex-tree/expandable-tree mutation-params-tree
               {::ex-tree/root    (eql/query->ast params)
-               ::ex-tree/render  (fp/get-state this :render)
+               ::ex-tree/render  (fc/get-state this :render)
                ::ex-tree/sort-by :key})))
 
         (render-plugin-extension this ::plugin-render-to-mutation-view-left))
@@ -835,14 +841,14 @@
           (ui/panel {::ui/panel-title "Output"}
             (ex-tree/expandable-tree mutation-output-tree
               {::ex-tree/root    (eql/query->ast output)
-               ::ex-tree/render  (fp/get-state this :render)
+               ::ex-tree/render  (fc/get-state this :render)
                ::ex-tree/sort-by :key})))
 
         (render-plugin-extension this ::plugin-render-to-mutation-view-right)))))
 
 (gobj/set MutationView "contextType" ExtensionContext)
 
-(def mutation-view (fp/factory MutationView {:keyfn ::pc/sym}))
+(def mutation-view (fc/factory MutationView {:keyfn ::pc/sym}))
 
 (defn realize-references [state coll]
   (mapv #(get-in state %) coll))
@@ -873,15 +879,15 @@
                       (fuzzy/fuzzy-match {::fuzzy/options      items
                                           ::fuzzy/search-input text})
                       [])]
-      (swap! state fp/merge-component SearchEverything (into {::search-results (vec (take max-search-results fuzzy-res))} [ref]))
+      (swap! state merge/merge-component SearchEverything (into {::search-results (vec (take max-search-results fuzzy-res))} [ref]))
       (swap! state update-in ref assoc ::text text))))
 
 (defn remove-not-found [x]
   (p/transduce-maps
-    (remove (fn [[_ v]] (contains? #{::p/not-found ::fp/not-found} v)))
+    (remove (fn [[_ v]] (contains? #{::p/not-found ::fc/not-found} v)))
     x))
 
-(fp/defsc AllAttributesList
+(fc/defsc AllAttributesList
   [this {::keys [attributes] :as props} computed]
   {}
   (ui/collapsible-box (assoc props ::ui/title "Attributes")
@@ -895,29 +901,29 @@
                                       :react-key     (pr-str attribute)} computed))))
             attributes))))
 
-(def all-attributes-list (fp/computed-factory AllAttributesList))
+(def all-attributes-list (fc/computed-factory AllAttributesList))
 
 (def last-value (atom nil))
 
-(fp/defsc AllResolversList
+(fc/defsc AllResolversList
   [this {::keys [resolvers] :as props} computed]
   {}
   (ui/collapsible-box (assoc props ::ui/title "Resolvers")
     (dom/div
       (mapv #(resolver-link % computed) resolvers))))
 
-(def all-resolvers-list (fp/computed-factory AllResolversList))
+(def all-resolvers-list (fc/computed-factory AllResolversList))
 
-(fp/defsc AllMutationsList
+(fc/defsc AllMutationsList
   [this {::keys [mutations] :as props} computed]
   {}
   (ui/collapsible-box (assoc props ::ui/title "Mutations")
     (dom/div
       (mapv #(mutation-link % computed) mutations))))
 
-(def all-mutations-list (fp/computed-factory AllMutationsList))
+(def all-mutations-list (fc/computed-factory AllMutationsList))
 
-(fp/defsc SearchEverything
+(fc/defsc SearchEverything
   [this
    {::keys   [text search-results attributes resolvers mutations]
     :ui/keys [collapse-attributes? collapse-resolvers? collapse-mutations?]}
@@ -946,33 +952,22 @@
    :css            [[:.container {:flex        "1"
                                   :white-space "nowrap"
                                   :overflow    "auto"}]]
-   :initLocalState (fn [] {:search
-                           #(fp/transact! this [`(search {::text ~(h/target-value %)})])
+   :initLocalState (fn [this]
+                     {:search
+                      #(fc/transact! this [(search {::text (pvh/target-value %)})])
 
-                           :toggle-attribute-collapse
-                           #(fm/toggle! this :ui/collapse-attributes?)
+                      :toggle-attribute-collapse
+                      #(fm/toggle! this :ui/collapse-attributes?)
 
-                           :toggle-resolver-collapse
-                           #(fm/toggle! this :ui/collapse-resolvers?)
+                      :toggle-resolver-collapse
+                      #(fm/toggle! this :ui/collapse-resolvers?)
 
-                           :toggle-mutation-collapse
-                           #(fm/toggle! this :ui/collapse-mutations?)
-
-                           :all-attributes
-                           (let [props    (fp/props this)
-                                 computed (fp/get-computed props)]
-                             (dom/div
-                               (attribute-link {::pc/attribute #{}} computed)
-                               (into []
-                                     (comp
-                                       (filter (comp keyword? ::pc/attribute))
-                                       (map (fn [{::pc/keys [attribute]}]
-                                              (attribute-link {::pc/attribute attribute} computed))))
-                                     (::attributes props))))})}
+                      :toggle-mutation-collapse
+                      #(fm/toggle! this :ui/collapse-mutations?)})}
   (ui/column (ui/gc :.flex)
     (ui/text-field {:placeholder   "Filter"
-                    :value         text
-                    :onChange      (fp/get-state this :search)
+                    :value         (or text "")
+                    :onChange      (fc/get-state this :search)
                     ::ui/left-icon :$fa-search
                     ::ui/on-clear  #(fm/set-value! this ::text "")})
     (ui/column (ui/gc :.flex :.scrollbars)
@@ -999,17 +994,17 @@
       (dom/div :.container {:style {:display (if (> (count text) 2) "none")}}
         (all-attributes-list {::attributes    attributes
                               ::ui/collapsed? collapse-attributes?
-                              ::ui/on-toggle  (fp/get-state this :toggle-attribute-collapse)} computed)
+                              ::ui/on-toggle  (fc/get-state this :toggle-attribute-collapse)} computed)
         (all-resolvers-list {::resolvers     resolvers
                              ::ui/collapsed? collapse-resolvers?
-                             ::ui/on-toggle  (fp/get-state this :toggle-resolver-collapse)} computed)
+                             ::ui/on-toggle  (fc/get-state this :toggle-resolver-collapse)} computed)
         (all-mutations-list {::mutations     mutations
                              ::ui/collapsed? collapse-mutations?
-                             ::ui/on-toggle  (fp/get-state this :toggle-mutation-collapse)} computed)))))
+                             ::ui/on-toggle  (fc/get-state this :toggle-mutation-collapse)} computed)))))
 
-(def search-everything (fp/computed-factory SearchEverything))
+(def search-everything (fc/computed-factory SearchEverything))
 
-(fp/defsc AttributeMismatchPanel
+(fc/defsc AttributeMismatchPanel
   [this {::keys [attr-type-mismatch attr-mismatch-expanded]} computed]
   {:pre-merge (fn [{:keys [current-normalized data-tree]}]
                 (merge {::attr-mismatch-expanded #{}} current-normalized data-tree))
@@ -1021,7 +1016,7 @@
     (for [{::pc/keys [attribute attr-leaf-in attr-branch-in]} attr-type-mismatch]
       (ui/raw-collapsible {:react-key      (pr-str attribute)
                            ::ui/collapsed? (not (contains? attr-mismatch-expanded attribute))
-                           ::ui/on-toggle  #(h/update-value! this ::attr-mismatch-expanded h/toggle-set-item attribute)
+                           ::ui/on-toggle  #(pvh/update-value! this ::attr-mismatch-expanded pvh/toggle-set-item attribute)
                            ::ui/title      (attribute-link {::pc/attribute attribute} computed)}
         (dom/div :.resolver-container
           (for [resolver attr-branch-in]
@@ -1030,9 +1025,9 @@
           (for [resolver attr-leaf-in]
             (resolver-link {::pc/sym resolver} computed)))))))
 
-(def attribute-mismatch-panel (fp/computed-factory AttributeMismatchPanel))
+(def attribute-mismatch-panel (fc/computed-factory AttributeMismatchPanel))
 
-(fp/defsc StatsView
+(fc/defsc StatsView
   [this {::keys  [attribute-count resolver-count mutation-count globals-count idents-count
                   attr-edges-count top-connection-hubs attr-type-mismatch]
          :>/keys [attr-type-mismatch-join]}
@@ -1047,7 +1042,7 @@
    :query     [::id ::attribute-count ::resolver-count ::globals-count ::idents-count
                ::attr-edges-count ::mutation-count ::attr-type-mismatch
                {::top-connection-hubs [::pc/attribute ::attr-edges-count]}
-               {:>/attr-type-mismatch-join (fp/get-query AttributeMismatchPanel)}]
+               {:>/attr-type-mismatch-join (fc/get-query AttributeMismatchPanel)}]
    :css       [[:.container {:padding-right "12px"}]
                [:.title ui/text-base]]}
   (dom/div :.container (ui/gc :.flex :.scrollbars)
@@ -1067,14 +1062,14 @@
             (attribute-link {::pc/attribute attribute
                              ::ui/render    #(str "[" attr-edges-count "] " (pr-str attribute))} computed))))
       (if (seq attr-type-mismatch)
-        (fp/fragment
+        (fc/fragment
           (dom/div {:style {:width "24px"}})
           (dom/div (ui/gc :.flex)
             (attribute-mismatch-panel attr-type-mismatch-join computed)))))))
 
-(def stats-view (fp/factory StatsView))
+(def stats-view (fc/factory StatsView))
 
-(fp/defsc FullGraphView
+(fc/defsc FullGraphView
   [this _
    {::keys [attributes on-select-attribute on-select-resolver]}]
   {:ident [::graph-view-id ::graph-view-id]
@@ -1092,7 +1087,7 @@
                       ::on-show-details  on-select-attribute
                       ::on-click-edge    #(on-select-resolver (first (::resolvers %)))})))
 
-(def full-graph-view (fp/factory FullGraphView))
+(def full-graph-view (fc/factory FullGraphView))
 
 (defn prop-presence-ident [props]
   (fn [data]
@@ -1102,16 +1097,16 @@
 
 (def main-view-ident (prop-presence-ident [::pc/attribute ::mutation-sym ::pc/sym ::id ::graph-view-id]))
 
-(fp/defsc MainViewUnion
+(fc/defsc MainViewUnion
   [this props]
   {:ident (fn [] (main-view-ident props))
    :query (fn []
-            {::pc/attribute  (fp/get-query AttributeView)
-             ::pc/sym        (fp/get-query ResolverView)
-             ::mutation-sym  (fp/get-query MutationView)
-             ::id            (fp/get-query StatsView)
-             ::graph-view-id (fp/get-query FullGraphView)})}
-  (case (first (fp/get-ident this))
+            {::pc/attribute  (fc/get-query AttributeView)
+             ::pc/sym        (fc/get-query ResolverView)
+             ::mutation-sym  (fc/get-query MutationView)
+             ::id            (fc/get-query StatsView)
+             ::graph-view-id (fc/get-query FullGraphView)})}
+  (case (first (fc/get-ident this))
     ::pc/attribute (attribute-view props)
     ::pc/sym (resolver-view props)
     ::mutation-sym (mutation-view props)
@@ -1119,7 +1114,7 @@
     ::graph-view-id (full-graph-view props)
     (dom/div "Blank page")))
 
-(def main-view-union (fp/computed-factory MainViewUnion {:keyfn #(or (::pc/attribute %) (::pc/sym %))}))
+(def main-view-union (fc/computed-factory MainViewUnion {:keyfn #(or (::pc/attribute %) (::pc/sym %))}))
 
 (defn augment [data f]
   (merge data (f data)))
@@ -1155,9 +1150,11 @@
               (sort-by ::fuzzy/string))
          (->> index-attributes
               vals
-              (map #(hash-map ::fuzzy/string (pr-str (::pc/attribute %))
-                              ::search-value (::pc/attribute %)
-                              ::search-type ::search-type-attribute))
+              (map #(let [attr-name (or (::pc/attribute-id %)
+                                        (::pc/attribute %))]
+                      (hash-map ::fuzzy/string (pr-str attr-name)
+                                ::search-value attr-name
+                                ::search-type ::search-type-attribute)))
               (sort-by ::fuzzy/string)))
        vec))
 
@@ -1196,16 +1193,16 @@
 
 ;; Query
 
-(fp/defsc AttributeIndex [_ _]
+(fc/defsc AttributeIndex [_ _]
   {:ident [::pc/attribute ::pc/attribute]
    :query [::pc/attribute ::pc/attribute-paths ::pc/attr-provides ::pc/attr-reach-via
            ::pc/attr-combinations ::weight ::reach]})
 
-(fp/defsc ResolverIndex [_ _]
+(fc/defsc ResolverIndex [_ _]
   {:ident [::pc/sym ::pc/sym]
    :query [::pc/sym ::pc/input ::pc/output ::pc/params]})
 
-(fp/defsc MutationIndex [_ _]
+(fc/defsc MutationIndex [_ _]
   {:ident [::mutation-sym ::mutation-sym]
    :query [::pc/sym ::mutation-sym ::pc/output ::pc/params]})
 
@@ -1223,17 +1220,17 @@
 
 (fm/defmutation navigate-to-attribute [{::pc/keys [attribute]}]
   (action [{:keys [state ref]}]
-    (swap! state fp/merge-component AttributeView {::pc/attribute attribute})
+    (swap! state merge/merge-component AttributeView {::pc/attribute attribute})
     (swap! state update-in ref history-append [::pc/attribute attribute])))
 
 (fm/defmutation navigate-to-resolver [{::pc/keys [sym]}]
   (action [{:keys [state ref]}]
-    (swap! state fp/merge-component ResolverView {::pc/sym sym})
+    (swap! state merge/merge-component ResolverView {::pc/sym sym})
     (swap! state update-in ref history-append [::pc/sym sym])))
 
 (fm/defmutation navigate-to-mutation [{::keys [mutation-sym]}]
   (action [{:keys [state ref]}]
-    (swap! state fp/merge-component MutationView {::mutation-sym mutation-sym})
+    (swap! state merge/merge-component MutationView {::mutation-sym mutation-sym})
     (swap! state update-in ref history-append [::mutation-sym mutation-sym])))
 
 (fm/defmutation navigate-stats [_]
@@ -1243,7 +1240,7 @@
 (fm/defmutation navigate-graph-view [_]
   (action [{:keys [state ref]}]
     (let [id (second ref)]
-      (swap! state fp/merge-component FullGraphView {::graph-view-id id})
+      (swap! state merge/merge-component FullGraphView {::graph-view-id id})
       (swap! state update-in ref history-append [::graph-view-id id]))))
 
 (defn can-go-back? [{::keys [history-index]}]
@@ -1271,9 +1268,9 @@
             ::history-index (inc history-index)))))))
 
 (defn clear-not-found [x]
-  (p/elide-items (conj p/special-outputs ::fp/not-found) x))
+  (p/elide-items (conj p/special-outputs ::fc/not-found) x))
 
-(fp/defsc IndexExplorer
+(fc/defsc IndexExplorer
   [this {::keys   [index attributes]
          :ui/keys [menu page]
          :as      props}
@@ -1295,19 +1292,20 @@
                            (process-index index)
                            {::idx {::no-index? true}}))))
    :initial-state  {}
-   :ident          [::id ::id]
+   :ident          ::id
    :query          [::id ::index ::idx ::history ::history-index
-                    {:ui/menu (fp/get-query SearchEverything)}
-                    {::attributes (fp/get-query AttributeIndex)}
-                    {::globals (fp/get-query AttributeIndex)}
-                    {::idents (fp/get-query AttributeIndex)}
-                    {::top-connection-hubs (fp/get-query AttributeIndex)}
-                    {::attr-type-mismatch (fp/get-query AttributeIndex)}
-                    {::resolvers (fp/get-query ResolverIndex)}
-                    {::mutations (fp/get-query MutationIndex)}
-                    {:ui/page (fp/get-query MainViewUnion)}]
-   :css            [[:.out-container {:width "100%"
-                                      :flex  "1"}]
+                    {:ui/menu (fc/get-query SearchEverything)}
+                    {::attributes (fc/get-query AttributeIndex)}
+                    {::globals (fc/get-query AttributeIndex)}
+                    {::idents (fc/get-query AttributeIndex)}
+                    {::top-connection-hubs (fc/get-query AttributeIndex)}
+                    {::attr-type-mismatch (fc/get-query AttributeIndex)}
+                    {::resolvers (fc/get-query ResolverIndex)}
+                    {::mutations (fc/get-query MutationIndex)}
+                    {:ui/page (fc/get-query MainViewUnion)}]
+   :css            [[:.out-container {:width    "100%"
+                                      :flex     "1"
+                                      :overflow "auto"}]
                     [:.container {:flex     "1"
                                   :overflow "hidden"}]
                     [:.graph {:height  "800px"
@@ -1322,39 +1320,40 @@
                     [:$tag-spaced
                      [:$tag {:margin-left "4px"}]]]
    :css-include    [AttributeLink ResolverLink MutationLink ui/UIKit]
-   :initLocalState (fn [] {:select-attribute #(fp/transact! this [`(navigate-to-attribute {::pc/attribute ~%})])
-                           :select-resolver  #(fp/transact! this [`(navigate-to-resolver {::pc/sym ~%})])
-                           :select-mutation  #(fp/transact! this [`(navigate-to-mutation {::mutation-sym ~%})])
-                           :go-back          #(fp/transact! this [`(navigate-backwards)])
-                           :go-forward       #(fp/transact! this [`(navigate-forwards)])
-                           :go-stats         #(fp/transact! this [`(navigate-stats)])
-                           :go-graph-view    #(fp/transact! this [`(navigate-graph-view)])})}
+   :initLocalState (fn [this]
+                     {:select-attribute #(fc/transact! this [`(navigate-to-attribute {::pc/attribute ~%})])
+                      :select-resolver  #(fc/transact! this [`(navigate-to-resolver {::pc/sym ~%})])
+                      :select-mutation  #(fc/transact! this [`(navigate-to-mutation {::mutation-sym ~%})])
+                      :go-back          #(fc/transact! this [`(navigate-backwards)])
+                      :go-forward       #(fc/transact! this [`(navigate-forwards)])
+                      :go-stats         #(fc/transact! this [`(navigate-stats)])
+                      :go-graph-view    #(fc/transact! this [`(navigate-graph-view) ::id])})}
   (dom/create-element (gobj/get ExtensionContext "Provider") #js {:value extensions}
     (ui/row {:react-key "container" :classes (ui/ccss this :.out-container)}
       (ui/column {:classes (ui/ccss this :.menu)}
-        (search-everything menu {::on-select-attribute (fp/get-state this :select-attribute)
-                                 ::on-select-resolver  (fp/get-state this :select-resolver)
-                                 ::on-select-mutation  (fp/get-state this :select-mutation)}))
+        (search-everything menu {::on-select-attribute (fc/get-state this :select-attribute)
+                                 ::on-select-resolver  (fc/get-state this :select-resolver)
+                                 ::on-select-mutation  (fc/get-state this :select-mutation)}))
       (ui/column (ui/gc :.flex :.no-scrollbars)
         (ui/row {}
-          (ui/button {:onClick  (fp/get-state this :go-back)
+          (ui/button {:onClick  (fc/get-state this :go-back)
                       :disabled (not (can-go-back? props))}
             "◀")
-          (ui/button {:onClick  (fp/get-state this :go-forward)
+          (ui/button {:onClick  (fc/get-state this :go-forward)
                       :disabled (not (can-go-forward? props))}
             "▶")
-          (ui/button {:onClick  (fp/get-state this :go-stats)
-                      :disabled (= (main-view-ident page) (fp/get-ident this))
+          (ui/button {:onClick  (fc/get-state this :go-stats)
+                      :disabled (= (main-view-ident page) (fc/get-ident this))
                       :style    {:marginLeft "12px"}} "Stats")
-          (ui/button {:onClick  (fp/get-state this :go-graph-view)
+          (ui/button {:onClick  (fc/get-state this :go-graph-view)
                       :disabled (= (first (main-view-ident page)) ::graph-view-id)
                       :style    {:marginLeft "12px"}} "Full Graph"))
         (if page
           (main-view-union page (assoc index
                                   ::attributes attributes
-                                  ::on-select-attribute (fp/get-state this :select-attribute)
-                                  ::on-select-resolver (fp/get-state this :select-resolver)
-                                  ::on-select-mutation (fp/get-state this :select-mutation))))
+                                  ::on-select-attribute (fc/get-state this :select-attribute)
+                                  ::on-select-resolver (fc/get-state this :select-resolver)
+                                  ::on-select-mutation (fc/get-state this :select-mutation))))
 
         #_(dom/div :.graph
             (attribute-graph {::attributes       attributes
@@ -1363,4 +1362,28 @@
                               ::direct-provides? true
                               ::nested-provides? true}))))))
 
-(def index-explorer (fp/computed-factory IndexExplorer))
+(def index-explorer (fc/computed-factory IndexExplorer))
+
+(fm/defmutation load-indexes* [_]
+  (action [{:keys [state ref]}]
+    #_ (swap! state update-in ref assoc :ui/query-running? true)
+    nil)
+  (ok-action [{:keys [state ref] :as env}]
+    (let [indexes (-> (pvh/env-parser-response env)
+                      ::pc/indexes)]
+      (swap! state merge/merge-component IndexExplorer {::id    (second ref)
+                                                        ::index (p/elide-special-outputs indexes)})))
+  (error-action [env]
+    #_ (js/console.log "QUERY ERROR" env)
+    nil)
+  (remote [{:keys [ast]}]
+    (assoc ast :key `cp/client-parser-mutation)))
+
+(defn load-indexes
+  [app {::keys    [id]
+        ::cp/keys [parser-id]}]
+  (let [props {::id                       id
+               ::cp/parser-id             parser-id
+               ::cp/client-parser-request [::pc/indexes]}]
+    (fc/transact! app [(load-indexes* props)]
+      {:ref [::id id]})))

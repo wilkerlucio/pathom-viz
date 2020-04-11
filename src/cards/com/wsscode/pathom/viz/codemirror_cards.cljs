@@ -1,14 +1,39 @@
 (ns com.wsscode.pathom.viz.codemirror-cards
-  (:require [cljs.core.async :as async]
-            [com.wsscode.common.async-cljs :refer [<? go-catch]]
-            [com.wsscode.pathom.connect :as pc]
-            [com.wsscode.pathom.core :as p]
-            [com.wsscode.pathom.fulcro.network :as pfn]
+  (:require [com.fulcrologic.fulcro.components :as fc]
             [com.wsscode.pathom.viz.codemirror :as cm]
-            [nubank.workspaces.card-types.fulcro :as ct.fulcro]
-            [nubank.workspaces.card-types.react :as ct.react]
+            [com.wsscode.pathom.viz.ui.kit :as ui]
+            [nubank.workspaces.card-types.fulcro3 :as ct.fulcro]
             [nubank.workspaces.core :as ws]
-            [nubank.workspaces.lib.fulcro-portal :as f.portal]
-            [nubank.workspaces.model :as wsm]
-            [fulcro.client.primitives :as fp]
-            [fulcro.client.localized-dom :as dom]))
+            [nubank.workspaces.model :as wsm]))
+
+(fc/defsc ClojureCodeMirrorWrapper
+  [this {::keys []}]
+  {:pre-merge (fn [{:keys [current-normalized data-tree]}]
+                (merge {::id (random-uuid)} current-normalized data-tree))
+   :ident     ::id
+   :query     [::id]
+   :css       [[:.container {:position "relative"
+                             :flex     1}]]}
+  (cm/clojure {:value     ""
+               :className (ui/ccss this :.container)}))
+
+(ws/defcard codemirror-clojure-card
+  {::wsm/align ::wsm/stretch-flex}
+  (ct.fulcro/fulcro-card
+    {::ct.fulcro/root ClojureCodeMirrorWrapper}))
+
+(fc/defsc PathomCodeMirrorWrapper
+  [this {::keys []}]
+  {:pre-merge (fn [{:keys [current-normalized data-tree]}]
+                (merge {::id (random-uuid)} current-normalized data-tree))
+   :ident     ::id
+   :query     [::id]
+   :css       [[:.container {:position "relative"
+                             :flex     1}]]}
+  (cm/pathom {:value     ""
+              :className (ui/ccss this :.container)}))
+
+(ws/defcard codemirror-pathom-card
+  {::wsm/align ::wsm/stretch-flex}
+  (ct.fulcro/fulcro-card
+    {::ct.fulcro/root PathomCodeMirrorWrapper}))

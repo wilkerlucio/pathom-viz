@@ -2,6 +2,8 @@
   (:require [cljs.reader :refer [read-string]]
             [cljs.spec.alpha :as s]
             [cljs.test :refer [is testing]]
+            [com.fulcrologic.fulcro-css.localized-dom :as dom]
+            [com.fulcrologic.fulcro.components :as fc]
             [com.wsscode.common.async-cljs :refer [go-catch <?]]
             [com.wsscode.fuzzy :as fuzzy]
             [com.wsscode.pathom.connect :as pc]
@@ -12,12 +14,12 @@
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.wsscode.pathom.viz.workspaces :as pws]
             [edn-query-language.core :as eql]
-            [fulcro.client.localized-dom :as dom]
-            [fulcro.client.primitives :as fp]
-            [nubank.workspaces.card-types.fulcro :as ct.fulcro]
+            [nubank.workspaces.card-types.fulcro3 :as ct.fulcro]
             [nubank.workspaces.core :as ws]
-            [nubank.workspaces.lib.fulcro-portal :as f.portal]
-            [nubank.workspaces.model :as wsm]))
+            [nubank.workspaces.model :as wsm]
+
+
+            [com.wsscode.pathom.viz.demo-connector]))
 
 (s/def :customer/id uuid?)
 
@@ -100,10 +102,10 @@
 
 (ws/defcard index-explorer
   (pws/index-explorer-card {::p/parser           parser
-                            ::pws/portal-options {::f.portal/computed
+                            ::pws/portal-options {::ct.fulcro/computed
                                                   {::iex/plugins [abrams-plugin]}}}))
 
-(fp/defsc AttributeGraphDemo
+(fc/defsc AttributeGraphDemo
   [this {::keys []}]
   {:pre-merge     (fn [{:keys [current-normalized data-tree]}]
                     (merge {:ui/id (random-uuid)} current-normalized data-tree))
@@ -116,7 +118,7 @@
 (ws/defcard attribute-graph-card
   {::wsm/card-width 4 ::wsm/card-height 12}
   (ct.fulcro/fulcro-card
-    {::f.portal/root AttributeGraphDemo}))
+    {::ct.fulcro/root AttributeGraphDemo}))
 
 (defn simple-compute-nodes-out [out]
   (-> out

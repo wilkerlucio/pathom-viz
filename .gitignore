@@ -5,3 +5,4 @@
 node_modules
 workspaces/assets/js
 standalone/assets/js
+shells/electron/js

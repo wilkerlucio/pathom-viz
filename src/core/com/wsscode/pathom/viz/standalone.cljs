@@ -6,11 +6,8 @@
             [com.wsscode.pathom.viz.query-editor :as pv.query-editor]
             [com.wsscode.common.async-cljs :refer [<? go-catch]]
             [fulcro.client :as fc]
-            [fulcro.client.network :as net]
-            [fulcro.client.data-fetch :as df]
             [fulcro.client.primitives :as fp]
             [fulcro-css.css :as css]))
-
 
 (defn transit-read [x]
   (-> (transit/read (transit/reader :json) x)))
@@ -29,7 +26,6 @@
                                  ::p.http/headers      {}
                                  ::p.http/form-params  (transit-write tx)}))]
         (transit-read body)))))
-
 
 (fp/defsc Root
   [this {:keys [ui/root]}]

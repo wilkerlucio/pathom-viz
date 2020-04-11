@@ -1,0 +1,1134 @@
+{"multiple ands"
+ {:com.wsscode.pathom.connect.planner/nodes             {1 {:com.wsscode.pathom.connect/sym                      a
+                                                            :com.wsscode.pathom.connect.planner/node-id          1
+                                                            :com.wsscode.pathom.connect.planner/requires         {:a {}}
+                                                            :com.wsscode.pathom.connect.planner/input            {:c {} :b {}}
+                                                            :com.wsscode.pathom.connect.planner/after-nodes      #{4}
+                                                            :com.wsscode.pathom.connect.planner/source-for-attrs #{:a}}
+                                                         2 {:com.wsscode.pathom.connect/sym                      c
+                                                            :com.wsscode.pathom.connect.planner/node-id          2
+                                                            :com.wsscode.pathom.connect.planner/requires         {:c {}}
+                                                            :com.wsscode.pathom.connect.planner/input            {}
+                                                            :com.wsscode.pathom.connect.planner/source-for-attrs #{:c}
+                                                            :com.wsscode.pathom.connect.planner/after-nodes      #{4}}
+                                                         3 {:com.wsscode.pathom.connect/sym                      b
+                                                            :com.wsscode.pathom.connect.planner/node-id          3
+                                                            :com.wsscode.pathom.connect.planner/requires         {:b {}}
+                                                            :com.wsscode.pathom.connect.planner/input            {}
+                                                            :com.wsscode.pathom.connect.planner/source-for-attrs #{:b}
+                                                            :com.wsscode.pathom.connect.planner/after-nodes      #{7 4}}
+                                                         4 {:com.wsscode.pathom.connect.planner/node-id     4
+                                                            :com.wsscode.pathom.connect.planner/requires    {:b {} :c {}}
+                                                            :com.wsscode.pathom.connect.planner/run-and     #{3 2}
+                                                            :com.wsscode.pathom.connect.planner/run-next    1
+                                                            :com.wsscode.pathom.connect.planner/after-nodes #{8}}
+                                                         5 {:com.wsscode.pathom.connect/sym                      d
+                                                            :com.wsscode.pathom.connect.planner/node-id          5
+                                                            :com.wsscode.pathom.connect.planner/requires         {:d {}}
+                                                            :com.wsscode.pathom.connect.planner/input            {:e {} :b {}}
+                                                            :com.wsscode.pathom.connect.planner/after-nodes      #{7}
+                                                            :com.wsscode.pathom.connect.planner/source-for-attrs #{:d}}
+                                                         6 {:com.wsscode.pathom.connect/sym                      e
+                                                            :com.wsscode.pathom.connect.planner/node-id          6
+                                                            :com.wsscode.pathom.connect.planner/requires         {:e {}}
+                                                            :com.wsscode.pathom.connect.planner/input            {}
+                                                            :com.wsscode.pathom.connect.planner/source-for-attrs #{:e}
+                                                            :com.wsscode.pathom.connect.planner/after-nodes      #{7}}
+                                                         7 {:com.wsscode.pathom.connect.planner/node-id     7
+                                                            :com.wsscode.pathom.connect.planner/requires    {:b {} :e {}}
+                                                            :com.wsscode.pathom.connect.planner/run-and     #{3 6}
+                                                            :com.wsscode.pathom.connect.planner/run-next    5
+                                                            :com.wsscode.pathom.connect.planner/after-nodes #{8}}
+                                                         8 {:com.wsscode.pathom.connect.planner/node-id  8
+                                                            :com.wsscode.pathom.connect.planner/requires {:b {} :e {} :c {}}
+                                                            :com.wsscode.pathom.connect.planner/run-and  #{7 4}}}
+  :com.wsscode.pathom.connect.planner/index-syms        {a #{1} c #{2} b #{3} d #{5} e #{6}}
+  :com.wsscode.pathom.connect.planner/unreachable-syms  #{}
+  :com.wsscode.pathom.connect.planner/unreachable-attrs #{}
+  :com.wsscode.pathom.connect.planner/index-attrs       {:c 2 :b 3 :a 1 :e 6 :d 5}
+  :com.wsscode.pathom.connect.planner/root              8}
+
+ "abrams demo"
+ {:com.wsscode.pathom.connect.planner/nodes             {218 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.rewards/rewards-enrolled?
+                                                              :com.wsscode.pathom.connect.planner/node-id          218
+                                                              :com.wsscode.pathom.connect.planner/requires         {:enrollment/enrolled? {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:enrollment/status {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{206}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:enrollment/enrolled?}}
+                                                         164 {:com.wsscode.pathom.connect.planner/node-id     164
+                                                              :com.wsscode.pathom.connect.planner/requires    {:collection.agreement.simulation/max-installments {}
+                                                                                                               :account.collection/late-days                     {}}
+                                                              :com.wsscode.pathom.connect.planner/run-and     #{156 163}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes #{148}}
+                                                         186 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.system/environment
+                                                              :com.wsscode.pathom.connect.planner/node-id          186
+                                                              :com.wsscode.pathom.connect.planner/requires         {:abrams.system/environment {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:abrams.system/environment}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         188 {:com.wsscode.pathom.connect/sym                      abrams.diplomat.graphql/stormshield-graphql
+                                                              :com.wsscode.pathom.connect.planner/node-id          188
+                                                              :com.wsscode.pathom.connect.planner/requires         {:stormshield.savings-account/id              {}
+                                                                                                                    :stormshield.savings-account/status          {}
+                                                                                                                    :stormshield.savings-account/bank-account    {}
+                                                                                                                    :stormshield.savings-account/savings-balance {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:stormshield.savings-account/bank-account
+                                                                                                                     :stormshield.savings-account/status
+                                                                                                                     :stormshield.savings-account/savings-balance
+                                                                                                                     :stormshield.savings-account/id}
+                                                              :com.wsscode.pathom.connect.planner/run-next         189
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         130 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.person/can-see-age?
+                                                              :com.wsscode.pathom.connect.planner/node-id          130
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/can-see-age? {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/can-see-age?}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         7   {:com.wsscode.pathom.connect/sym                 abrams.controllers.graph.person/person_SLASH_cpf__GT_customer_SLASH_cpf
+                                                              :com.wsscode.pathom.connect.planner/node-id     7
+                                                              :com.wsscode.pathom.connect.planner/requires    {:customer/cpf {}}
+                                                              :com.wsscode.pathom.connect.planner/input       {:person/cpf {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes #{9}}
+                                                         154 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.revolver/revolver-rounded-delinquent-debt
+                                                              :com.wsscode.pathom.connect.planner/node-id          154
+                                                              :com.wsscode.pathom.connect.planner/requires         {:account.revolver/rounded-delinquent-debt {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id                           {}
+                                                                                                                    :account.revolver.debt/delinquent-debt {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{155}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:account.revolver/rounded-delinquent-debt}}
+                                                         224 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.fraud-incident/has-big-mama-private-comments-permission?
+                                                              :com.wsscode.pathom.connect.planner/node-id          224
+                                                              :com.wsscode.pathom.connect.planner/requires         {:fraud.report.permission/big-mama-private-comments? {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:fraud.report.permission/big-mama-private-comments?}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         205 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.person/all-rollouts-details
+                                                              :com.wsscode.pathom.connect.planner/node-id          205
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/all-rollouts-details {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/all-rollouts-details}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         175 {:com.wsscode.pathom.connect.planner/node-id     175
+                                                              :com.wsscode.pathom.connect.planner/requires    {:account.financing/can-anticipate?    {}
+                                                                                                               :account.financing/settled-financings {}}
+                                                              :com.wsscode.pathom.connect.planner/run-and     #{165 174}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes #{166}}
+                                                         1   {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.system/echo-true
+                                                              :com.wsscode.pathom.connect.planner/node-id          1
+                                                              :com.wsscode.pathom.connect.planner/requires         {:abrams.helpers/echo-true {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:abrams.helpers/echo-true}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         206 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.rewards/customer-enrollment
+                                                              :com.wsscode.pathom.connect.planner/node-id          206
+                                                              :com.wsscode.pathom.connect.planner/requires         {:enrollment.plan/precise-amount                    {}
+                                                                                                                    :enrollment.points-balance/points-display          {}
+                                                                                                                    :enrollment.plan/id                                {}
+                                                                                                                    :enrollment.points-balance/earned-points-display   {}
+                                                                                                                    :enrollment.product/name                           {}
+                                                                                                                    :enrollment.points-balance/wiped-points-display    {}
+                                                                                                                    :enrollment/enrolled-at                            {}
+                                                                                                                    :enrollment.subscription/id                        {}
+                                                                                                                    :enrollment.product/id                             {}
+                                                                                                                    :enrollment.plan/amount                            {}
+                                                                                                                    :enrollment.points-balance/redeemed-points-display {}
+                                                                                                                    :enrollment/status                                 {}
+                                                                                                                    :enrollment/rewards-id                             {}
+                                                                                                                    :enrollment.subscription/next-due-date             {}
+                                                                                                                    :enrollment.subscription/external-id               {}
+                                                                                                                    :enrollment.plan/frequency                         {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:enrollment.plan/precise-amount
+                                                                                                                     :enrollment.points-balance/points-display
+                                                                                                                     :enrollment.plan/id
+                                                                                                                     :enrollment.points-balance/earned-points-display
+                                                                                                                     :enrollment.product/name
+                                                                                                                     :enrollment.points-balance/wiped-points-display
+                                                                                                                     :enrollment/enrolled-at
+                                                                                                                     :enrollment.subscription/id
+                                                                                                                     :enrollment.product/id
+                                                                                                                     :enrollment.plan/amount
+                                                                                                                     :enrollment.points-balance/redeemed-points-display
+                                                                                                                     :enrollment/status
+                                                                                                                     :enrollment/rewards-id
+                                                                                                                     :enrollment.subscription/next-due-date
+                                                                                                                     :enrollment.subscription/external-id
+                                                                                                                     :enrollment.plan/frequency}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}
+                                                              :com.wsscode.pathom.connect.planner/run-next         218}
+                                                         165 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.financing/can-anticipate-financing?
+                                                              :com.wsscode.pathom.connect.planner/node-id          165
+                                                              :com.wsscode.pathom.connect.planner/requires         {:account.financing/can-anticipate? {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:account/financings {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{175 166}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:account.financing/can-anticipate?}}
+                                                         225 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.account-recovery/account-all-recoveries
+                                                              :com.wsscode.pathom.connect.planner/node-id          225
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/account-recoveries {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/account-recoveries}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         39  {:com.wsscode.pathom.connect.planner/node-id     39
+                                                              :com.wsscode.pathom.connect.planner/requires    {:customer/address-state            {}
+                                                                                                               :customer/mothers-name             {}
+                                                                                                               :customer/tags                     {}
+                                                                                                               :customer/billing-address-city     {}
+                                                                                                               :customer/billing-address-locality {}
+                                                                                                               :customer/address-ref-point        {}
+                                                                                                               :customer/email                    {}
+                                                                                                               :customer/preferred-name           {}
+                                                                                                               :customer/phone                    {}
+                                                                                                               :customer/address-postcode         {}
+                                                                                                               :customer/address-number           {}
+                                                                                                               :customer/address-line2            {}
+                                                                                                               :customer/billing-address-country  {}
+                                                                                                               :customer/name                     {}
+                                                                                                               :customer/billing-address-postcode {}
+                                                                                                               :customer/prospects                {}
+                                                                                                               :customer/billing-address-line1    {}
+                                                                                                               :customer/address-line1            {}
+                                                                                                               :customer/printed-name             {}
+                                                                                                               :customer/billing-address-line2    {}
+                                                                                                               :customer/address-city             {}
+                                                                                                               :customer/documents                {}
+                                                                                                               :customer/marital-status           {}
+                                                                                                               :customer/address-locality         {}
+                                                                                                               :customer/billing-address-number   {}
+                                                                                                               :customer/dob                      {}
+                                                                                                               :customer/billing-address-state    {}
+                                                                                                               :customer/primary-device           {}
+                                                                                                               :customer/address-country          {}
+                                                                                                               :customer/gender                   {}}
+                                                              :com.wsscode.pathom.connect.planner/run-and     #{33 38}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes #{15}}
+                                                         46  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.client-certificate/recently-updated-fraudulent-client-certificates
+                                                              :com.wsscode.pathom.connect.planner/node-id          46
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/recently-updated-fraudulent-client-certificates {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/recently-updated-client-certificates {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{47}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/recently-updated-fraudulent-client-certificates}}
+                                                         149 {:com.wsscode.pathom.connect.planner/node-id     149
+                                                              :com.wsscode.pathom.connect.planner/requires    {:account.whitelist/to                  {}
+                                                                                                               :account/financings                    {}
+                                                                                                               :account/active-collection             {}
+                                                                                                               :account.whitelist/from                {}
+                                                                                                               :account/most-recent-agreement         {}
+                                                                                                               :account.whitelist/active?             {}
+                                                                                                               :account.revolver.debt/delinquent-debt {}
+                                                                                                               :financing/anticipations               {}
+                                                                                                               :account/financing-strategies          {}
+                                                                                                               :account/refinancing-strategies        {}}
+                                                              :com.wsscode.pathom.connect.planner/run-and     #{167 155 166 148 180 158 68 173}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes #{53}}
+                                                         157 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.person/customer-phone-entries
+                                                              :com.wsscode.pathom.connect.planner/node-id          157
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/phone-entries {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/phone-entries}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         204 {:com.wsscode.pathom.connect/sym                      abrams.diplomat.graphql/mancini-graphql
+                                                              :com.wsscode.pathom.connect.planner/node-id          204
+                                                              :com.wsscode.pathom.connect.planner/requires         {:mancini.customer/account {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:mancini.customer/account}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         232 {:com.wsscode.pathom.connect/sym                 abrams.controllers.graph.customer/cpnj-companies
+                                                              :com.wsscode.pathom.connect.planner/node-id     232
+                                                              :com.wsscode.pathom.connect.planner/requires    {:customer/companies {}}
+                                                              :com.wsscode.pathom.connect.planner/input       {:customer/cnpj {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes #{6}}
+                                                         144 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.person/customer_SLASH_prospects__GT_person_SLASH_prospects
+                                                              :com.wsscode.pathom.connect.planner/node-id          144
+                                                              :com.wsscode.pathom.connect.planner/requires         {:person/prospects {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/prospects {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{145}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:person/prospects}}
+                                                         176 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.client-certificate/customer-pin-status
+                                                              :com.wsscode.pathom.connect.planner/node-id          176
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/pin-status {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/pin-throttlers {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{177}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/pin-status}
+                                                              :com.wsscode.pathom.connect.planner/run-next         178}
+                                                         141 {:com.wsscode.pathom.connect/sym                 abrams.controllers.graph.person/prospects-by-person-id
+                                                              :com.wsscode.pathom.connect.planner/node-id     141
+                                                              :com.wsscode.pathom.connect.planner/requires    {:person/prospects {}}
+                                                              :com.wsscode.pathom.connect.planner/input       {:person/id {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes #{142}}
+                                                         137 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.proximo/my-actor
+                                                              :com.wsscode.pathom.connect.planner/node-id          137
+                                                              :com.wsscode.pathom.connect.planner/requires         {:proximo/my-actor {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:proximo/my-actor}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         234 {:com.wsscode.pathom.connect.planner/node-id  234
+                                                              :com.wsscode.pathom.connect.planner/requires {:customer/account-recoveries                        {}
+                                                                                                            :enrollment.plan/precise-amount                     {}
+                                                                                                            :enrollment.points-balance/points-display           {}
+                                                                                                            :customer.complaint/all-reasons                     {}
+                                                                                                            :enrollment.plan/id                                 {}
+                                                                                                            :enrollment.points-balance/earned-points-display    {}
+                                                                                                            :boleto-quota.savings-transfer-in/total             {}
+                                                                                                            :savings-account/created-at                         {}
+                                                                                                            :customer.fraud/reports                             {}
+                                                                                                            :stormshield.savings-account/bank-account           {}
+                                                                                                            :enrollment.product/name                            {}
+                                                                                                            :customer/pin-throttlers                            {}
+                                                                                                            :auto-bill-payment/scheduled-payment-date           {}
+                                                                                                            :customer/can-see-age?                              {}
+                                                                                                            :account/id                                         {}
+                                                                                                            :customer/cpf                                       {}
+                                                                                                            :enrollment.points-balance/wiped-points-display     {}
+                                                                                                            :customer/can-read-documents?                       {}
+                                                                                                            :customer/chargebacks                               {}
+                                                                                                            :customer/can-bypass-transfer-out-rules?            {}
+                                                                                                            :abrams.helpers/echo-true                           {}
+                                                                                                            :client-certificate.permission/can-perform-ato?     {}
+                                                                                                            :customer/can-report-fraudster?                     {}
+                                                                                                            :enrollment/enrolled-at                             {}
+                                                                                                            :enrollment.subscription/id                         {}
+                                                                                                            :customer/all-rollouts-details                      {}
+                                                                                                            :proximo/my-actor                                   {}
+                                                                                                            :customer/latest-cpf-cycle                          {}
+                                                                                                            :enrollment.product/id                              {}
+                                                                                                            :abrams.api/shard                                   {}
+                                                                                                            :customer/primary-prospect                          {}
+                                                                                                            :customer/phone-entries                             {}
+                                                                                                            :stormshield.savings-account/status                 {}
+                                                                                                            :enrollment.plan/amount                             {}
+                                                                                                            :stormshield.savings-account/savings-balance        {}
+                                                                                                            :sherlock.suspect/can-report-suspect?               {}
+                                                                                                            :customer/sentences                                 {}
+                                                                                                            :customer/paginated-purchases                       {}
+                                                                                                            :customer/tokenizations                             {}
+                                                                                                            :customer/client-certificates                       {}
+                                                                                                            :enrollment.points-balance/redeemed-points-display  {}
+                                                                                                            :fraud.report.permission/fraudster-catcher?         {}
+                                                                                                            :customer/all-cards                                 {}
+                                                                                                            :enrollment/status                                  {}
+                                                                                                            :stormshield.savings-account/id                     {}
+                                                                                                            :fraud.alert-bars/triggered-rules                   {}
+                                                                                                            :fraud.report.permission/big-mama-private-comments? {}
+                                                                                                            :boleto-quota.savings-transfer-in/remaining         {}
+                                                                                                            :customer/marital-status-options                    {}
+                                                                                                            :enrollment/rewards-id                              {}
+                                                                                                            :enrollment.subscription/next-due-date              {}
+                                                                                                            :auto-bill-payment/enabled                          {}
+                                                                                                            :customer/accounts                                  {}
+                                                                                                            :savings-account/id                                 {}
+                                                                                                            :sherlock.incident.manual-alarms/all                {}
+                                                                                                            :customer/collisions                                {}
+                                                                                                            :enrollment.subscription/external-id                {}
+                                                                                                            :abrams.system/environment                          {}
+                                                                                                            :enrollment.plan/frequency                          {}
+                                                                                                            :customer/income-proofs                             {}
+                                                                                                            :mancini.customer/account                           {}
+                                                                                                            :customer/complaints                                {}}
+                                                              :com.wsscode.pathom.connect.planner/run-and  #{186
+                                                                                                             188
+                                                                                                             130
+                                                                                                             224
+                                                                                                             205
+                                                                                                             1
+                                                                                                             206
+                                                                                                             225
+                                                                                                             157
+                                                                                                             204
+                                                                                                             137
+                                                                                                             15
+                                                                                                             48
+                                                                                                             50
+                                                                                                             139
+                                                                                                             129
+                                                                                                             223
+                                                                                                             191
+                                                                                                             36
+                                                                                                             41
+                                                                                                             196
+                                                                                                             184
+                                                                                                             131
+                                                                                                             227
+                                                                                                             228
+                                                                                                             2
+                                                                                                             202
+                                                                                                             179
+                                                                                                             138
+                                                                                                             45
+                                                                                                             53
+                                                                                                             132
+                                                                                                             203
+                                                                                                             140
+                                                                                                             133
+                                                                                                             185
+                                                                                                             52
+                                                                                                             147
+                                                                                                             161
+                                                                                                             190
+                                                                                                             177}}
+                                                         15  {:com.wsscode.pathom.connect.planner/node-id          15
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/cpf {}}
+                                                              :com.wsscode.pathom.connect.planner/run-or           #{13 6 34}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/cpf}
+                                                              :com.wsscode.pathom.connect.planner/run-next         39
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         48  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.fraud/blocked-transfers-out
+                                                              :com.wsscode.pathom.connect.planner/node-id          48
+                                                              :com.wsscode.pathom.connect.planner/requires         {:fraud.alert-bars/triggered-rules {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:fraud.alert-bars/triggered-rules}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         50  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.dementor/get-latest-cpf-cycle
+                                                              :com.wsscode.pathom.connect.planner/node-id          50
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/latest-cpf-cycle {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/latest-cpf-cycle}
+                                                              :com.wsscode.pathom.connect.planner/run-next         49
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         139 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.sherlock/all-incident-manual-alarms
+                                                              :com.wsscode.pathom.connect.planner/node-id          139
+                                                              :com.wsscode.pathom.connect.planner/requires         {:sherlock.incident.manual-alarms/all {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:sherlock.incident.manual-alarms/all}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         174 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.financing/settled-financings
+                                                              :com.wsscode.pathom.connect.planner/node-id          174
+                                                              :com.wsscode.pathom.connect.planner/requires         {:account.financing/settled-financings {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:account/financings {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{175}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:account.financing/settled-financings}}
+                                                         226 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.logistic/customer-shipping-card
+                                                              :com.wsscode.pathom.connect.planner/node-id          226
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/shipping-card {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/all-cards {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{140}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/shipping-card}}
+                                                         129 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.person/can-read-documents?
+                                                              :com.wsscode.pathom.connect.planner/node-id          129
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/can-read-documents? {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/can-read-documents?}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         156 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.agreement-simulation/agreements-max-installments
+                                                              :com.wsscode.pathom.connect.planner/node-id          156
+                                                              :com.wsscode.pathom.connect.planner/requires         {:collection.agreement.simulation/max-installments {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:account/active-collection {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{164 148}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:collection.agreement.simulation/max-installments}}
+                                                         223 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.fraud-incident/reports-by-customer-id
+                                                              :com.wsscode.pathom.connect.planner/node-id          223
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer.fraud/reports {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer.fraud/reports}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         33  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.person/customer-by-cpf
+                                                              :com.wsscode.pathom.connect.planner/node-id          33
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/address-state            {}
+                                                                                                                    :customer/mothers-name             {}
+                                                                                                                    :customer/tags                     {}
+                                                                                                                    :customer/billing-address-city     {}
+                                                                                                                    :customer/billing-address-locality {}
+                                                                                                                    :customer/address-ref-point        {}
+                                                                                                                    :customer/email                    {}
+                                                                                                                    :customer/preferred-name           {}
+                                                                                                                    :customer/phone                    {}
+                                                                                                                    :customer/address-postcode         {}
+                                                                                                                    :customer/address-number           {}
+                                                                                                                    :customer/address-line2            {}
+                                                                                                                    :customer/billing-address-country  {}
+                                                                                                                    :customer/name                     {}
+                                                                                                                    :customer/billing-address-postcode {}
+                                                                                                                    :customer/billing-address-line1    {}
+                                                                                                                    :customer/address-line1            {}
+                                                                                                                    :customer/printed-name             {}
+                                                                                                                    :customer/billing-address-line2    {}
+                                                                                                                    :customer/address-city             {}
+                                                                                                                    :customer/documents                {}
+                                                                                                                    :customer/marital-status           {}
+                                                                                                                    :customer/address-locality         {}
+                                                                                                                    :customer/billing-address-number   {}
+                                                                                                                    :customer/dob                      {}
+                                                                                                                    :customer/billing-address-state    {}
+                                                                                                                    :customer/primary-device           {}
+                                                                                                                    :customer/address-country          {}
+                                                                                                                    :customer/gender                   {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/cpf {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/address-state
+                                                                                                                     :customer/mothers-name
+                                                                                                                     :customer/tags
+                                                                                                                     :customer/billing-address-city
+                                                                                                                     :customer/billing-address-locality
+                                                                                                                     :customer/address-ref-point
+                                                                                                                     :customer/email
+                                                                                                                     :customer/preferred-name
+                                                                                                                     :customer/phone
+                                                                                                                     :customer/address-postcode
+                                                                                                                     :customer/address-number
+                                                                                                                     :customer/address-line2
+                                                                                                                     :customer/billing-address-country
+                                                                                                                     :customer/name
+                                                                                                                     :customer/billing-address-postcode
+                                                                                                                     :customer/billing-address-line1
+                                                                                                                     :customer/address-line1
+                                                                                                                     :customer/printed-name
+                                                                                                                     :customer/billing-address-line2
+                                                                                                                     :customer/address-city
+                                                                                                                     :customer/documents
+                                                                                                                     :customer/marital-status
+                                                                                                                     :customer/address-locality
+                                                                                                                     :customer/billing-address-number
+                                                                                                                     :customer/dob
+                                                                                                                     :customer/billing-address-state
+                                                                                                                     :customer/primary-device
+                                                                                                                     :customer/address-country
+                                                                                                                     :customer/gender}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{39 15}}
+                                                         13  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.person/customer_SLASH_id__GT_person_SLASH_id
+                                                              :com.wsscode.pathom.connect.planner/node-id          13
+                                                              :com.wsscode.pathom.connect.planner/requires         {:person/id {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:person/id}
+                                                              :com.wsscode.pathom.connect.planner/run-next         142
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{15}}
+                                                         191 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.boleto/boleto-quota
+                                                              :com.wsscode.pathom.connect.planner/node-id          191
+                                                              :com.wsscode.pathom.connect.planner/requires         {:boleto-quota.savings-transfer-in/total     {}
+                                                                                                                    :boleto-quota.savings-transfer-in/remaining {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:boleto-quota.savings-transfer-in/total
+                                                                                                                     :boleto-quota.savings-transfer-in/remaining}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         178 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.client-certificate/customer-pin-status-blocked?
+                                                              :com.wsscode.pathom.connect.planner/node-id          178
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/pin-blocked? {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/pin-status {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{176}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/pin-blocked?}}
+                                                         167 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.financing/anticipation-refinancing-strategies
+                                                              :com.wsscode.pathom.connect.planner/node-id          167
+                                                              :com.wsscode.pathom.connect.planner/requires         {:account/refinancing-strategies {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:account/id {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{149}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:account/refinancing-strategies}}
+                                                         36  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.collision/customer-collisions
+                                                              :com.wsscode.pathom.connect.planner/node-id          36
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/collisions {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/collisions}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         41  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.api/api-shard
+                                                              :com.wsscode.pathom.connect.planner/node-id          41
+                                                              :com.wsscode.pathom.connect.planner/requires         {:abrams.api/shard {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:abrams.api/shard}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         196 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.chargeback/customer-chargebacks
+                                                              :com.wsscode.pathom.connect.planner/node-id          196
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/chargebacks {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/chargebacks}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         162 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.collection/can-refinance?
+                                                              :com.wsscode.pathom.connect.planner/node-id          162
+                                                              :com.wsscode.pathom.connect.planner/requires         {:account/can-refinance? {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:account.collection/late-days {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{163}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:account/can-refinance?}}
+                                                         184 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.purchase/paginated-customer-purchases
+                                                              :com.wsscode.pathom.connect.planner/node-id          184
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/paginated-purchases {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/paginated-purchases}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         131 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.person/can-report-fraudster?
+                                                              :com.wsscode.pathom.connect.planner/node-id          131
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/can-report-fraudster? {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/can-report-fraudster?}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         43  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.client-certificate/recently-updated-suspect-client-certificates
+                                                              :com.wsscode.pathom.connect.planner/node-id          43
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/recently-updated-suspect-client-certificates {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/recently-updated-client-certificates {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{44 47}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/recently-updated-suspect-client-certificates}}
+                                                         231 {:com.wsscode.pathom.connect/sym                 abrams.controllers.graph.person/companies-from-person
+                                                              :com.wsscode.pathom.connect.planner/node-id     231
+                                                              :com.wsscode.pathom.connect.planner/requires    {:customer/companies {}}
+                                                              :com.wsscode.pathom.connect.planner/input       {:person/id {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes #{142}}
+                                                         44  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.client-certificate/recently-updated-client-certificates
+                                                              :com.wsscode.pathom.connect.planner/node-id          44
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/recently-updated-client-certificates {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/client-certificates {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{45}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/recently-updated-client-certificates}
+                                                              :com.wsscode.pathom.connect.planner/run-next         47}
+                                                         6   {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.person/customer-by-id
+                                                              :com.wsscode.pathom.connect.planner/node-id          6
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/address-state            {}
+                                                                                                                    :customer/mothers-name             {}
+                                                                                                                    :customer/billing-address-city     {}
+                                                                                                                    :customer/billing-address-locality {}
+                                                                                                                    :customer/address-ref-point        {}
+                                                                                                                    :customer/email                    {}
+                                                                                                                    :customer/preferred-name           {}
+                                                                                                                    :customer/phone                    {}
+                                                                                                                    :customer/address-postcode         {}
+                                                                                                                    :customer/cpf                      {}
+                                                                                                                    :customer/address-number           {}
+                                                                                                                    :customer/address-line2            {}
+                                                                                                                    :customer/billing-address-country  {}
+                                                                                                                    :customer/name                     {}
+                                                                                                                    :customer/billing-address-postcode {}
+                                                                                                                    :customer/billing-address-line1    {}
+                                                                                                                    :customer/address-line1            {}
+                                                                                                                    :customer/printed-name             {}
+                                                                                                                    :customer/cnpj                     {}
+                                                                                                                    :customer/billing-address-line2    {}
+                                                                                                                    :customer/address-city             {}
+                                                                                                                    :customer/documents                {}
+                                                                                                                    :customer/marital-status           {}
+                                                                                                                    :customer/address-locality         {}
+                                                                                                                    :customer/billing-address-number   {}
+                                                                                                                    :customer/dob                      {}
+                                                                                                                    :customer/billing-address-state    {}
+                                                                                                                    :customer/primary-device           {}
+                                                                                                                    :customer/address-country          {}
+                                                                                                                    :customer/gender                   {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{15}
+                                                              :com.wsscode.pathom.connect.planner/run-next         232
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/cnpj}}
+                                                         189 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.savings-account/savings-account-reset-date
+                                                              :com.wsscode.pathom.connect.planner/node-id          189
+                                                              :com.wsscode.pathom.connect.planner/requires         {:savings-account.reset-date/month {}
+                                                                                                                    :savings-account.reset-date/day   {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:stormshield.savings-account/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:savings-account.reset-date/day
+                                                                                                                     :savings-account.reset-date/month}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{188}}
+                                                         198 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.savings-account-purchase/savings-account-purchases
+                                                              :com.wsscode.pathom.connect.planner/node-id          198
+                                                              :com.wsscode.pathom.connect.planner/requires         {:savings-account/purchases {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:savings-account/denied-purchases   {}
+                                                                                                                    :savings-account/approved-purchases {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{201}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:savings-account/purchases}}
+                                                         155 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.revolver/revolver-by-account
+                                                              :com.wsscode.pathom.connect.planner/node-id          155
+                                                              :com.wsscode.pathom.connect.planner/requires         {:account.revolver.debt/delinquent-debt {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:account/id {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{149}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:account.revolver.debt/delinquent-debt}
+                                                              :com.wsscode.pathom.connect.planner/run-next         154}
+                                                         227 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.person/income-proofs-by-customer-id
+                                                              :com.wsscode.pathom.connect.planner/node-id          227
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/income-proofs {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/income-proofs}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         51  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.azkaban/render-cpf-irregular-confirmed-bar?
+                                                              :com.wsscode.pathom.connect.planner/node-id          51
+                                                              :com.wsscode.pathom.connect.planner/requires         {:shuffle.banners.predicates/render-cpf-irregular-confirmed-bar? {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/sentences {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{52}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:shuffle.banners.predicates/render-cpf-irregular-confirmed-bar?}}
+                                                         201 {:com.wsscode.pathom.connect.planner/node-id     201
+                                                              :com.wsscode.pathom.connect.planner/requires    {:savings-account/denied-purchases   {}
+                                                                                                               :savings-account/approved-purchases {}}
+                                                              :com.wsscode.pathom.connect.planner/run-and     #{200 199}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes #{190}
+                                                              :com.wsscode.pathom.connect.planner/run-next    198}
+                                                         166 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.financing/account-financings
+                                                              :com.wsscode.pathom.connect.planner/node-id          166
+                                                              :com.wsscode.pathom.connect.planner/requires         {:account/financings {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:account/id {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{149}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:account/financings}
+                                                              :com.wsscode.pathom.connect.planner/run-next         175}
+                                                         34  {:com.wsscode.pathom.connect/sym                 abrams.controllers.graph.person/primary-prospect
+                                                              :com.wsscode.pathom.connect.planner/node-id     34
+                                                              :com.wsscode.pathom.connect.planner/requires    {:customer/tags {}}
+                                                              :com.wsscode.pathom.connect.planner/input       {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes #{15}}
+                                                         228 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.auto-bill-payment/auto-bill-payment-by-customer-id
+                                                              :com.wsscode.pathom.connect.planner/node-id          228
+                                                              :com.wsscode.pathom.connect.planner/requires         {:auto-bill-payment/enabled                {}
+                                                                                                                    :auto-bill-payment/scheduled-payment-date {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:auto-bill-payment/scheduled-payment-date
+                                                                                                                     :auto-bill-payment/enabled}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         148 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.collection/collection-by-account-id
+                                                              :com.wsscode.pathom.connect.planner/node-id          148
+                                                              :com.wsscode.pathom.connect.planner/requires         {:account/active-collection {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:account/id {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{149}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:account/active-collection}
+                                                              :com.wsscode.pathom.connect.planner/run-next         164}
+                                                         2   {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.person/primary-prospect
+                                                              :com.wsscode.pathom.connect.planner/node-id          2
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/primary-prospect {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/primary-prospect}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         142 {:com.wsscode.pathom.connect.planner/node-id     142
+                                                              :com.wsscode.pathom.connect.planner/requires    {:prospect/id        {}
+                                                                                                               :person/prospects   {}
+                                                                                                               :customer/companies {}}
+                                                              :com.wsscode.pathom.connect.planner/run-and     #{141 231 11}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes #{13}}
+                                                         47  {:com.wsscode.pathom.connect.planner/node-id     47
+                                                              :com.wsscode.pathom.connect.planner/requires    {:customer/recently-updated-suspect-client-certificates    {}
+                                                                                                               :customer/recently-updated-fraudulent-client-certificates {}}
+                                                              :com.wsscode.pathom.connect.planner/run-and     #{46 43}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes #{44}}
+                                                         180 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.financing/anticipations
+                                                              :com.wsscode.pathom.connect.planner/node-id          180
+                                                              :com.wsscode.pathom.connect.planner/requires         {:financing/anticipations {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:account/id {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{149}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:financing/anticipations}}
+                                                         158 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.whitelist/account-whitelist
+                                                              :com.wsscode.pathom.connect.planner/node-id          158
+                                                              :com.wsscode.pathom.connect.planner/requires         {:account.whitelist/active? {}
+                                                                                                                    :account.whitelist/from    {}
+                                                                                                                    :account.whitelist/to      {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:account/id {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{149}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:account.whitelist/to
+                                                                                                                     :account.whitelist/from
+                                                                                                                     :account.whitelist/active?}}
+                                                         202 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.complaint/all-reasons
+                                                              :com.wsscode.pathom.connect.planner/node-id          202
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer.complaint/all-reasons {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer.complaint/all-reasons}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         68  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.agreement/most-recent-agreement
+                                                              :com.wsscode.pathom.connect.planner/node-id          68
+                                                              :com.wsscode.pathom.connect.planner/requires         {:account/most-recent-agreement {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:account/id {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{149 53}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:account/most-recent-agreement}}
+                                                         200 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.savings-account-purchase/savings-account-approved-purchases
+                                                              :com.wsscode.pathom.connect.planner/node-id          200
+                                                              :com.wsscode.pathom.connect.planner/requires         {:savings-account/approved-purchases {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:savings-account/id {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{201}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:savings-account/approved-purchases}}
+                                                         11  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.person/expand-person-id
+                                                              :com.wsscode.pathom.connect.planner/node-id          11
+                                                              :com.wsscode.pathom.connect.planner/requires         {:prospect/id {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:person/id {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{13 142}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:prospect/id}
+                                                              :com.wsscode.pathom.connect.planner/run-next         10}
+                                                         9   {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.person/prospect_SLASH_cpf__GT_person_SLASH_cpf
+                                                              :com.wsscode.pathom.connect.planner/node-id          9
+                                                              :com.wsscode.pathom.connect.planner/requires         {:person/cpf {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:prospect/cpf {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{10}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:person/cpf}
+                                                              :com.wsscode.pathom.connect.planner/run-next         7}
+                                                         145 {:com.wsscode.pathom.connect.planner/node-id     145
+                                                              :com.wsscode.pathom.connect.planner/requires    {:customer/account-requests {}
+                                                                                                               :person/prospects          {}}
+                                                              :com.wsscode.pathom.connect.planner/run-and     #{144 37}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes #{38}}
+                                                         179 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.client-certificate/can-perform-ato?
+                                                              :com.wsscode.pathom.connect.planner/node-id          179
+                                                              :com.wsscode.pathom.connect.planner/requires         {:client-certificate.permission/can-perform-ato? {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:client-certificate.permission/can-perform-ato?}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         138 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.fraud-incident/has-fraudster-catcher-permission?
+                                                              :com.wsscode.pathom.connect.planner/node-id          138
+                                                              :com.wsscode.pathom.connect.planner/requires         {:fraud.report.permission/fraudster-catcher? {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:fraud.report.permission/fraudster-catcher?}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         45  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.client-certificate/client-certificates
+                                                              :com.wsscode.pathom.connect.planner/node-id          45
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/client-certificates {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/client-certificates}
+                                                              :com.wsscode.pathom.connect.planner/run-next         44
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         53  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.person/account-id
+                                                              :com.wsscode.pathom.connect.planner/node-id          53
+                                                              :com.wsscode.pathom.connect.planner/requires         {:account/id {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:account/id}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}
+                                                              :com.wsscode.pathom.connect.planner/run-next         149}
+                                                         132 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.person/customer-marital-status-options
+                                                              :com.wsscode.pathom.connect.planner/node-id          132
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/marital-status-options {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/marital-status-options}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         203 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.complaint/customer-complaints
+                                                              :com.wsscode.pathom.connect.planner/node-id          203
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/complaints {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/complaints}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         140 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.card-crebito/cards-by-customer-id
+                                                              :com.wsscode.pathom.connect.planner/node-id          140
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/all-cards {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/all-cards}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}
+                                                              :com.wsscode.pathom.connect.planner/run-next         226}
+                                                         133 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.sherlock/can-report-suspect?
+                                                              :com.wsscode.pathom.connect.planner/node-id          133
+                                                              :com.wsscode.pathom.connect.planner/requires         {:sherlock.suspect/can-report-suspect? {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:sherlock.suspect/can-report-suspect?}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         163 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.collection/active-collection-late-days
+                                                              :com.wsscode.pathom.connect.planner/node-id          163
+                                                              :com.wsscode.pathom.connect.planner/requires         {:account.collection/late-days {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:account/active-collection {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{164}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:account.collection/late-days}
+                                                              :com.wsscode.pathom.connect.planner/run-next         162}
+                                                         38  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.person/prospects-by-cpf
+                                                              :com.wsscode.pathom.connect.planner/node-id          38
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/prospects {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/cpf {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{39}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/prospects}
+                                                              :com.wsscode.pathom.connect.planner/run-next         145}
+                                                         173 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.financing/anticipation-financing-strategies
+                                                              :com.wsscode.pathom.connect.planner/node-id          173
+                                                              :com.wsscode.pathom.connect.planner/requires         {:account/financing-strategies {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:account/id {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{149}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:account/financing-strategies}}
+                                                         10  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.person/prospect-by-id
+                                                              :com.wsscode.pathom.connect.planner/node-id          10
+                                                              :com.wsscode.pathom.connect.planner/requires         {:prospect/cpf {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:prospect/id {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{11}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:prospect/cpf}
+                                                              :com.wsscode.pathom.connect.planner/run-next         9}
+                                                         185 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.fraud/can-bypass-transfer-out-rules?
+                                                              :com.wsscode.pathom.connect.planner/node-id          185
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/can-bypass-transfer-out-rules? {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/can-bypass-transfer-out-rules?}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         52  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.azkaban/get-customer-sentences
+                                                              :com.wsscode.pathom.connect.planner/node-id          52
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/sentences {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/sentences}
+                                                              :com.wsscode.pathom.connect.planner/run-next         51
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         147 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.account/all-accounts
+                                                              :com.wsscode.pathom.connect.planner/node-id          147
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/accounts {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/accounts}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         161 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.tokenization/tokenizations-for-customer
+                                                              :com.wsscode.pathom.connect.planner/node-id          161
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/tokenizations {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/tokenizations}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         199 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.savings-account-purchase/savings-account-denied-purchases
+                                                              :com.wsscode.pathom.connect.planner/node-id          199
+                                                              :com.wsscode.pathom.connect.planner/requires         {:savings-account/denied-purchases {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:savings-account/id {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{201 190}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:savings-account/denied-purchases}}
+                                                         37  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.account-request/all-account-requests
+                                                              :com.wsscode.pathom.connect.planner/node-id          37
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/account-requests {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/prospects {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{145 38}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/account-requests}}
+                                                         190 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.savings-account/savings-account-by-customer-id
+                                                              :com.wsscode.pathom.connect.planner/node-id          190
+                                                              :com.wsscode.pathom.connect.planner/requires         {:savings-account/created-at {}
+                                                                                                                    :savings-account/id         {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:savings-account/created-at
+                                                                                                                     :savings-account/id}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}
+                                                              :com.wsscode.pathom.connect.planner/run-next         201}
+                                                         177 {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.client-certificate/pin-throttler
+                                                              :com.wsscode.pathom.connect.planner/node-id          177
+                                                              :com.wsscode.pathom.connect.planner/requires         {:customer/pin-throttlers {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/id {}}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:customer/pin-throttlers}
+                                                              :com.wsscode.pathom.connect.planner/run-next         176
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{234}}
+                                                         49  {:com.wsscode.pathom.connect/sym                      abrams.controllers.graph.dementor/render-cpf-irregular-cycle-bar?
+                                                              :com.wsscode.pathom.connect.planner/node-id          49
+                                                              :com.wsscode.pathom.connect.planner/requires         {:shuffle.banners.predicates/render-cpf-irregular-cycle-bar? {}}
+                                                              :com.wsscode.pathom.connect.planner/input            {:customer/latest-cpf-cycle {}}
+                                                              :com.wsscode.pathom.connect.planner/after-nodes      #{50}
+                                                              :com.wsscode.pathom.connect.planner/source-for-attrs #{:shuffle.banners.predicates/render-cpf-irregular-cycle-bar?}}}
+  :com.wsscode.pathom.connect.planner/index-syms        {abrams.controllers.graph.person/prospect_SLASH_cpf__GT_person_SLASH_cpf                     #{9}
+                                                         abrams.controllers.graph.person/can-read-documents?                                         #{129}
+                                                         abrams.controllers.graph.client-certificate/client-certificates                             #{45}
+                                                         abrams.controllers.graph.customer/cpnj-companies                                            #{232}
+                                                         abrams.diplomat.graphql/stormshield-graphql                                                 #{188}
+                                                         abrams.controllers.graph.financing/can-anticipate-financing?                                #{165}
+                                                         abrams.controllers.graph.person/prospect-by-id                                              #{10}
+                                                         abrams.controllers.graph.sherlock/all-incident-manual-alarms                                #{139}
+                                                         abrams.controllers.graph.financing/anticipation-financing-strategies                        #{173}
+                                                         abrams.controllers.graph.system/echo-true                                                   #{1}
+                                                         abrams.controllers.graph.person/account-id                                                  #{53}
+                                                         abrams.controllers.graph.savings-account-purchase/savings-account-denied-purchases          #{199}
+                                                         abrams.controllers.graph.agreement/most-recent-agreement                                    #{68}
+                                                         abrams.controllers.graph.azkaban/get-customer-sentences                                     #{52}
+                                                         abrams.controllers.graph.dementor/render-cpf-irregular-cycle-bar?                           #{49}
+                                                         abrams.controllers.graph.financing/account-financings                                       #{166}
+                                                         abrams.controllers.graph.financing/settled-financings                                       #{174}
+                                                         abrams.controllers.graph.person/can-see-age?                                                #{130}
+                                                         abrams.controllers.graph.fraud-incident/has-fraudster-catcher-permission?                   #{138}
+                                                         abrams.controllers.graph.tokenization/tokenizations-for-customer                            #{161}
+                                                         abrams.controllers.graph.complaint/all-reasons                                              #{202}
+                                                         abrams.controllers.graph.person/prospects-by-person-id                                      #{141}
+                                                         abrams.controllers.graph.fraud-incident/reports-by-customer-id                              #{223}
+                                                         abrams.controllers.graph.account-recovery/account-all-recoveries                            #{225}
+                                                         abrams.controllers.graph.dementor/get-latest-cpf-cycle                                      #{50}
+                                                         abrams.controllers.graph.card-crebito/cards-by-customer-id                                  #{140}
+                                                         abrams.controllers.graph.savings-account/savings-account-reset-date                         #{189}
+                                                         abrams.controllers.graph.azkaban/render-cpf-irregular-confirmed-bar?                        #{51}
+                                                         abrams.controllers.graph.boleto/boleto-quota                                                #{191}
+                                                         abrams.controllers.graph.person/expand-person-id                                            #{11}
+                                                         abrams.controllers.graph.person/all-rollouts-details                                        #{205}
+                                                         abrams.controllers.graph.client-certificate/customer-pin-status                             #{176}
+                                                         abrams.diplomat.graphql/mancini-graphql                                                     #{204}
+                                                         abrams.controllers.graph.person/customer-phone-entries                                      #{157}
+                                                         abrams.controllers.graph.client-certificate/recently-updated-client-certificates            #{44}
+                                                         abrams.controllers.graph.client-certificate/customer-pin-status-blocked?                    #{178}
+                                                         abrams.controllers.graph.chargeback/customer-chargebacks                                    #{196}
+                                                         abrams.controllers.graph.savings-account-purchase/savings-account-purchases                 #{198}
+                                                         abrams.controllers.graph.account/all-accounts                                               #{147}
+                                                         abrams.controllers.graph.fraud-incident/has-big-mama-private-comments-permission?           #{224}
+                                                         abrams.controllers.graph.sherlock/can-report-suspect?                                       #{133}
+                                                         abrams.controllers.graph.financing/anticipations                                            #{180}
+                                                         abrams.controllers.graph.person/primary-prospect                                            #{34
+                                                                                                                                                       2}
+                                                         abrams.controllers.graph.collection/can-refinance?                                          #{162}
+                                                         abrams.controllers.graph.person/can-report-fraudster?                                       #{131}
+                                                         abrams.controllers.graph.savings-account/savings-account-by-customer-id                     #{190}
+                                                         abrams.controllers.graph.person/customer_SLASH_id__GT_person_SLASH_id                       #{13}
+                                                         abrams.controllers.graph.purchase/paginated-customer-purchases                              #{184}
+                                                         abrams.controllers.graph.person/income-proofs-by-customer-id                                #{227}
+                                                         abrams.controllers.graph.fraud/blocked-transfers-out                                        #{48}
+                                                         abrams.controllers.graph.fraud/can-bypass-transfer-out-rules?                               #{185}
+                                                         abrams.controllers.graph.api/api-shard                                                      #{41}
+                                                         abrams.controllers.graph.account-request/all-account-requests                               #{37}
+                                                         abrams.controllers.graph.person/prospects-by-cpf                                            #{38}
+                                                         abrams.controllers.graph.savings-account-purchase/savings-account-approved-purchases        #{200}
+                                                         abrams.controllers.graph.collision/customer-collisions                                      #{36}
+                                                         abrams.controllers.graph.person/customer-by-id                                              #{6}
+                                                         abrams.controllers.graph.complaint/customer-complaints                                      #{203}
+                                                         abrams.controllers.graph.financing/anticipation-refinancing-strategies                      #{167}
+                                                         abrams.controllers.graph.client-certificate/recently-updated-fraudulent-client-certificates #{46}
+                                                         abrams.controllers.graph.proximo/my-actor                                                   #{137}
+                                                         abrams.controllers.graph.person/person_SLASH_cpf__GT_customer_SLASH_cpf                     #{7}
+                                                         abrams.controllers.graph.person/customer_SLASH_prospects__GT_person_SLASH_prospects         #{144}
+                                                         abrams.controllers.graph.person/customer-by-cpf                                             #{33}
+                                                         abrams.controllers.graph.agreement-simulation/agreements-max-installments                   #{156}
+                                                         abrams.controllers.graph.person/customer-marital-status-options                             #{132}
+                                                         abrams.controllers.graph.logistic/customer-shipping-card                                    #{226}
+                                                         abrams.controllers.graph.client-certificate/recently-updated-suspect-client-certificates    #{43}
+                                                         abrams.controllers.graph.client-certificate/pin-throttler                                   #{177}
+                                                         abrams.controllers.graph.rewards/customer-enrollment                                        #{206}
+                                                         abrams.controllers.graph.auto-bill-payment/auto-bill-payment-by-customer-id                 #{228}
+                                                         abrams.controllers.graph.revolver/revolver-by-account                                       #{155}
+                                                         abrams.controllers.graph.whitelist/account-whitelist                                        #{158}
+                                                         abrams.controllers.graph.person/companies-from-person                                       #{231}
+                                                         abrams.controllers.graph.collection/collection-by-account-id                                #{148}
+                                                         abrams.controllers.graph.collection/active-collection-late-days                             #{163}
+                                                         abrams.controllers.graph.revolver/revolver-rounded-delinquent-debt                          #{154}
+                                                         abrams.controllers.graph.system/environment                                                 #{186}
+                                                         abrams.controllers.graph.rewards/rewards-enrolled?                                          #{218}
+                                                         abrams.controllers.graph.client-certificate/can-perform-ato?                                #{179}}
+  :com.wsscode.pathom.connect.planner/unreachable-syms  #{abrams.controllers.graph.account/simple-account
+                                                          abrams.controllers.graph.account/account-balances
+                                                          abrams.controllers.graph.chargeback/chargeback-by-id
+                                                          abrams.controllers.graph.person/id-by-unknown-id
+                                                          abrams.controllers.graph.bills/bill-details
+                                                          abrams.controllers.graph.card-crebito/card-by-id
+                                                          abrams.controllers.graph.bills/open-bill-details
+                                                          abrams.controllers.graph.boleto/boleto-by-id
+                                                          abrams.controllers.graph.bills/last-close-date
+                                                          abrams.controllers.graph.agreement/settled-refinance?
+                                                          abrams.controllers.graph.person/prospect_SLASH_id__GT_person_SLASH_id
+                                                          abrams.controllers.graph.purchase/purchase-simple
+                                                          abrams.controllers.graph.savings-account-purchase/savings-purchase
+                                                          abrams.controllers.graph.bills/last-closed-bill
+                                                          abrams.controllers.graph.bills/bills-summary
+                                                          abrams.controllers.graph.person/prospects-by-email
+                                                          abrams.controllers.graph.bills/account-last-bill-overdue-close-date
+                                                          abrams.controllers.graph.person/customer_SLASH_cpf__GT_person_SLASH_cpf
+                                                          abrams.controllers.graph.financing/has-open-financing?
+                                                          abrams.controllers.graph.bills/bill-by-id
+                                                          abrams.controllers.graph.agreement/refinance-promise?
+                                                          abrams.controllers.graph.bills/bills-by-id
+                                                          abrams.controllers.graph.adjustment/adjustment-by-id}
+  :com.wsscode.pathom.connect.planner/unreachable-attrs #{:nubank.shuffle.common.ui.layout/page-load-error
+                                                          :account/next-close-date
+                                                          :account/status
+                                                          :account/refinance-promise?
+                                                          :person/unknown-id
+                                                          :card/id
+                                                          :account/bills-by-id
+                                                          :customer/chargebacks-count
+                                                          :account.bills/last-overdue-close-date
+                                                          :account/precise-credit-limit
+                                                          :adjustment/id
+                                                          :customer/chargebacks-triage-count
+                                                          :account/bills
+                                                          :account/next-due-date
+                                                          :boleto/id
+                                                          :account/last-close-date
+                                                          :account/has-open-financing?
+                                                          :account/settled-refinance?
+                                                          :chargeback/id
+                                                          :customer/chargebacks-solved-count
+                                                          :customer/chargebacks-analysis-count
+                                                          :person/email
+                                                          :account/last-closed-bill
+                                                          :savings-account.purchase/id}
+  :com.wsscode.pathom.connect.planner/index-attrs       {:customer/account-recoveries                                    225
+                                                         :account.revolver/rounded-delinquent-debt                       154
+                                                         :enrollment.plan/precise-amount                                 206
+                                                         :enrollment.points-balance/points-display                       206
+                                                         :customer.complaint/all-reasons                                 202
+                                                         :account.whitelist/to                                           158
+                                                         :savings-account.reset-date/day                                 189
+                                                         :enrollment.plan/id                                             206
+                                                         :customer/address-state                                         33
+                                                         :customer/mothers-name                                          33
+                                                         :enrollment.points-balance/earned-points-display                206
+                                                         :boleto-quota.savings-transfer-in/total                         191
+                                                         :customer/tags                                                  33
+                                                         :customer/billing-address-city                                  33
+                                                         :savings-account/created-at                                     190
+                                                         :customer.fraud/reports                                         223
+                                                         :customer/billing-address-locality                              33
+                                                         :stormshield.savings-account/bank-account                       188
+                                                         :enrollment.product/name                                        206
+                                                         :customer/address-ref-point                                     33
+                                                         :customer/email                                                 33
+                                                         :customer/preferred-name                                        33
+                                                         :customer/pin-throttlers                                        177
+                                                         :auto-bill-payment/scheduled-payment-date                       228
+                                                         :customer/phone                                                 33
+                                                         :customer/can-see-age?                                          130
+                                                         :customer/address-postcode                                      33
+                                                         :account/id                                                     53
+                                                         :customer/cpf                                                   15
+                                                         :enrollment.points-balance/wiped-points-display                 206
+                                                         :shuffle.banners.predicates/render-cpf-irregular-cycle-bar?     49
+                                                         :customer/can-read-documents?                                   129
+                                                         :prospect/id                                                    11
+                                                         :customer/chargebacks                                           196
+                                                         :customer/can-bypass-transfer-out-rules?                        185
+                                                         :customer/address-number                                        33
+                                                         :abrams.helpers/echo-true                                       1
+                                                         :savings-account/denied-purchases                               199
+                                                         :customer/address-line2                                         33
+                                                         :account/financings                                             166
+                                                         :account/active-collection                                      148
+                                                         :customer/billing-address-country                               33
+                                                         :account.whitelist/from                                         158
+                                                         :collection.agreement.simulation/max-installments               156
+                                                         :customer/name                                                  33
+                                                         :account/can-refinance?                                         162
+                                                         :customer/recently-updated-fraudulent-client-certificates       46
+                                                         :savings-account.reset-date/month                               189
+                                                         :client-certificate.permission/can-perform-ato?                 179
+                                                         :customer/billing-address-postcode                              33
+                                                         :customer/can-report-fraudster?                                 131
+                                                         :enrollment/enrolled-at                                         206
+                                                         :savings-account/purchases                                      198
+                                                         :enrollment.subscription/id                                     206
+                                                         :customer/prospects                                             38
+                                                         :customer/billing-address-line1                                 33
+                                                         :person/cpf                                                     9
+                                                         :customer/address-line1                                         33
+                                                         :customer/all-rollouts-details                                  205
+                                                         :customer/printed-name                                          33
+                                                         :customer/cnpj                                                  6
+                                                         :proximo/my-actor                                               137
+                                                         :customer/latest-cpf-cycle                                      50
+                                                         :enrollment.product/id                                          206
+                                                         :customer/pin-status                                            176
+                                                         :abrams.api/shard                                               41
+                                                         :account/most-recent-agreement                                  68
+                                                         :customer/primary-prospect                                      2
+                                                         :customer/phone-entries                                         157
+                                                         :account.financing/settled-financings                           174
+                                                         :customer/billing-address-line2                                 33
+                                                         :stormshield.savings-account/status                             188
+                                                         :enrollment.plan/amount                                         206
+                                                         :stormshield.savings-account/savings-balance                    188
+                                                         :customer/address-city                                          33
+                                                         :sherlock.suspect/can-report-suspect?                           133
+                                                         :customer/sentences                                             52
+                                                         :customer/documents                                             33
+                                                         :customer/paginated-purchases                                   184
+                                                         :customer/tokenizations                                         161
+                                                         :customer/client-certificates                                   45
+                                                         :enrollment.points-balance/redeemed-points-display              206
+                                                         :prospect/cpf                                                   10
+                                                         :customer/account-requests                                      37
+                                                         :fraud.report.permission/fraudster-catcher?                     138
+                                                         :person/prospects                                               144
+                                                         :account.financing/can-anticipate?                              165
+                                                         :account.whitelist/active?                                      158
+                                                         :customer/marital-status                                        33
+                                                         :customer/address-locality                                      33
+                                                         :customer/billing-address-number                                33
+                                                         :customer/all-cards                                             140
+                                                         :enrollment/status                                              206
+                                                         :account.revolver.debt/delinquent-debt                          155
+                                                         :stormshield.savings-account/id                                 188
+                                                         :customer/dob                                                   33
+                                                         :fraud.alert-bars/triggered-rules                               48
+                                                         :fraud.report.permission/big-mama-private-comments?             224
+                                                         :boleto-quota.savings-transfer-in/remaining                     191
+                                                         :customer/billing-address-state                                 33
+                                                         :customer/marital-status-options                                132
+                                                         :enrollment/rewards-id                                          206
+                                                         :enrollment.subscription/next-due-date                          206
+                                                         :shuffle.banners.predicates/render-cpf-irregular-confirmed-bar? 51
+                                                         :savings-account/approved-purchases                             200
+                                                         :auto-bill-payment/enabled                                      228
+                                                         :customer/pin-blocked?                                          178
+                                                         :financing/anticipations                                        180
+                                                         :customer/accounts                                              147
+                                                         :customer/primary-device                                        33
+                                                         :customer/recently-updated-suspect-client-certificates          43
+                                                         :savings-account/id                                             190
+                                                         :account/financing-strategies                                   173
+                                                         :sherlock.incident.manual-alarms/all                            139
+                                                         :customer/recently-updated-client-certificates                  44
+                                                         :account/refinancing-strategies                                 167
+                                                         :customer/collisions                                            36
+                                                         :customer/shipping-card                                         226
+                                                         :account.collection/late-days                                   163
+                                                         :enrollment.subscription/external-id                            206
+                                                         :customer/address-country                                       33
+                                                         :abrams.system/environment                                      186
+                                                         :enrollment.plan/frequency                                      206
+                                                         :enrollment/enrolled?                                           218
+                                                         :customer/income-proofs                                         227
+                                                         :mancini.customer/account                                       204
+                                                         :person/id                                                      13
+                                                         :customer/gender                                                33
+                                                         :customer/complaints                                            203}
+  :com.wsscode.pathom.connect.planner/root              234}}

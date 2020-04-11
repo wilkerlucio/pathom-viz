@@ -1,0 +1,3 @@
+#!/bin/bash
+
+npx shadow-cljs watch workspaces electron-background electron-renderer -A:dev:electron

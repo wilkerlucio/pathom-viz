@@ -3,7 +3,7 @@
     ["react" :as react]
     [cljs.spec.alpha :as s]
     [clojure.spec.gen.alpha :as gen]
-    [fulcro.client.primitives :as fp]
+    [com.fulcrologic.fulcro.components :as fc]
     [goog.object :as gobj]))
 
 (declare new-context)
@@ -22,14 +22,14 @@
    If you pass props in, it applies the equivalent of the #js reader to them.
    You must convert any nested data structures to a JS obj if desired."
   ([Component render]
-   (fp/create-element
+   (fc/create-element
      Component
      #js {:children
           (fn [& v]
             (apply render v))}
      []))
   ([Component props render]
-   (fp/create-element
+   (fc/create-element
      Component
      (-> {:children
           (fn [& v]
@@ -50,7 +50,7 @@
      (provider {:context my-context :value  \"initial state\"}
        (dom/div \"children\")))"
   [{::keys [context value]} & children]
-  (fp/create-element
+  (fc/create-element
     (gobj/get context "Provider")
     #js {:value value}
     children))
