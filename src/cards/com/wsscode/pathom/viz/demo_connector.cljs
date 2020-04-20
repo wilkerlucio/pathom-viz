@@ -26,9 +26,4 @@
       {::p.connector/parser-id ::my-parser})))
 
 (comment
-  (def tracked-parser
-    (p.connector/connect-parser
-      {::p.connector/parser-id "tracked parser"}
-      parser))
-
-  (tracked-parser {} [:works]))
+  (parser {} [:works]))
