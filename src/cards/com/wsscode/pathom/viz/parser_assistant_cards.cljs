@@ -18,7 +18,7 @@
                                 :ui/index-explorer       {:com.wsscode.pathom.viz.index-explorer/id "singleton"}}
      ::ct.fulcro/app           {:remotes
                                 {:remote
-                                 (h/pathom-remote local.parser/parser)}}}))
+                                 (h/pathom-remote (local.parser/parser []))}}}))
 
 (ws/defcard multi-parser-manager-card
   {::wsm/align ::wsm/stretch-flex}
@@ -27,4 +27,4 @@
      ::ct.fulcro/initial-state {::assistant/manager-id "singleton"}
      ::ct.fulcro/app           {:remotes
                                 {:remote
-                                 (h/pathom-remote local.parser/parser)}}}))
+                                 (h/pathom-remote (local.parser/parser []))}}}))

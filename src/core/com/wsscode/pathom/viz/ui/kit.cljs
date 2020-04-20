@@ -684,6 +684,7 @@
                                     :font-weight "bold"}]]
                  [:$CodeMirror-hint {:font-size "10px"}]
                  [:.flex {:flex "1"}]
+                 [:.center {:text-align "center"}]
                  [:.scrollbars {:overflow "auto"}]
                  [:.no-scrollbars {:overflow "hidden"}]
                  [:.nowrap {:white-space "nowrap"}]

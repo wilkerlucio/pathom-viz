@@ -160,11 +160,16 @@
 
 ;; App Init
 
+(pc/defmutation open-external [_ {:keys [url]}]
+  {::pc/sym    'com.wsscode.pathom.viz.ui.mutation-effects/open-external
+   ::pc/params [:url]}
+  (.openExternal shell url))
+
 (defonce app
   (fapp/fulcro-app
     {:remotes
      {:remote
-      (pvh/pathom-remote local.parser/parser)}}))
+      (pvh/pathom-remote (local.parser/parser [open-external]))}}))
 
 (defn init []
   (fapp/mount! app Root "app-root")

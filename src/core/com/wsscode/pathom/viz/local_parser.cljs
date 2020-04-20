@@ -11,17 +11,19 @@
 (def registry
   [cp/registry query.editor/registry])
 
-(def parser
-  (p/async-parser
-    {::p/env     {::p/reader               [p/map-reader
-                                            pc/reader3
-                                            pc/open-ident-reader
-                                            p/env-placeholder-reader]
-                  ::cp/parsers*            client-parsers
-                  ::p/placeholder-prefixes #{">"}}
-     ::p/mutate  pc/mutate-async
-     ::p/plugins [(pc/connect-plugin {::pc/register registry})
-                  (p/env-wrap-plugin #(merge {::cp/parsers @client-parsers} %))
-                  p/error-handler-plugin
-                  p/elide-special-outputs-plugin
-                  p/trace-plugin]}))
+(defn parser
+  ([] (parser []))
+  ([reg]
+   (p/async-parser
+     {::p/env     {::p/reader               [p/map-reader
+                                             pc/reader3
+                                             pc/open-ident-reader
+                                             p/env-placeholder-reader]
+                   ::cp/parsers*            client-parsers
+                   ::p/placeholder-prefixes #{">"}}
+      ::p/mutate  pc/mutate-async
+      ::p/plugins [(pc/connect-plugin {::pc/register [registry reg]})
+                   (p/env-wrap-plugin #(merge {::cp/parsers @client-parsers} %))
+                   p/error-handler-plugin
+                   p/elide-special-outputs-plugin
+                   p/trace-plugin]})))

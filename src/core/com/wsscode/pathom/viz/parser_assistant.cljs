@@ -5,6 +5,7 @@
             [com.fulcrologic.fulcro.data-fetch :as df]
             [com.fulcrologic.fulcro.mutations :as fm]
             [com.wsscode.pathom.viz.client-parser :as cp]
+            [com.wsscode.pathom.viz.ui.mutation-effects :as mf]
             [com.wsscode.async.async-cljs :refer [go-promise <?]]
             [com.wsscode.pathom.viz.index-explorer :as index-explorer]
             [com.wsscode.pathom.viz.query-editor :as query-editor]
@@ -162,7 +163,8 @@
                           :align-items     "center"
                           :justify-content "center"}
                  ui/text-sans-13
-                 {:font-size "21px"}]]
+                 [:.large {:font-size     "21px"
+                           :margin-bottom "6px"}]]]
    :use-hooks? true}
   (let [reload       (h/use-callback #(reload-available-parsers this))
         add-from-url (h/use-callback #(add-from-url! this))]
@@ -185,6 +187,14 @@
           (dom/div :.blank
             (if (seq available-parsers)
               "Select a parser"
-              "Connect a parser")))))))
+              (dom/div
+                (dom/div :.large (ui/gc :.center) "Connect a parser")
+                (dom/div "Not sure what to do to? "
+                  (dom/a {:href    "#"
+                          :onClick #(do
+                                      (.preventDefault %)
+                                      (fc/transact! this [(mf/open-external {:url "https://roamresearch.com/#/app/wsscode/page/RG9C93Sip"})]))}
+                    "Check the docs")
+                  ".")))))))))
 
 (def multi-parser-manager (fc/computed-factory MultiParserManager {:keyfn ::manager-id}))
