@@ -23,9 +23,37 @@
 
 (defonce connected-clients* (atom #{}))
 
+(defn handle-client-connect [server {::ws-server/keys [client-id]}]
+  (when-not (contains? @connected-clients* client-id)
+    (js/console.log "Client connect" client-id)
+
+    (swap! connected-clients* conj client-id)
+
+    (message-renderer! server
+      {:com.wsscode.pathom.viz.electron.renderer.main/message-type
+       :com.wsscode.pathom.viz.electron.renderer.main/connect-client
+
+       ::ws-server/client-id
+       client-id})))
+
+(defn handle-client-disconnect [server {::ws-server/keys [client-id]}]
+  (js/console.log "Client disconnect" client-id)
+
+  (swap! connected-clients* disj client-id)
+
+  (message-renderer! server
+    {:com.wsscode.pathom.viz.electron.renderer.main/message-type
+     :com.wsscode.pathom.viz.electron.renderer.main/disconnect-client
+
+     ::ws-server/client-id
+     client-id}))
+
 (defn handle-client-message [server {::ws-server/keys [client-id]} msg]
   (let [type (:com.wsscode.pathom.viz.ws-connector.core/type msg)]
     (case type
+      :com.wsscode.pathom.viz.ws-connector.core/ping
+      nil
+
       :com.wsscode.pathom.viz.ws-connector.core/pathom-request
       (message-renderer! server
         (assoc msg
@@ -42,36 +70,27 @@
 
       (js/console.warn "WS client sent unknown message" (pr-str msg)))))
 
+(>defn handle-http-request [server msg]
+  [map? (s/keys :req [::ws-server/client-id])
+   => any?]
+  (handle-client-connect server msg)
+  (handle-client-message server msg msg))
+
 (defn start-ws! [server]
   (ws-server/start-ws!
     {::ws-server/port
      SERVER_PORT
 
      ::ws-server/on-client-connect
-     (fn [{::ws-server/keys [client-id] :as env} message]
-       (js/console.log "Client connect" client-id)
-
-       (swap! connected-clients* conj client-id)
-
-       (message-renderer! server
-         {:com.wsscode.pathom.viz.electron.renderer.main/message-type
-          :com.wsscode.pathom.viz.electron.renderer.main/connect-client
-
-          ::ws-server/client-id
-          client-id}))
+     (fn [client _message]
+       (handle-client-connect server client))
 
      ::ws-server/on-client-disconnect
-     (fn [{::ws-server/keys [client-id] :as env} client]
-       (js/console.log "Client disconnect" client-id)
+     (fn [client _message]
+       (handle-client-disconnect server client))
 
-       (swap! connected-clients* disj client-id)
-
-       (message-renderer! server
-         {:com.wsscode.pathom.viz.electron.renderer.main/message-type
-          :com.wsscode.pathom.viz.electron.renderer.main/disconnect-client
-
-          ::ws-server/client-id
-          client-id}))
+     ::ws-server/on-http-request
+     #(handle-http-request server %2)
 
      ::ws-server/on-client-message
      #(handle-client-message server % %3)}))

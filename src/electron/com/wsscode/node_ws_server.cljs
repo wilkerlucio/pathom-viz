@@ -38,9 +38,17 @@
 (def cors (nodejs/require "cors"))
 (def body-parser (nodejs/require "body-parser"))
 
-(defn routes [express-app {:keys [ajax-post-fn ajax-get-or-ws-handshake-fn]}]
+(defn respond-http-request [{::keys [on-http-request] :as config} req res]
+  (let [msg (wsst/read (.-body req))]
+    (if-not (wap/capture-response! msg)
+      (on-http-request config msg)))
+  (.send res "Done"))
+
+(defn routes
+  [config express-app {:keys [ajax-post-fn ajax-get-or-ws-handshake-fn]}]
   (doto express-app
     (.use (cors))
+    (.post "/request" #(respond-http-request config % %2))
     (.ws "/chsk"
       (fn [ws req next]
         (ajax-get-or-ws-handshake-fn req nil nil
@@ -57,14 +65,15 @@
     (.use (fn [req _res next]
             (log/trace "Request: %s" (.-originalUrl req))
             (next)))
+    (.use (.text body-parser #js {:type #js ["application/edn" "application/transit+json"]}))
     (.use (.urlencoded body-parser #js {:extended false}))
     (routes ch-server)))
 
-(defn start-web-server! [{::keys [port]}]
+(defn start-web-server! [{::keys [port] :as config}]
   (log/info "Starting express")
   (let [express-app       (express)
         express-ws-server (express-ws express-app)]
-    (wrap-defaults express-app routes @channel-socket-server)
+    (wrap-defaults express-app (partial routes config) @channel-socket-server)
     (let [http-server (.listen express-app port)]
       (reset! server-atom
         {:express-app express-app
@@ -89,7 +98,8 @@
                 ::send-fn (:send-fn @channel-socket-server)))
 
 (>defn start-ws!
-  [{::keys [port on-client-connect
+  [{::keys [port
+            on-client-connect
             on-client-disconnect
             on-client-message]
     :as    config}]
