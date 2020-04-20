@@ -186,7 +186,7 @@
           (parser-assistant-ui parser-assistant)
           (dom/div :.blank
             (if (seq available-parsers)
-              "Select a parser"
+              (dom/div :.large "Select a parser")
               (dom/div
                 (dom/div :.large (ui/gc :.center) "Connect a parser")
                 (dom/div "Not sure what to do to? "
