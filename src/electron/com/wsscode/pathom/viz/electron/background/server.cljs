@@ -2,11 +2,12 @@
   (:require
     [cljs.spec.alpha :as s]
     [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
-    [com.wsscode.async.async-cljs :refer [go-promise <?]]
+    [com.wsscode.async.async-cljs :refer [go-promise <? <!p]]
     [com.wsscode.async.processing :as wap]
     [com.wsscode.node-ws-server :as ws-server]
     [com.wsscode.pathom.viz.electron.ipc-main :as ipc-main]
-    [com.wsscode.transit :as wsst]))
+    [com.wsscode.transit :as wsst]
+    ["node-fetch" :default fetch]))
 
 (goog-define SERVER_PORT 8240)
 
@@ -22,8 +23,23 @@
   (wap/await! msg))
 
 (defonce connected-clients* (atom #{}))
+(defonce http-clients* (atom {}))
 
-(defn handle-client-connect [server {::ws-server/keys [client-id]}]
+(defn send-http-request! [{::ws-server/keys [client-id]
+                           :as              msg}]
+  (if-let [http-url (get @http-clients* client-id)]
+    (do
+      (fetch http-url #js {:method  "POST"
+                           :headers #js {"Content-Type" "application/transit+json"}
+                           :body    (wsst/write msg)})
+      (wap/await! msg))
+    (js/console.warn "Tried to send http message but client-id doesn't have url")))
+
+(defn handle-client-connect
+  [server
+   {::ws-server/keys                                        [client-id]
+    :com.wsscode.pathom.viz.ws-connector.impl.http-clj/keys [local-http-address]}]
+  (if local-http-address (swap! http-clients* assoc client-id local-http-address))
   (when-not (contains? @connected-clients* client-id)
     (js/console.log "Client connect" client-id)
 
@@ -95,6 +111,11 @@
      ::ws-server/on-client-message
      #(handle-client-message server % %3)}))
 
+(defn send-message! [server {::ws-server/keys [client-id] :as msg}]
+  (if (get @http-clients* client-id)
+    (send-http-request! msg)
+    (ws-server/send-message! server msg)))
+
 (defn handle-renderer-message
   [server {::keys [type] :as message}]
   ;; LANDMARK: Hook up of incoming messages from Electron renderer
@@ -102,7 +123,7 @@
     ::request-parser
     (go-promise
       (try
-        (let [res (<? (ws-server/send-message! server
+        (let [res (<? (send-message! server
                         {:com.wsscode.pathom.viz.ws-connector.core/type
                          :com.wsscode.pathom.viz.ws-connector.core/parser-request
 
