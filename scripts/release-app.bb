@@ -16,4 +16,6 @@
     (do
       (println "Creating tag" tag "...")
       (shell/sh "git" "tag" "-a" tag "-m" tag)
-      (shell/sh "git" "push" "--follow-tags"))))
+      (shell/sh "git" "push" "--follow-tags")
+      (println "Done")
+      nil)))
