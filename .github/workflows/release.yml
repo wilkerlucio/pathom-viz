@@ -17,12 +17,16 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v1
 
+      - uses: DeLaGuardo/setup-clojure@2.0
+        with:
+          tools-deps: '1.10.1.469'
+
       - name: Install Node.js, NPM and Yarn
         uses: actions/setup-node@v1
         with:
           node-version: 12
 
-      - name: Install
+      - name: NPM Install
         run: npm install
 
       - name: Build JS
