@@ -1275,92 +1275,92 @@
          :ui/keys [menu page]
          :as      props}
    extensions]
-  {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
-                     (let [data-tree (clear-not-found data-tree)]
-                       (merge
-                         (let [id (or (::id data-tree)
-                                      (::id current-normalized)
-                                      (random-uuid))]
-                           {::id            id
-                            ::history       [[::id id]]
-                            ::history-index 0
-                            :ui/menu        {::id id}
-                            :ui/page        {::id id}})
-                         current-normalized
-                         data-tree
-                         (if-let [index (get data-tree ::index)]
-                           (process-index index)
-                           {::idx {::no-index? true}}))))
-   :initial-state  {}
-   :ident          ::id
-   :query          [::id ::index ::idx ::history ::history-index
-                    {:ui/menu (fc/get-query SearchEverything)}
-                    {::attributes (fc/get-query AttributeIndex)}
-                    {::globals (fc/get-query AttributeIndex)}
-                    {::idents (fc/get-query AttributeIndex)}
-                    {::top-connection-hubs (fc/get-query AttributeIndex)}
-                    {::attr-type-mismatch (fc/get-query AttributeIndex)}
-                    {::resolvers (fc/get-query ResolverIndex)}
-                    {::mutations (fc/get-query MutationIndex)}
-                    {:ui/page (fc/get-query MainViewUnion)}]
-   :css            [[:.out-container {:width    "100%"
-                                      :flex     "1"
-                                      :overflow "auto"}]
-                    [:.container {:flex     "1"
-                                  :overflow "hidden"}]
-                    [:.graph {:height  "800px"
-                              :display "flex"
-                              :border  "1px solid #000"}]
-                    [:.menu {:margin-right  "16px"
-                             :padding-right "16px"
-                             :overflow      "auto"
-                             :width         "30%"}]
-                    [:$row-center {:display "flex" :align-items "center"}]
-                    [:$scrollbars {:overflow "auto"}]
-                    [:$tag-spaced
-                     [:$tag {:margin-left "4px"}]]]
-   :css-include    [AttributeLink ResolverLink MutationLink ui/UIKit]
-   :initLocalState (fn [this]
-                     {:select-attribute #(fc/transact! this [`(navigate-to-attribute {::pc/attribute ~%})])
-                      :select-resolver  #(fc/transact! this [`(navigate-to-resolver {::pc/sym ~%})])
-                      :select-mutation  #(fc/transact! this [`(navigate-to-mutation {::mutation-sym ~%})])
-                      :go-back          #(fc/transact! this [`(navigate-backwards)])
-                      :go-forward       #(fc/transact! this [`(navigate-forwards)])
-                      :go-stats         #(fc/transact! this [`(navigate-stats)])
-                      :go-graph-view    #(fc/transact! this [`(navigate-graph-view) ::id])})}
-  (dom/create-element (gobj/get ExtensionContext "Provider") #js {:value extensions}
-    (ui/row {:react-key "container" :classes (ui/ccss this :.out-container)}
-      (ui/column {:classes (ui/ccss this :.menu)}
-        (search-everything menu {::on-select-attribute (fc/get-state this :select-attribute)
-                                 ::on-select-resolver  (fc/get-state this :select-resolver)
-                                 ::on-select-mutation  (fc/get-state this :select-mutation)}))
-      (ui/column (ui/gc :.flex :.no-scrollbars)
-        (ui/row {}
-          (ui/button {:onClick  (fc/get-state this :go-back)
-                      :disabled (not (can-go-back? props))}
-            "◀")
-          (ui/button {:onClick  (fc/get-state this :go-forward)
-                      :disabled (not (can-go-forward? props))}
-            "▶")
-          (ui/button {:onClick  (fc/get-state this :go-stats)
-                      :disabled (= (main-view-ident page) (fc/get-ident this))
-                      :style    {:marginLeft "12px"}} "Stats")
-          (ui/button {:onClick  (fc/get-state this :go-graph-view)
-                      :disabled (= (first (main-view-ident page)) ::graph-view-id)
-                      :style    {:marginLeft "12px"}} "Full Graph"))
-        (if page
-          (main-view-union page (assoc index
-                                  ::attributes attributes
-                                  ::on-select-attribute (fc/get-state this :select-attribute)
-                                  ::on-select-resolver (fc/get-state this :select-resolver)
-                                  ::on-select-mutation (fc/get-state this :select-mutation))))
+  {:pre-merge     (fn [{:keys [current-normalized data-tree]}]
+                    (let [data-tree (clear-not-found data-tree)]
+                      (merge
+                        (let [id (or (::id data-tree)
+                                     (::id current-normalized)
+                                     (random-uuid))]
+                          {::id            id
+                           ::history       [[::id id]]
+                           ::history-index 0
+                           :ui/menu        {::id id}
+                           :ui/page        {::id id}})
+                        current-normalized
+                        data-tree
+                        (if-let [index (get data-tree ::index)]
+                          (process-index index)
+                          {::idx {::no-index? true}}))))
+   :initial-state {}
+   :ident         ::id
+   :query         [::id ::index ::idx ::history ::history-index
+                   {:ui/menu (fc/get-query SearchEverything)}
+                   {::attributes (fc/get-query AttributeIndex)}
+                   {::globals (fc/get-query AttributeIndex)}
+                   {::idents (fc/get-query AttributeIndex)}
+                   {::top-connection-hubs (fc/get-query AttributeIndex)}
+                   {::attr-type-mismatch (fc/get-query AttributeIndex)}
+                   {::resolvers (fc/get-query ResolverIndex)}
+                   {::mutations (fc/get-query MutationIndex)}
+                   {:ui/page (fc/get-query MainViewUnion)}]
+   :css           [[:.out-container {:width    "100%"
+                                     :flex     "1"
+                                     :overflow "auto"}]
+                   [:.container {:flex     "1"
+                                 :overflow "hidden"}]
+                   [:.graph {:height  "800px"
+                             :display "flex"
+                             :border  "1px solid #000"}]
+                   [:.menu {:overflow "auto"}]
+                   [:$row-center {:display "flex" :align-items "center"}]
+                   [:$scrollbars {:overflow "auto"}]
+                   [:$tag-spaced
+                    [:$tag {:margin-left "4px"}]]]
+   :css-include   [AttributeLink ResolverLink MutationLink ui/UIKit]
+   :use-hooks?    true}
+  (let [menu-size        (pvh/use-persistent-state ::menu-size 300)
+        select-attribute (pvh/use-callback #(fc/transact! this [`(navigate-to-attribute {::pc/attribute ~%})]))
+        select-resolver  (pvh/use-callback #(fc/transact! this [`(navigate-to-resolver {::pc/sym ~%})]))
+        select-mutation  (pvh/use-callback #(fc/transact! this [`(navigate-to-mutation {::mutation-sym ~%})]))
+        go-back          (pvh/use-callback #(fc/transact! this [`(navigate-backwards)]))
+        go-forward       (pvh/use-callback #(fc/transact! this [`(navigate-forwards)]))
+        go-stats         (pvh/use-callback #(fc/transact! this [`(navigate-stats)]))
+        go-graph-view    (pvh/use-callback #(fc/transact! this [`(navigate-graph-view) ::id]))]
+    (dom/create-element (gobj/get ExtensionContext "Provider") #js {:value extensions}
+      (ui/row {:react-key "container" :classes (ui/ccss this :.out-container)}
+        (ui/column {:classes (ui/ccss this :.menu)
+                    :style   {:width (str @menu-size "px")}}
+          (search-everything menu {::on-select-attribute select-attribute
+                                   ::on-select-resolver  select-resolver
+                                   ::on-select-mutation  select-mutation}))
+        (ui/drag-resize {:state menu-size :direction "left"})
+        (ui/column (ui/gc :.flex :.no-scrollbars)
+          (ui/row {}
+            (ui/button {:onClick  go-back
+                        :disabled (not (can-go-back? props))}
+              "◀")
+            (ui/button {:onClick  go-forward
+                        :disabled (not (can-go-forward? props))}
+              "▶")
+            (ui/button {:onClick  go-stats
+                        :disabled (= (main-view-ident page) (fc/get-ident this))
+                        :style    {:marginLeft "12px"}} "Stats")
+            (ui/button {:onClick  go-graph-view
+                        :disabled (= (first (main-view-ident page)) ::graph-view-id)
+                        :style    {:marginLeft "12px"}} "Full Graph"))
+          (if page
+            (main-view-union page (assoc index
+                                    ::attributes attributes
+                                    ::on-select-attribute select-attribute
+                                    ::on-select-resolver select-resolver
+                                    ::on-select-mutation select-mutation)))
 
-        #_(dom/div :.graph
-            (attribute-graph {::attributes       attributes
-                              ::direct-reaches?  true
-                              ::nested-reaches?  true
-                              ::direct-provides? true
-                              ::nested-provides? true}))))))
+          #_(dom/div :.graph
+              (attribute-graph {::attributes       attributes
+                                ::direct-reaches?  true
+                                ::nested-reaches?  true
+                                ::direct-provides? true
+                                ::nested-provides? true})))))))
 
 (def index-explorer (fc/computed-factory IndexExplorer))
 
