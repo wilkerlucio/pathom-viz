@@ -16,6 +16,10 @@ Graph API's built with the https://github.com/wilkerlucio/pathom[Pathom] library
 
 The standalone app is the easiest way to use Pathom Viz.
 
+=== Download the app
+
+Download of binaries are available at the [releases page](https://github.com/wilkerlucio/pathom-viz/releases).
+
 === Building the app
 
 If you wanna develop the app:
@@ -41,50 +45,9 @@ npm run pack
 
 The builds will be available at the `dist` directory.
 
-== Available tools
+== Usage docs
 
-=== Workspaces Pathom card
-
-If you are using Workspaces, this is a great way to try out your parser as a card.
-
-Here is an example of using the card with a Pathom local parser:
-
-```clojure
-(ns my-workspace-cards
-  (:require [nubank.workspaces.core :as ws]
-            [com.wsscode.pathom.viz.workspaces :as pvw]))
-
-(ws/defcard simple-parser-demo
-  (pvw/pathom-card {::pvw/parser parser}))
-```
-
-This will provide you a codemirror editor with query tracing support, like this:
-
-image:pathom-viz-card-demo.gif[Query Card]
-
-=== D3 Trace Timeline
-
-[GIF HERE]
-
-The tracing visualization is used by Pathom to provide an efficient way to understand
-whats happening during the processing of a specific query. But the trace code is
-generic and you can use it to represent any kind of timeline that follows the same
-structure.
-
-=== Fulcro Codemirror editor
-
-If you like to embed a Pathom query editor you can use the codemirror components provided
-at the `com.wsscode.pathom.viz.codemirror` namespace. The major painpoint is usually
-maintaing the index updated and
-
-=== CodeMirror pathom-mode
-
-== Fulcro Inspect integration
-
-The simplest way to leverage the available tools here is though
-https://github.com/fulcrologic/fulcro-inspect[Fulcro Inspect], you can just install
-the Chrome extension and it will automatically hook into a Fulcro app and run queries
-against a Pathom remote.
+Find usage docs at https://roamresearch.com/#/app/wsscode/page/RG9C93Sip.
 
 == Support
 
