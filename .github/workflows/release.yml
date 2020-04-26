@@ -6,6 +6,8 @@ on:
   push:
     branches:
       - master
+    tags:
+      - v*
 
 jobs:
   release:
@@ -41,7 +43,7 @@ jobs:
           # GitHub authentication token
           github_token: ${{ secrets.github_token }}
           # Whether the app should be released after a successful build
-          release: ${{ startsWith(github.ref, 'refs/tags/v') }}
+          release: true
           # Directory where NPM/Yarn commands should be run
           package_root: shells/electron
           app_root: shells/electron
