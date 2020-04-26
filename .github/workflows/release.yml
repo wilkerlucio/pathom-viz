@@ -4,19 +4,17 @@ name: Build/release
 
 on:
   push:
-    branches:
-      - master
     tags:
-      - v*
+      - app-v*
 
 jobs:
   release:
     runs-on: ${{ matrix.os }}
 
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-latest, ubuntu-latest]
 
     steps:
       - name: Check out Git repository
