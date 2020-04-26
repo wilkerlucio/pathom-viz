@@ -42,3 +42,4 @@ jobs:
           # Directory where NPM/Yarn commands should be run
           package_root: shells/electron
           app_root: shells/electron
+          skip_build: true

@@ -26,9 +26,7 @@
     "start": "npm install && electron .",
     "pack": "electron-builder --dir",
     "dist": "electron-builder -mwl",
-    "postinstall": "electron-builder install-app-deps",
-    "build": "electron-builder --mac --windows --linux",
-    "release": "electron-builder --mac --windows --linux --publish always"
+    "postinstall": "electron-builder install-app-deps"
   },
   "build": {
     "appId": "com.wsscode.pathom-viz-standalone",
