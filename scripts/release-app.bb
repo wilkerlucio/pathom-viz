@@ -10,7 +10,7 @@
 (defn git-tag-exists? [tag]
   (seq (:out (shell/sh "git" "tag" "-l" tag))))
 
-(let [tag (str "app-v" (package-version "shells/electron/package.json"))]
+(let [tag (str "v" (package-version "shells/electron/package.json"))]
   (if (git-tag-exists? tag)
     (println "Release" tag "already exists")
     (do
