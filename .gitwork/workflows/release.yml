@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: Build/release
 
 on: push
 
@@ -19,7 +19,7 @@ jobs:
       - name: Install Node.js, NPM and Yarn
         uses: actions/setup-node@v1
         with:
-          node-version: 10
+          node-version: 12
 
       - name: Electron Builder Action
         uses: samuelmeuli/action-electron-builder@v1.4.0
