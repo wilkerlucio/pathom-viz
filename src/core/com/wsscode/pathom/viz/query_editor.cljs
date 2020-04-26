@@ -274,7 +274,7 @@
         show-history? (pvh/use-persistent-state ::show-history? true)
         history-size  (pvh/use-persistent-state ::history-width (or default-history-size 250))
         query-size    (pvh/use-persistent-state ::query-width (or default-query-size 400))
-        trace-size    (pvh/use-persistent-state ::trace-height (or default-trace-size 400))]
+        trace-size    (pvh/use-persistent-state ::trace-height (or default-trace-size 200))]
     (dom/div :.container
       (dom/div :.toolbar
         (if enable-trace?
