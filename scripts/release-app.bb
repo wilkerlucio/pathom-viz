@@ -14,7 +14,6 @@
   (if (git-tag-exists? tag)
     (println "Release" tag "already exists")
     (do
-      (println "Creating tag...")
+      (println "Creating tag" tag "...")
       (shell/sh "git" "tag" "-a" tag "-m" tag)
       (shell/sh "git" "push" "--follow-tags"))))
-
