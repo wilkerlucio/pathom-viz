@@ -20,13 +20,15 @@
   },
   "devDependencies": {
     "electron": "^7.1.3",
-    "electron-builder": "^21.2.0"
+    "electron-builder": "^22.5.1"
   },
   "scripts": {
-    "postinstall": "install-app-deps",
     "start": "npm install && electron .",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder -mwl"
+    "dist": "electron-builder -mwl",
+    "postinstall": "electron-builder install-app-deps",
+    "build": "electron-builder --mac --windows --linux",
+    "release": "electron-builder --mac --windows --linux --publish always"
   },
   "build": {
     "appId": "com.wsscode.pathom-viz-standalone",
