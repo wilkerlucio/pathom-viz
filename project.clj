@@ -1,4 +1,4 @@
-(defproject com.wsscode/pathom-viz "1.0.8"
+(defproject com.wsscode/pathom-viz "1.1.0-SNAPSHOT"
   :description "A suite of visual components to support Pathom."
   :url "https://github.com/wilkerlucio/pathom-viz"
   :min-lein-version "2.7.0"
