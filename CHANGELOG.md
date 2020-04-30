@@ -1,5 +1,14 @@
 # Change Log
 
+## [1.1.1]
+- Fix show history button
+
+## [1.1.0]
+- Standalone app!
+- Refactor all code to use Fulcro 3
+
+From here up we will log things in terms of the standalone app
+
 ## [1.0.8]
 - Replace ghostwheel with guardrails
 - Ensure index-io is present to compute completions
