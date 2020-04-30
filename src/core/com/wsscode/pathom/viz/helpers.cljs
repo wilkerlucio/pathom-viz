@@ -325,10 +325,10 @@
   (-reset! [o new-value] (doto new-value set-value!))
 
   ISwap
-  (-swap! [a f] (set-value! f))
-  (-swap! [a f x] (set-value! #(f % x)))
-  (-swap! [a f x y] (set-value! #(f % x y)))
-  (-swap! [a f x y more] (set-value! #(apply f % x y more))))
+  (-swap! [a f] (set-value! (f value)))
+  (-swap! [a f x] (set-value! (f value x)))
+  (-swap! [a f x y] (set-value! (f value x y)))
+  (-swap! [a f x y more] (set-value! (apply f value x y more))))
 
 (defn use-atom-state [initial-value]
   (let [[value set-value!] (use-state initial-value)]
