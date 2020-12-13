@@ -1,4 +1,4 @@
-import * as d3 from "d3";
+import d3 from "d3";
 
 d3.select('body').selectAll('.pathom-tooltip').remove()
 
