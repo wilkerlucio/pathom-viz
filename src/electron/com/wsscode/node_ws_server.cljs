@@ -36,7 +36,7 @@
 (def express-ws (nodejs/require "express-ws"))
 (def ws (nodejs/require "ws"))
 (def cors (nodejs/require "cors"))
-(def body-parser (nodejs/require "body-parser"))
+(def body-parser ^js (nodejs/require "body-parser"))
 
 (defn respond-http-request [{::keys [on-http-request] :as config} req res]
   (let [msg (wsst/read (.-body req))]
@@ -45,7 +45,7 @@
   (.send res "Done"))
 
 (defn routes
-  [config express-app {:keys [ajax-post-fn ajax-get-or-ws-handshake-fn]}]
+  [config ^js express-app {:keys [ajax-post-fn ajax-get-or-ws-handshake-fn]}]
   (doto express-app
     (.use (cors))
     (.post "/request" #(respond-http-request config % %2))
@@ -56,13 +56,13 @@
            :websocket  ws})))
     (.get "/chsk" ajax-get-or-ws-handshake-fn)
     (.post "/chsk" ajax-post-fn)
-    (.use (fn [req res next]
+    (.use (fn [^js req res next]
             (log/warn "Unhandled request: %s" (.-originalUrl req))
             (next)))))
 
 (defn wrap-defaults [express-app routes ch-server]
   (doto ^js express-app
-    (.use (fn [req _res next]
+    (.use (fn [^js req _res next]
             (log/trace "Request: %s" (.-originalUrl req))
             (next)))
     (.use (.text body-parser #js {:type #js ["application/edn" "application/transit+json"]}))
@@ -71,8 +71,8 @@
 
 (defn start-web-server! [{::keys [port] :as config}]
   (log/info "Starting express")
-  (let [express-app       (express)
-        express-ws-server (express-ws express-app)]
+  (let [express-app       ^js (express)
+        express-ws-server ^js (express-ws express-app)]
     (wrap-defaults express-app (partial routes config) @channel-socket-server)
     (let [http-server (.listen express-app port)]
       (reset! server-atom
