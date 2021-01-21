@@ -99,7 +99,8 @@
   {:css [[:.container {:cursor      "pointer"
                        :color       color-attribute
                        :font-size   "14px"
-                       :line-height "1.4em"}
+                       :line-height "1.4em"
+                       :padding     "0 4px"}
           ui/text-base]]}
   (dom/div :.container (ui/dom-props (merge (attribute-graph-events this attribute) props))
     (if render (render props) (pr-str attribute))))
@@ -113,7 +114,8 @@
   {:css [[:.container {:cursor      "pointer"
                        :color       color-resolver
                        :font-size   "14px"
-                       :line-height "1.4em"}
+                       :line-height "1.4em"
+                       :padding     "0 4px"}
           ui/text-base]]}
   (dom/div :.container (ui/dom-props (merge (resolver-graph-events this sym) props))
     (if render (render props) (pr-str sym))))
@@ -127,7 +129,8 @@
   {:css [[:.container {:cursor      "pointer"
                        :color       color-mutation
                        :font-size   "14px"
-                       :line-height "1.4em"}
+                       :line-height "1.4em"
+                       :padding     "0 4px"}
           ui/text-base]]}
   (let [on-select-mutation (-> this fc/props fc/get-computed ::on-select-mutation)]
     (dom/div :.container (ui/dom-props (merge {:onClick #(on-select-mutation sym)} props))
