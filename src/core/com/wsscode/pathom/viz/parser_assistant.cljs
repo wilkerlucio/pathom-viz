@@ -12,7 +12,8 @@
             [com.wsscode.pathom.viz.request-history :as request-history]
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.wsscode.pathom.viz.helpers :as h]
-            [clojure.core.async :as async]))
+            [clojure.core.async :as async]
+            [clojure.string :as str]))
 
 (defn initialize-parser-assistant [this]
   (let [{::cp/keys [parser-id] :as props} (fc/props this)]
@@ -140,6 +141,10 @@
       (fc/transact! this [(add-parser-from-url {::cp/url parser-url})])
       (reload-available-parsers this))))
 
+(defn hidden-parser? [x]
+  (or (and (keyword? x) (= (namespace x) "pathom.viz.hidden"))
+      (and (string? x) (str/starts-with? x ":pathom.viz.hidden/"))))
+
 (fc/defsc MultiParserManager
   [this {:ui/keys  [parser-assistant]
          ::cp/keys [available-parsers]
@@ -166,8 +171,11 @@
                  [:.large {:font-size     "21px"
                            :margin-bottom "6px"}]]]
    :use-hooks? true}
-  (let [reload       (h/use-callback #(reload-available-parsers this))
-        add-from-url (h/use-callback #(add-from-url! this))]
+  (let [reload            (h/use-callback #(reload-available-parsers this))
+        add-from-url      (h/use-callback #(add-from-url! this))
+        available-parsers (into (empty available-parsers)
+                                (remove hidden-parser?)
+                                available-parsers)]
     (h/use-effect reload [])
 
     (ui/column (ui/gc :.flex)

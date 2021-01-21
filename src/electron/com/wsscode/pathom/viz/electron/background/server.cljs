@@ -7,7 +7,8 @@
     [com.wsscode.node-ws-server :as ws-server]
     [com.wsscode.pathom.viz.electron.ipc-main :as ipc-main]
     [com.wsscode.transit :as wsst]
-    ["node-fetch" :default fetch]))
+    ["node-fetch" :default fetch]
+    [clojure.set :as set]))
 
 (goog-define SERVER_PORT 8240)
 
@@ -83,6 +84,12 @@
           :com.wsscode.pathom.viz.electron.renderer.main/message-type
           :com.wsscode.pathom.viz.electron.renderer.main/pathom-request-done
           ::ws-server/client-id client-id))
+
+      :com.wsscode.pathom.viz.ws-connector.core/log-entry
+      (message-renderer! server
+        (assoc msg
+          :com.wsscode.pathom.viz.electron.renderer.main/message-type
+          :com.wsscode.pathom.viz.electron.renderer.main/log-entry))
 
       (js/console.warn "WS client sent unknown message" (pr-str msg)))))
 

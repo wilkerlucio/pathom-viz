@@ -65,8 +65,8 @@
     (.use (fn [^js req _res next]
             (log/trace "Request: %s" (.-originalUrl req))
             (next)))
-    (.use (.text body-parser #js {:type #js ["application/edn" "application/transit+json"]}))
-    (.use (.urlencoded body-parser #js {:extended false}))
+    (.use (.text body-parser #js {:type #js ["application/edn" "application/transit+json"] :limit "1000mb"}))
+    (.use (.urlencoded body-parser #js {:extended false :limit "1000mb"}))
     (routes ch-server)))
 
 (defn start-web-server! [{::keys [port] :as config}]

@@ -21,7 +21,10 @@
             [com.wsscode.pathom.viz.request-history :as request-history]
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.wsscode.transit :as wsst]
-            [goog.object :as gobj]))
+            [goog.object :as gobj]
+            [com.wsscode.pathom3.viz.plan :as viz-plan]
+            [com.fulcrologic.fulcro.mutations :as fm]
+            [helix.core :as h]))
 
 (>def ::channel any?)
 (>def ::message-type qualified-keyword?)
@@ -59,10 +62,17 @@
   (assistant/initialize-assistant this client-id))
 
 (defn multi-parser-ref [this]
-  (:ui/multi-parser (fc/component->state-map this)))
+  (-> (fc/component->state-map this) :comp/ident :comp/connections-and-logs :ui/multi-parser))
 
 (defn reload-parsers-ui! [this]
   (assistant/reload-available-parsers this (multi-parser-ref this)))
+
+(fm/defmutation log-new-entry [entry]
+  (action [{:keys [state]}]
+    (swap! state update-in [:comp/ident :comp/logs-view]
+      assoc ::log-current-value entry)
+    (swap! state update-in [:comp/ident :comp/connections-and-logs]
+      assoc :ui/current-tab ::tab-logs)))
 
 (defn electron-message-handler
   [this {::keys                           [message-type]
@@ -89,6 +99,9 @@
       (merge/merge-component! this request-history/RequestView
         {::request-history/request-id request-id
          ::request-history/response   response}))
+
+    ::log-entry
+    (fc/transact! this [(log-new-entry (:com.wsscode.pathom.viz.ws-connector.core/entry msg))])
 
     (js/console.warn "Unknown message received" msg)))
 
@@ -123,11 +136,56 @@
 
 ;; App Root Container
 
-(fc/defsc Root
-  [this {:ui/keys [multi-parser]}]
+(fc/defsc LogsView
+  [this {::keys [log-current-value]}]
+  {:ident (fn [_] [:comp/ident :comp/logs-view])
+   :query [::logs-view-id ::log-current-value]}
+  (ui/row {:style {:flex "1" :background "#ccc"}}
+    (dom/div)
+    (dom/div {:style {:flex "1" :display "flex"}}
+      (if log-current-value
+        (case (:pathom.viz.log/type log-current-value)
+          :pathom.viz.log.type/plan-and-stats
+          (h/$ viz-plan/PlanGraphView
+            {:run-stats    log-current-value
+             :display-type ::viz-plan/display-type-label})
+          (pr-str log-current-value))))))
+
+(def logs-view (fc/factory LogsView))
+
+(fc/defsc ConnectionsAndLogs
+  [this {:ui/keys [multi-parser logs-view-data current-tab]}]
   {:pre-merge  (fn [{:keys [current-normalized data-tree]}]
-                 (merge {:ui/multi-parser {}} current-normalized data-tree))
-   :query      [{:ui/multi-parser (fc/get-query assistant/MultiParserManager)}]
+                 (merge {:ui/multi-parser   {}
+                         :ui/logs-view-data {}
+                         :ui/current-tab    ::tab-connections} current-normalized data-tree))
+   :ident      (fn [_] [:comp/ident :comp/connections-and-logs])
+   :query      [{:ui/multi-parser (fc/get-query assistant/MultiParserManager)}
+                {:ui/logs-view-data (fc/get-query LogsView)}
+                :ui/current-tab]
+   :use-hooks? true}
+  (use-electron-ipc #(electron-message-handler this %2))
+  (pvh/use-effect #(sync-background-parsers this) [])
+  (ui/tab-container {}
+    (ui/tab-nav {::ui/active-tab-id current-tab}
+      [[{::ui/tab-id ::tab-connections
+         :onClick    #(fm/set-value! this :ui/current-tab ::tab-connections)}
+        "Connections"]
+       [{::ui/tab-id ::tab-logs
+         :onClick    #(fm/set-value! this :ui/current-tab ::tab-logs)}
+        "Logs"]])
+    (case current-tab
+      ::tab-logs
+      (logs-view logs-view-data)
+      (assistant/multi-parser-manager multi-parser))))
+
+(def connections-and-logs (fc/factory ConnectionsAndLogs))
+
+(fc/defsc Root
+  [this {:ui/keys [stuff]}]
+  {:pre-merge  (fn [{:keys [current-normalized data-tree]}]
+                 (merge {:ui/stuff {}} current-normalized data-tree))
+   :query      [{:ui/stuff (fc/get-query ConnectionsAndLogs)}]
    :css        [[:body {:margin "0"}]
                 [:#app-root {:width      "100vw"
                              :height     "100vh"
@@ -142,10 +200,8 @@
                  ui/text-sans-13
                  [:a {:text-decoration "none"}]]]
    :use-hooks? true}
-  (use-electron-ipc #(electron-message-handler this %2))
-  (pvh/use-effect #(sync-background-parsers this) [])
   (ui/column (ui/gc :.flex)
-    (assistant/multi-parser-manager multi-parser)
+    (connections-and-logs stuff)
     (dom/div :.footer
       (dom/a {:href    "#"
               :onClick (ui/prevent-default #(.openExternal shell "https://github.com/wilkerlucio/pathom-viz"))}
