@@ -13,15 +13,15 @@
 
  :aliases
  {:provided
-  {:extra-deps {com.fulcrologic/fulcro    {:mvn/version "3.2.2"}
-                com.wsscode/pathom        {:mvn/version "2.3.0-alpha21"}
+  {:extra-deps {com.fulcrologic/fulcro    {:mvn/version "3.4.14"}
+                com.wsscode/pathom        {:mvn/version "2.3.1"}
                 com.wsscode/pathom3       {:git/url "https://github.com/wilkerlucio/pathom3" :sha "07093ccb2cd22f06e74b8442dff3f7faacc5c297"}
                 org.clojure/clojure       {:mvn/version "1.10.1"}
                 org.clojure/clojurescript {:mvn/version "1.10.764"}}}
 
   :dev
   {:extra-deps {binaryage/devtools   {:mvn/version "0.9.10"}
-                thheller/shadow-cljs {:mvn/version "2.11.8"}
+                thheller/shadow-cljs {:mvn/version "2.11.14"}
                 nubank/workspaces    {:git/url "https://github.com/wilkerlucio/workspaces.git"
                                       :sha     "f9521f7b810b8dad9fe62a03a888a4e30044d07e"}}}
 
