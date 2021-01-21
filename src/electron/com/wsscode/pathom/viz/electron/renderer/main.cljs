@@ -26,8 +26,8 @@
 (>def ::channel any?)
 (>def ::message-type qualified-keyword?)
 
-(defonce electron (js/require "electron"))
-(defonce shell (gobj/get electron "shell"))
+(defonce ^js electron (js/require "electron"))
+(defonce ^js shell (gobj/get electron "shell"))
 
 (defonce ipcRenderer (gobj/get electron "ipcRenderer"))
 
@@ -78,7 +78,7 @@
     (js/console.log "Disconnect client")
 
     ::pathom-request
-    (let [{:com.wsscode.pathom.viz.ws-connector.core/keys [request-id tx]} msg]
+    (let [{:com.wsscode.pathom.viz.ws-connector.core/keys [request-id tx] :as req} msg]
       (merge/merge-component! this request-history/RequestView
         {::request-history/request-id request-id
          ::request-history/request    tx}
