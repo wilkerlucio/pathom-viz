@@ -13,8 +13,8 @@
     "create-react-class": "^15.6.3",
     "cytoscape": "^3.16.3",
     "cytoscape-dagre": "^2.3.1",
-    "dagre": "^0.8.5",
     "d3": "^5.16.0",
+    "dagre": "^0.8.5",
     "highlight.js": "^9.12.0",
     "parinfer": "^3.12.0",
     "parinfer-codemirror": "^1.4.2",
@@ -23,6 +23,7 @@
     "react-draggable": "^3.0.5",
     "react-grid-layout": "^0.16.6",
     "react-icons": "^2.2.7",
+    "react-refresh": "0.8.1",
     "reakit": "^0.11.2",
     "shadow-cljs": "^2.8.96"
   }
