@@ -44,7 +44,8 @@
                           :overflow    "hidden"}]]
    :use-hooks? true}
   (let [response-size (pvh/use-persistent-state ::response-size 400)
-        trace-size    (pvh/use-persistent-state ::trace-size 300)]
+        trace-size    (pvh/use-persistent-state ::trace-size 300)
+        ds            (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)]
     (ui/column (ui/gc :.flex)
       (ui/row (ui/gc :.flex)
         (ui/column (ui/gc :.flex)
@@ -73,10 +74,18 @@
         (fc/fragment
           (ui/drag-resize {:state trace-size :direction "down"})
           (dom/div :.header "Graph View")
-          (dom/div :.trace {:style {:height (str @trace-size "px")}}
-            (h/$ viz-plan/PlanGraphView
-              {:run-stats    graph-view
-               :display-type ::viz-plan/display-type-label})))))))
+          (fc/fragment
+            (ui/section-header {}
+              (ui/row {}
+                (dom/div (ui/gc :.flex) "Graph Viz")
+                (ui/dom-select {:value    @ds
+                                :onChange #(reset! ds %2)}
+                  (ui/dom-option {:value ::viz-plan/display-type-label} "Display: resolver name")
+                  (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))))
+            (dom/div :.trace {:style {:height (str @trace-size "px")}}
+              (h/$ viz-plan/PlanGraphView
+                {:run-stats    graph-view
+                 :display-type @ds}))))))))
 
 (def request-view (fc/factory RequestView {:keyfn ::request-id}))
 

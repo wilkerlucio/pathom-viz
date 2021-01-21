@@ -24,7 +24,8 @@
             [goog.object :as gobj]
             [com.wsscode.pathom3.viz.plan :as viz-plan]
             [com.fulcrologic.fulcro.mutations :as fm]
-            [helix.core :as h]))
+            [helix.core :as h]
+            [helix.hooks :as hooks]))
 
 (>def ::channel any?)
 (>def ::message-type qualified-keyword?)
@@ -138,18 +139,29 @@
 
 (fc/defsc LogsView
   [this {::keys [log-current-value]}]
-  {:ident (fn [_] [:comp/ident :comp/logs-view])
-   :query [::logs-view-id ::log-current-value]}
-  (ui/row {:style {:flex "1" :background "#ccc"}}
-    (dom/div)
-    (dom/div {:style {:flex "1" :display "flex"}}
-      (if log-current-value
-        (case (:pathom.viz.log/type log-current-value)
-          :pathom.viz.log.type/plan-and-stats
-          (h/$ viz-plan/PlanGraphView
-            {:run-stats    log-current-value
-             :display-type ::viz-plan/display-type-label})
-          (pr-str log-current-value))))))
+  {:ident      (fn [_] [:comp/ident :comp/logs-view])
+   :query      [::logs-view-id ::log-current-value]
+   :use-hooks? true}
+  (let [ds (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)]
+    (ui/row {:style {:flex "1" :background "#ccc"}}
+      (dom/div)
+      (ui/column {:style {:flex "1"}}
+        (if log-current-value
+          (case (:pathom.viz.log/type log-current-value)
+            :pathom.viz.log.type/plan-and-stats
+            (fc/fragment
+              (ui/section-header {}
+                (ui/row {}
+                  (dom/div (ui/gc :.flex) "Graph Viz")
+                  (ui/dom-select {:value    @ds
+                                  :onChange #(reset! ds %2)}
+                    (ui/dom-option {:value ::viz-plan/display-type-label} "Display: resolver name")
+                    (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))))
+              (ui/column {:style {:flex 12}}
+                (h/$ viz-plan/PlanGraphView
+                  {:run-stats    log-current-value
+                   :display-type @ds})))
+            (pr-str log-current-value)))))))
 
 (def logs-view (fc/factory LogsView))
 

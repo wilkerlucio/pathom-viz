@@ -21,7 +21,8 @@
             [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [helix.core :as h]
-            [com.wsscode.pathom3.viz.plan :as viz-plan]))
+            [com.wsscode.pathom3.viz.plan :as viz-plan]
+            [helix.hooks :as hooks]))
 
 (declare QueryEditor TransactionResponse)
 
@@ -202,6 +203,21 @@
     #(fc/set-state! this {:render? true})
     100))
 
+(h/defnc GraphWithOptions [{:keys [graph size]}]
+  (let [[ds ds!] (hooks/use-state ::viz-plan/display-type-label)]
+    (fc/fragment
+      (ui/section-header {}
+        (ui/row {}
+          (dom/div (ui/gc :.flex) "Graph Viz")
+          (ui/dom-select {:value    ds
+                          :onChange #(ds! %2)}
+            (ui/dom-option {:value ::viz-plan/display-type-label} "Display: resolver name")
+            (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))))
+      (dom/div :.trace {:style {:height (str size "px")}}
+        (h/$ viz-plan/PlanGraphView
+          {:run-stats    graph
+           :display-type ds})))))
+
 (fc/defsc QueryEditor
   [this
    {::keys    [query result request-trace? query-history]
@@ -335,16 +351,28 @@
                                 ::cm/lineNumbers true}}
             editor-props)))
 
-      (if graph-view
-        (fc/fragment
-          (ui/drag-resize
-            {:direction "down"
-             :state     trace-size})
+      (let [ds (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)]
+        (if graph-view
+          (fc/fragment
+            (ui/drag-resize
+              {:direction "down"
+               :state     trace-size})
 
-          (dom/div :.trace {:style {:height (str @trace-size "px")}}
-            (h/$ viz-plan/PlanGraphView
-              {:run-stats    graph-view
-               :display-type ::viz-plan/display-type-label}))))
+            (fc/fragment
+              (ui/section-header {}
+                (ui/row {}
+                  (dom/div (ui/gc :.flex) "Graph Viz")
+                  (ui/dom-select {:value    @ds
+                                  :onChange #(reset! ds %2)}
+                    (ui/dom-option {:value ::viz-plan/display-type-label} "Display: resolver name")
+                    (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))))
+              (dom/div {:style {:display    "flex"
+                                :paddingTop "18px"
+                                :overflow   "hidden"
+                                :height     (str @trace-size "px")}}
+                (h/$ viz-plan/PlanGraphView
+                  {:run-stats    graph-view
+                   :display-type @ds}))))))
 
       (if (:com.wsscode.pathom/trace trace-viewer)
         (fc/fragment

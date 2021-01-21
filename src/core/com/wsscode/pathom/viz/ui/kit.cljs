@@ -261,6 +261,16 @@
 
 (def collapsible-box (fc/factory CollapsibleBox))
 
+(fc/defsc SectionHeader
+  [this props]
+  {:css [[:.container {:background    "#f7f7f7"
+                       :border-bottom "1px solid #ddd"
+                       :padding       "4px 8px"}
+          text-sans-13]]}
+  (dom/div :.container (dom-props props) (fc/children this)))
+
+(def section-header (fc/factory SectionHeader))
+
 (fc/defsc RawCollapsible
   [this {::keys [collapsed? on-toggle title]
          :or    {on-toggle identity}
@@ -719,6 +729,7 @@
                  PanelBlock
                  RawCollapsible
                  Row
+                 SectionHeader
                  TabContainer
                  TabNav
                  Tag
