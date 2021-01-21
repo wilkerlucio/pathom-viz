@@ -61,7 +61,7 @@
             (next)))))
 
 (defn wrap-defaults [express-app routes ch-server]
-  (doto express-app
+  (doto ^js express-app
     (.use (fn [req _res next]
             (log/trace "Request: %s" (.-originalUrl req))
             (next)))
