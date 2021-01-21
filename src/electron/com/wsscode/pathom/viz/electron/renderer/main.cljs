@@ -24,8 +24,7 @@
             [goog.object :as gobj]
             [com.wsscode.pathom3.viz.plan :as viz-plan]
             [com.fulcrologic.fulcro.mutations :as fm]
-            [helix.core :as h]
-            [helix.hooks :as hooks]))
+            [helix.core :as h]))
 
 (>def ::channel any?)
 (>def ::message-type qualified-keyword?)
@@ -70,10 +69,13 @@
 
 (fm/defmutation log-new-entry [entry]
   (action [{:keys [state]}]
-    (swap! state update-in [:comp/ident :comp/logs-view]
-      assoc ::log-current-value entry)
-    (swap! state update-in [:comp/ident :comp/connections-and-logs]
-      assoc :ui/current-tab ::tab-logs)))
+    (let [now (js/Date.)]
+      (swap! state update-in [:comp/ident :comp/logs-view ::logs]
+        assoc now entry)
+      (swap! state update-in [:comp/ident :comp/logs-view]
+        assoc ::log-current-value now)
+      (swap! state update-in [:comp/ident :comp/connections-and-logs]
+        assoc :ui/current-tab ::tab-logs))))
 
 (defn electron-message-handler
   [this {::keys                           [message-type]
@@ -137,17 +139,32 @@
 
 ;; App Root Container
 
+(fm/defmutation clear-logs [_]
+  (action [{:keys [state]}]
+    (swap! state assoc-in [:comp/ident :comp/logs-view ::logs] nil)
+    (swap! state assoc-in [:comp/ident :comp/logs-view ::log-current-value] nil)))
+
 (fc/defsc LogsView
-  [this {::keys [log-current-value]}]
+  [this {::keys [logs log-current-value]}]
   {:ident      (fn [_] [:comp/ident :comp/logs-view])
-   :query      [::logs-view-id ::log-current-value]
+   :query      [::logs-view-id ::logs ::log-current-value]
    :use-hooks? true}
-  (let [ds (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)]
+  (let [ds      (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)
+        log-val (get logs log-current-value)]
     (ui/row {:style {:flex "1" :background "#ccc"}}
-      (dom/div)
+      (ui/column {:style {:alignSelf "stretch"}}
+        (ui/button {:onClick #(fc/transact! this [(clear-logs {})])} "Clear logs")
+        (ui/dom-select {:value    log-current-value
+                        :onChange #(fm/set-value! this ::log-current-value %2)
+                        :size     "3"
+                        :style    {:flex    "1"
+                                   :outline "none"}}
+          (for [t (sort (keys logs))]
+            (ui/dom-option {:key t :value t}
+              (.toLocaleTimeString t)))))
       (ui/column {:style {:flex "1"}}
-        (if log-current-value
-          (case (:pathom.viz.log/type log-current-value)
+        (if log-val
+          (case (:pathom.viz.log/type log-val)
             :pathom.viz.log.type/plan-and-stats
             (fc/fragment
               (ui/section-header {}
@@ -159,9 +176,10 @@
                     (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))))
               (ui/column {:style {:flex 12}}
                 (h/$ viz-plan/PlanGraphView
-                  {:run-stats    log-current-value
+                  {:run-stats    log-val
                    :display-type @ds})))
-            (pr-str log-current-value)))))))
+            (pr-str log-val))
+          )))))
 
 (def logs-view (fc/factory LogsView))
 
