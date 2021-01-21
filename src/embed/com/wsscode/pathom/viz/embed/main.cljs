@@ -20,7 +20,7 @@
             [com.wsscode.pathom.viz.parser-assistant :as assistant]
             [com.wsscode.pathom.viz.request-history :as request-history]
             [com.wsscode.pathom.viz.ui.kit :as ui]
-            [com.wsscode.transit :as wsst]
+            [com.wsscode.pathom.viz.transit :as wsst]
             [goog.object :as gobj]))
 ;
 ;(>def ::channel any?)

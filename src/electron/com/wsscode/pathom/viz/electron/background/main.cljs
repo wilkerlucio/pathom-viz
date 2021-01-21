@@ -4,7 +4,7 @@
     ["path" :as path]
     ["url" :as url]
     [com.wsscode.pathom.viz.electron.background.server :as server]
-    [com.wsscode.transit :as wsst]))
+    [com.wsscode.pathom.viz.transit :as wsst]))
 
 (defonce web-contents* (atom nil))
 

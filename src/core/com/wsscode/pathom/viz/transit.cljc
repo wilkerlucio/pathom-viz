@@ -1,4 +1,4 @@
-(ns com.wsscode.transit
+(ns com.wsscode.pathom.viz.transit
   (:refer-clojure :exclude [read write])
   (:require [cognitect.transit :as t]
             #?(:cljs [goog.object :as gobj]))
@@ -33,12 +33,14 @@
 (defn ^String write [x]
   #?(:clj
      (let [out    (ByteArrayOutputStream. 4096)
-           writer (t/writer out :json {:default-handler (DefaultHandler.)})]
+           writer (t/writer out :json {:default-handler (DefaultHandler.)
+                                       :transform       t/write-meta})]
        (t/write writer x)
        (.toString out))
 
      :cljs
-     (let [writer (t/writer :json {:handlers cljs-write-handlers})]
+     (let [writer (t/writer :json {:handlers  cljs-write-handlers
+                                   :transform t/write-meta})]
        (t/write writer x))))
 
 #?(:cljs

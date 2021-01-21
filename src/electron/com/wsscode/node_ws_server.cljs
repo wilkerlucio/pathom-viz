@@ -5,10 +5,11 @@
     [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
     [com.wsscode.async.async-cljs :refer [go <!]]
     [com.wsscode.async.processing :as wap]
-    [com.wsscode.transit :as wsst]
+    [com.wsscode.pathom.viz.transit :as wsst]
     [taoensso.sente.packers.transit :as st]
     [taoensso.sente.server-adapters.express :as sente-express]
-    [taoensso.timbre :as log]))
+    [taoensso.timbre :as log]
+    [cognitect.transit :as t]))
 
 (>def ::port pos-int?)
 (>def ::client-id any?)
@@ -24,7 +25,8 @@
   "Returns a json packer for use with sente."
   [{:keys [read write]}]
   (st/->TransitPacker :json
-    {:handlers (merge {"default" (wsst/->DefaultHandler)} write)}
+    {:handlers  (merge {"default" (wsst/->DefaultHandler)} write)
+     :transform t/write-meta}
     {:handlers (or read {})}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

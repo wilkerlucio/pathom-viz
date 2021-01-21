@@ -6,7 +6,7 @@
     [com.wsscode.async.processing :as wap]
     [com.wsscode.node-ws-server :as ws-server]
     [com.wsscode.pathom.viz.electron.ipc-main :as ipc-main]
-    [com.wsscode.transit :as wsst]
+    [com.wsscode.pathom.viz.transit :as wsst]
     ["node-fetch" :default fetch]
     [clojure.set :as set]))
 

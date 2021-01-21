@@ -20,7 +20,7 @@
             [com.wsscode.pathom.viz.parser-assistant :as assistant]
             [com.wsscode.pathom.viz.request-history :as request-history]
             [com.wsscode.pathom.viz.ui.kit :as ui]
-            [com.wsscode.transit :as wsst]
+            [com.wsscode.pathom.viz.transit :as wsst]
             [goog.object :as gobj]
             [com.wsscode.pathom3.viz.plan :as viz-plan]
             [com.fulcrologic.fulcro.mutations :as fm]
@@ -43,16 +43,16 @@
     (go-promise
       (try
         (<? (message-background!
-              {:com.wsscode.pathom.viz.electron.background.server/type
-               :com.wsscode.pathom.viz.electron.background.server/request-parser
+                        {:com.wsscode.pathom.viz.electron.background.server/type
+                         :com.wsscode.pathom.viz.electron.background.server/request-parser
 
-               :edn-query-language.core/query
-               tx
+                         :edn-query-language.core/query
+                         tx
 
-               :com.wsscode.node-ws-server/client-id
-               client-id
+                         :com.wsscode.node-ws-server/client-id
+                         client-id
 
-               ::wap/request-id
+                         ::wap/request-id
                (random-uuid)}))
         (catch :default e
           (js/console.error "response failed" e))))))

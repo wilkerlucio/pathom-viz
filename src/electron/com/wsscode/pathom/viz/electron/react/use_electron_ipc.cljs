@@ -2,7 +2,7 @@
   (:require [cljs.core.async :as async]
             [com.wsscode.async.processing :as wap]
             [com.wsscode.pathom.viz.helpers :as pvh]
-            [com.wsscode.transit :as wsst]
+            [com.wsscode.pathom.viz.transit :as wsst]
             [goog.object :as gobj]))
 
 (defonce electron (js/require "electron"))

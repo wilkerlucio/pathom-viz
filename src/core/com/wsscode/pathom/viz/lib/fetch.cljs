@@ -3,7 +3,7 @@
             [cljs.spec.alpha :as s]
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [com.wsscode.async.async-cljs :refer [go-promise <!p <?]]
-            [com.wsscode.transit :as transit]
+            [com.wsscode.pathom.viz.transit :as transit]
             [goog.object :as gobj]))
 
 ; region specs

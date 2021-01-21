@@ -2,7 +2,7 @@
  ["src/core" "src/cards"]
 
  :deps
- {com.cognitect/transit-cljs       {:mvn/version "0.8.256"}
+ {com.cognitect/transit-cljs       {:mvn/version "0.8.264"}
   com.cognitect/transit-clj        {:mvn/version "1.0.324"}
   com.fulcrologic/guardrails       {:mvn/version "0.0.12"}
   com.taoensso/sente               {:mvn/version "1.16.0"}
@@ -20,7 +20,7 @@
                 org.clojure/clojurescript {:mvn/version "1.10.764"}}}
 
   :dev
-  {:extra-deps {binaryage/devtools   {:mvn/version "0.9.10"}
+  {:extra-deps {binaryage/devtools   {:mvn/version "1.0.0"}
                 thheller/shadow-cljs {:mvn/version "2.11.14"}
                 nubank/workspaces    {:git/url "https://github.com/wilkerlucio/workspaces.git"
                                       :sha     "f9521f7b810b8dad9fe62a03a888a4e30044d07e"}}}

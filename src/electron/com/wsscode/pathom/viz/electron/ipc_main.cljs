@@ -2,7 +2,7 @@
   (:require
     ["electron" :refer [ipcMain]]
     [com.wsscode.async.processing :as wap]
-    [com.wsscode.transit :as wsst]))
+    [com.wsscode.pathom.viz.transit :as wsst]))
 
 (defn on-ipc-main-event [f]
   (.on ipcMain "event"
