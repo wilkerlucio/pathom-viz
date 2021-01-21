@@ -22,7 +22,7 @@ Download of binaries are available at the [releases page](https://github.com/wil
 
 === Building the app
 
-If you wanna develop the app:
+If you want to develop the app:
 
 [source]
 ----
