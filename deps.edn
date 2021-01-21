@@ -5,7 +5,7 @@
  {com.cognitect/transit-cljs       {:mvn/version "0.8.256"}
   com.cognitect/transit-clj        {:mvn/version "1.0.324"}
   com.fulcrologic/guardrails       {:mvn/version "0.0.12"}
-  com.taoensso/sente               {:mvn/version "1.15.0"}
+  com.taoensso/sente               {:mvn/version "1.16.0"}
   com.wsscode/async                {:mvn/version "1.0.13"}
   com.wsscode/fuzzy                {:mvn/version "1.0.0"}
   com.wsscode/pathom-viz-connector {:mvn/version "1.0.0"}
