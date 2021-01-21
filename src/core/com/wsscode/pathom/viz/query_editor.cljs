@@ -19,7 +19,9 @@
             [com.wsscode.pathom.viz.query-plan :as plan-view]
             [com.wsscode.pathom.viz.trace :as pvt]
             [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
-            [com.wsscode.pathom.viz.ui.kit :as ui]))
+            [com.wsscode.pathom.viz.ui.kit :as ui]
+            [helix.core :as h]
+            [com.wsscode.pathom3.viz.plan :as viz-plan]))
 
 (declare QueryEditor TransactionResponse)
 
@@ -68,6 +70,7 @@
       (swap! state update-in ref assoc
         :ui/query-running? false
         ::result (pvh/pprint (dissoc response :com.wsscode.pathom/trace)))
+      (pvh/swap-in! env [] assoc :ui/graph-view (-> response meta :com.wsscode.pathom3.connect.runner/run-stats))
       (pvh/swap-in! env [:ui/trace-viewer] assoc
         :com.wsscode.pathom/trace (get response :com.wsscode.pathom/trace))
       (pvh/swap-in! env [:ui/trace-viewer :ui/plan-viewer] assoc
@@ -203,7 +206,7 @@
   [this
    {::keys    [query result request-trace? query-history]
     ::pc/keys [indexes]
-    :ui/keys  [query-running? trace-viewer]}
+    :ui/keys  [query-running? trace-viewer graph-view]}
    {::keys [editor-props enable-trace?
             default-trace-size
             default-query-size
@@ -234,6 +237,7 @@
                  :ui/query-running?
                  :ui/show-history?
                  :com.wsscode.pathom/trace
+                 :ui/graph-view
                  {:ui/trace-viewer (fc/get-query trace+plan/TraceWithPlan)}]
    :css         [[:.container {:border         "1px solid #ddd"
                                :display        "flex"
@@ -295,32 +299,6 @@
                  :disabled query-running?}
           "Run query"))
 
-      #_(ui/resizable-row {:layout [250 nil 400]}
-          (if (and @show-history? (seq query-history))
-            (dom/div :.history-container
-              (history-view {::query-history query-history
-                             ::on-pick-query #(fm/set-value! this ::query %)})))
-
-          (cm/pathom
-            (merge {:className   (:editor css)
-                    :value       (or (str query) "")
-                    ::pc/indexes (if (map? indexes) (p/elide-not-found indexes))
-                    ::cm/options {::cm/extraKeys
-                                  {"Cmd-Enter"   run-query
-                                   "Ctrl-Enter"  run-query
-                                   "Shift-Enter" run-query
-                                   "Cmd-J"       "pathomJoin"
-                                   "Ctrl-Space"  "autocomplete"}}
-                    :onChange    #(fm/set-value! this ::query %)}
-              editor-props))
-
-          (cm/clojure
-            (merge {:className   (:result css)
-                    :value       result
-                    ::cm/options {::cm/readOnly    true
-                                  ::cm/lineNumbers true}}
-              editor-props)))
-
       (dom/div :.query-row
         (if (and @show-history? (seq query-history))
           (fc/fragment
@@ -356,6 +334,17 @@
                   ::cm/options {::cm/readOnly    true
                                 ::cm/lineNumbers true}}
             editor-props)))
+
+      (if graph-view
+        (fc/fragment
+          (ui/drag-resize
+            {:direction "down"
+             :state     trace-size})
+
+          (dom/div :.trace {:style {:height (str @trace-size "px")}}
+            (h/$ viz-plan/PlanGraphView
+              {:run-stats    graph-view
+               :display-type ::viz-plan/display-type-label}))))
 
       (if (:com.wsscode.pathom/trace trace-viewer)
         (fc/fragment

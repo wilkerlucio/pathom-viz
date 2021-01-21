@@ -5,7 +5,9 @@
             [com.wsscode.pathom.viz.helpers :as pvh]
             [com.fulcrologic.fulcro.mutations :as fm]
             [com.wsscode.pathom.viz.codemirror :as cm]
-            [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]))
+            [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
+            [com.wsscode.pathom3.viz.plan :as viz-plan]
+            [helix.core :as h]))
 
 (defn pre-merge-request [{:keys [current-normalized data-tree]}]
   (let [id        (or (::request-id data-tree)
@@ -16,17 +18,23 @@
                     trace
                     (assoc ::trace-viewer
                            {::trace+plan/id           id
-                            :com.wsscode.pathom/trace trace}))]
+                            :com.wsscode.pathom/trace trace})
+
+                    true
+                    (assoc :ui/graph-view
+                           (-> data-tree ::response meta :com.wsscode.pathom3.connect.runner/run-stats)))]
     (merge {::request-id id}
       current-normalized data-tree)))
 
 (fc/defsc RequestView
-  [this {::keys [request response trace-viewer]}]
+  [this {::keys [request response trace-viewer]
+         :ui/keys [graph-view]}]
   {:pre-merge  pre-merge-request
    :ident      ::request-id
    :query      [::request-id
                 ::request
                 ::response
+                :ui/graph-view
                 {::trace-viewer (fc/get-query trace+plan/TraceWithPlan)}]
    :css        [[:.header {:background    "#f7f7f7"
                            :border-bottom "1px solid #ddd"
@@ -59,7 +67,16 @@
           (ui/drag-resize {:state trace-size :direction "down"})
           (dom/div :.header "Trace")
           (dom/div :.trace {:style {:height (str @trace-size "px")}}
-            (trace+plan/trace-with-plan trace-viewer)))))))
+            (trace+plan/trace-with-plan trace-viewer))))
+
+      (if graph-view
+        (fc/fragment
+          (ui/drag-resize {:state trace-size :direction "down"})
+          (dom/div :.header "Graph View")
+          (dom/div :.trace {:style {:height (str @trace-size "px")}}
+            (h/$ viz-plan/PlanGraphView
+              {:run-stats    graph-view
+               :display-type ::viz-plan/display-type-label})))))))
 
 (def request-view (fc/factory RequestView {:keyfn ::request-id}))
 
