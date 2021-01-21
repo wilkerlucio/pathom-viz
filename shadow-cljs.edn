@@ -26,7 +26,8 @@
           :electron-renderer   {:target           :browser
                                 :modules          {:main {:entries [com.wsscode.pathom.viz.electron.renderer.main]}}
                                 :dev              {:compiler-options {:external-config {:guardrails {:throw? false}}}}
-                                :devtools         {:preloads     [devtools.preload com.fulcrologic.fulcro.inspect.websocket-preload]}
+                                :devtools         {:preloads     [devtools.preload com.fulcrologic.fulcro.inspect.websocket-preload
+                                                                  com.fulcrologic.fulcro.inspect.dom-picker-preload]}
                                 :compiler-options {:optimizations :simple}
                                 :output-dir       "shells/electron/js/renderer"
                                 :asset-path       "js/renderer"}}}
