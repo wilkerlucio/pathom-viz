@@ -73,7 +73,6 @@
       (if graph-view
         (fc/fragment
           (ui/drag-resize {:state trace-size :direction "down"})
-          (dom/div :.header "Graph View")
           (fc/fragment
             (ui/section-header {}
               (ui/row {}
