@@ -38,7 +38,7 @@ To package the app do the following:
 
 [source]
 ----
-shadow-cljs release electron-background electron-renderer
+./script/build-electron
 cd shells/electron
 npm run pack
 ----
