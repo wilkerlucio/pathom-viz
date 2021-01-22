@@ -1,7 +1,7 @@
 {
   "name": "pathom-viz",
   "productName": "Pathom Viz",
-  "version": "1.2.1",
+  "version": "2021.01.22",
   "description": "Pathom visualization tools for parser development.",
   "homepage": "https://github.com/wilkerlucio/pathom-viz",
   "main": "js/background/main.js",
