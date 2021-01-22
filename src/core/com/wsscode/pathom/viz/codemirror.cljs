@@ -27,7 +27,8 @@
             ["./pathom-mode"]
             [com.wsscode.pathom3.connect.indexes :as pci]
             [com.wsscode.pathom3.cache :as p.cache]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [edn-query-language.core :as eql]))
 
 (s/def ::mode (s/or :string string? :obj map?))
 (s/def ::theme string?)
@@ -144,7 +145,7 @@
                           (and (= "join" mode)
                                (= "ident" (gobj/getValueByKeys s "key" "mode")))
                           (let [key (str->keyword (gobj/getValueByKeys s "key" "key"))]
-                            {:type :attribute :context (conj ctx key)})
+                            {:type :attribute :context (conj ctx [key])})
 
                           ; join: [{:child [|]}]
                           (and (= "join" mode)
@@ -184,17 +185,28 @@
 
 (defn fetch-context-data [env context]
   (if (seq context)
-    (get (paths-for-context* env (pop context)) (peek context))
+    (let [head (peek context)]
+      (cond
+        (vector? head)
+        {(first head) {}}
+
+        (and (keyword? head)
+             (= ">" (namespace head)))
+        (paths-for-context* env (pop context))
+
+        :else
+        (get (paths-for-context* env (pop context)) head)))
     {}))
 
 (defn paths-for-context* [env context]
   (p.cache/cached ::ctx-path-cache* env [(select-keys env [::pc/index-io]) context]
     (fn []
-      (let [context      (into [] (remove (comp #{">"} namespace)) context) ; remove placeholders from context
+      (let [context      (into [] context)
             context-data (fetch-context-data env context)]
         (pci/reachable-paths env context-data)))))
 
 (defn paths-for-context [env context]
+  (js/console.log "!! FOR CON" context)
   (paths-for-context*
     (assoc env ::ctx-path-cache* pathom-cache
                ::pci/index-io (::pc/index-io env))
