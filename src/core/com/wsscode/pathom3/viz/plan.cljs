@@ -167,7 +167,8 @@
                   (doseq [{:keys [data classes]} nodes]
                     (when-let [node ^js (first (.nodes cy (str "[id=\"" (:id data) "\"]")))]
                       (.classes node (into-array classes))
-                      (.data node data)))
+                      (vreset! (gobj/get (.data node) "source-node")
+                        @(:source-node data))))
                   (add-fade-in cy (clj->js add-nodes))
                   (add-fade-in cy (clj->js add-edges))))
         (-> cy
