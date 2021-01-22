@@ -24,7 +24,10 @@
             ["codemirror/addon/hint/show-hint"]
             ["codemirror/addon/display/placeholder"]
             ["parinfer-codemirror" :as parinfer-cm]
-            ["./pathom-mode"]))
+            ["./pathom-mode"]
+            [com.wsscode.pathom3.connect.indexes :as pci]
+            [com.wsscode.pathom3.cache :as p.cache]
+            [clojure.set :as set]))
 
 (s/def ::mode (s/or :string string? :obj map?))
 (s/def ::theme string?)
@@ -177,13 +180,32 @@
       (let [prev (gobj/getValueByKeys path-stack "prev")]
         (recur indexes (js-obj "state" (js-obj "mode" (gobj/get prev "mode") "pathStack" prev)))))))
 
+(declare paths-for-context*)
+
+(defn fetch-context-data [env context]
+  (if (seq context)
+    (get (paths-for-context* env (pop context)) (peek context))
+    {}))
+
+(defn paths-for-context* [env context]
+  (p.cache/cached ::ctx-path-cache* env [(select-keys env [::pc/index-io]) context]
+    (fn []
+      (let [context      (into [] (remove (comp #{">"} namespace)) context) ; remove placeholders from context
+            context-data (fetch-context-data env context)]
+        (pci/reachable-paths env context-data)))))
+
+(defn paths-for-context [env context]
+  (paths-for-context*
+    (assoc env ::ctx-path-cache* pathom-cache
+               ::pci/index-io (::pc/index-io env))
+    context))
+
 (defn ^:export completions [index token reg]
   (if (map? (::pc/index-io index))
     (let [ctx (token-context index token)]
       (when reg
         (case (:type ctx)
-          :attribute (->> (pc/discover-attrs (assoc index ::pc/cache pathom-cache)
-                            (->> ctx :context (remove (comp #{">"} namespace)))))
+          :attribute (->> (paths-for-context index (->> ctx :context rseq vec)))
           :ident (into {} (map #(hash-map % {})) (-> index ::pc/idents))
           {})))))
 
