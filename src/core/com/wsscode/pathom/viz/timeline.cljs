@@ -54,7 +54,6 @@
                                  ::viz-plan/keys [node-output-state]
                                  ::pco/keys      [op-name]
                                  :as             node}]
-                             (js/console.log "!! ST" node-output-state)
                              (if node-run-duration-ms
                                (let [path' (conj path node-id)]
                                  (cond-> {:path      path'

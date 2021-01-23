@@ -107,7 +107,9 @@
                                        "node-empty-output"
 
                                        ::node-state-success
-                                       "node-success")]
+                                       "node-success"
+
+                                       nil)]
                       {:group   "nodes"
                        :data    {:id          (str node-id)
                                  :label       node-label
