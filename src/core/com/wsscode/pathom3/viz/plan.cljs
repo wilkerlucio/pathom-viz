@@ -14,7 +14,8 @@
     [goog.object :as gobj]
     [helix.core :as h]
     [helix.dom :as dom]
-    [helix.hooks :as hooks]))
+    [helix.hooks :as hooks]
+    [com.wsscode.misc.coll :as coll]))
 
 (.use cytoscape cytoscape-dagre)
 
@@ -221,10 +222,13 @@
                                                           :target-arrow-color "#000"}}]
                       :elements  (clj->js elements)})]
         (.on cy "click" "node"
-             (fn [e]
-               (if-let [node-data (some-> e .-target (aget 0) (.data) (gobj/get "source-node") deref)]
-                 (js/console.log (::pcp/node-id node-data)
-                                 (select-keys node-data (vec (keys (d/datafy node-data))))))))
+          (fn [e]
+            (if-let [node-data (some-> e .-target (aget 0) (.data) (gobj/get "source-node") deref)]
+              (js/console.log (::pcp/node-id node-data)
+                (-> node-data
+                    (psm/sm-touch! (vec (keys (d/datafy node-data))))
+                    d/datafy
+                    (->> (coll/remove-vals #{::pco/unknown-value})))))))
         (reset! cy-ref cy)))))
 
 (h/defnc PlanGraphView [{:keys [elements run-stats display-type]}]

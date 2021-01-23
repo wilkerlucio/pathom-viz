@@ -22,19 +22,20 @@
 (defn compute-timeline-tree
   ([data path] (compute-timeline-tree data path nil))
   ([data path start]
-   (let [run-stats (some-> data meta ::pcr/run-stats
-                           (psm/smart-run-stats)
-                           (psm/sm-update-env pci/register
-                             [viz-plan/node-extensions-registry
-                              timeline-env]))
-         start     (or start
-                       (-> run-stats :com.wsscode.pathom3.connect.runner.stats/process-run-start-ms))]
+   (let [run-stats-plain (some-> data meta ::pcr/run-stats)
+         run-stats       (some-> run-stats-plain
+                                 (psm/smart-run-stats)
+                                 (psm/sm-update-env pci/register
+                                   [viz-plan/node-extensions-registry
+                                    timeline-env]))
+         start           (or start
+                             (-> run-stats :com.wsscode.pathom3.connect.runner.stats/process-run-start-ms))]
      (if run-stats
        {:start     (if start
                      (- (:com.wsscode.pathom3.connect.runner.stats/process-run-start-ms run-stats) start)
                      0)
         :name      (str (peek path))
-        :run-stats (volatile! run-stats)
+        :run-stats (volatile! run-stats-plain)
         :path      path
         :details   [{:event    "Make plan"
                      :start    (- (::pcr/compute-plan-run-start-ms run-stats) start)
@@ -56,7 +57,7 @@
                                (let [path' (conj path node-id)]
                                  (cond-> {:path      path'
                                           :node      (volatile! node)
-                                          :run-stats (volatile! run-stats)
+                                          :run-stats (volatile! run-stats-plain)
                                           :start     (- node-run-start-ms start)
                                           :duration  node-run-duration-ms
                                           :name      (if op-name (str op-name) (str span-label))

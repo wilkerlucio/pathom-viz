@@ -9,6 +9,7 @@
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.wsscode.pathom.viz.timeline :as timeline]
             [com.wsscode.pathom3.viz.plan :as viz-plan]
+            [goog.object :as gobj]
             [helix.core :as h]))
 
 (fc/defsc TraceWithPlan
@@ -26,25 +27,27 @@
                  [:.plan {:display "flex"}]]
    :css-include [pvt/D3Trace]
    :use-hooks?  true}
-  (let [stats        (some-> trace meta :com.wsscode.pathom3.connect.runner/run-stats)
-        trace'       (pvh/use-memo #(if stats
-                                      (timeline/compute-timeline-tree trace [])
-                                      trace)
-                       [trace])
-        plan-size    (pvh/use-persistent-state ::plan-size 200)
-        display-type (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)]
-    ;(js/console.log "!! TRACE" trace trace')
+  (let [stats          (some-> trace meta :com.wsscode.pathom3.connect.runner/run-stats)
+        trace'         (pvh/use-memo #(if stats
+                                        (timeline/compute-timeline-tree trace [])
+                                        trace)
+                         [trace])
+        [show-stats set-show-stats!] (pvh/use-state nil)
+        plan-size      (pvh/use-persistent-state ::plan-size 200)
+        display-type   (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)
+        details-handle (pvh/use-callback
+                         (fn [events node]
+                           (when-let [s (gobj/get node "run-stats")]
+                             (set-show-stats! @s))
+                           (js/console.log "Attribute trace:" events node))
+                         [])]
     (dom/div :.container
       (if trace
         (dom/div :.trace
           (pvt/d3-trace {::pvt/trace-data      trace'
-                         ::pvt/on-show-details (fn [events node]
-                                                 #_#_(plan-view/set-plan-view-graph! this plan-viewer
-                                                       (plan-view/events->plan events))
-                                                     (fc/transact! this [:ui/plan-viewer])
-                                                 (js/console.log "Attribute trace:" events node))})))
+                         ::pvt/on-show-details details-handle})))
 
-      (if stats
+      (if show-stats
         (fc/fragment
           (ui/drag-resize
             {:state     plan-size
@@ -54,11 +57,13 @@
               (ui/dom-select {:value    @display-type
                               :onChange #(reset! display-type %2)}
                 (ui/dom-option {:value ::viz-plan/display-type-label} "Display: resolver name")
-                (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))))
+                (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))
+              (ui/button {:onClick #(set-show-stats! nil)
+                          :style {:marginLeft 6}} "Close")))
 
           (dom/div :.plan {:style {:height (str @plan-size "px")}}
             (h/$ viz-plan/PlanGraphView
-              {:run-stats    stats
+              {:run-stats    show-stats
                :display-type @display-type})))))))
 
 (def trace-with-plan (fc/factory TraceWithPlan))
