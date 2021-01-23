@@ -206,7 +206,6 @@
         (pci/reachable-paths env context-data)))))
 
 (defn paths-for-context [env context]
-  (js/console.log "!! FOR CON" context)
   (paths-for-context*
     (assoc env ::ctx-path-cache* pathom-cache
                ::pci/index-io (::pc/index-io env))

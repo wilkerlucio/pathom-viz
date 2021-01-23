@@ -6,24 +6,14 @@
             [com.wsscode.pathom.viz.helpers :as pvh]
             [com.wsscode.pathom.connect.planner :as pcp]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
-            [com.wsscode.pathom.viz.ui.kit :as ui]))
+            [com.wsscode.pathom.viz.ui.kit :as ui]
+            [com.wsscode.pathom.viz.timeline :as timeline]
+            [com.wsscode.pathom3.viz.plan :as viz-plan]
+            [helix.core :as h]))
 
 (fc/defsc TraceWithPlan
-  [this
-   {:ui/keys                 [plan-viewer]
-    :com.wsscode.pathom/keys [trace]}]
-  {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
-                  (let [id (or (::id data-tree)
-                               (::id current-normalized)
-                               (random-uuid))]
-                    (merge {::id            id
-                            :ui/plan-viewer {::plan-view/id id}}
-                      current-normalized data-tree)))
-   :ident       ::id
-   :query       [::id
-                 :com.wsscode.pathom/trace
-                 {:ui/plan-viewer (fc/get-query plan-view/PlanViewWithDetails)}]
-   :css         [[:.container {:display        "flex"
+  [this {:com.wsscode.pathom/keys [trace]}]
+  {:css         [[:.container {:display        "flex"
                                :flex-direction "column"
                                :flex           "1"
                                :max-width      "100%"
@@ -36,24 +26,39 @@
                  [:.plan {:display "flex"}]]
    :css-include [pvt/D3Trace]
    :use-hooks?  true}
-  (let [plan-size (pvh/use-persistent-state ::plan-size 200)]
+  (let [stats        (some-> trace meta :com.wsscode.pathom3.connect.runner/run-stats)
+        trace'       (pvh/use-memo #(if stats
+                                      (timeline/compute-timeline-tree trace [])
+                                      trace)
+                       [trace])
+        plan-size    (pvh/use-persistent-state ::plan-size 200)
+        display-type (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)]
+    ;(js/console.log "!! TRACE" trace trace')
     (dom/div :.container
       (if trace
         (dom/div :.trace
-          (pvt/d3-trace {::pvt/trace-data      trace
-                         ::pvt/on-show-details (fn [events]
-                                                 (plan-view/set-plan-view-graph! this plan-viewer
-                                                   (plan-view/events->plan events))
-                                                 (fc/transact! this [:ui/plan-viewer])
-                                                 (js/console.log "Attribute trace:" events))})))
+          (pvt/d3-trace {::pvt/trace-data      trace'
+                         ::pvt/on-show-details (fn [events node]
+                                                 #_#_(plan-view/set-plan-view-graph! this plan-viewer
+                                                       (plan-view/events->plan events))
+                                                     (fc/transact! this [:ui/plan-viewer])
+                                                 (js/console.log "Attribute trace:" events node))})))
 
-      (if (::pcp/graph plan-viewer)
+      (if stats
         (fc/fragment
           (ui/drag-resize
             {:state     plan-size
-             :direction "down"})
+             :direction "down"}
+            (ui/row {:classes [:.center]}
+              (dom/div (ui/gc :.flex) "Graph Viz")
+              (ui/dom-select {:value    @display-type
+                              :onChange #(reset! display-type %2)}
+                (ui/dom-option {:value ::viz-plan/display-type-label} "Display: resolver name")
+                (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))))
 
           (dom/div :.plan {:style {:height (str @plan-size "px")}}
-            (plan-view/plan-view-with-details plan-viewer)))))))
+            (h/$ viz-plan/PlanGraphView
+              {:run-stats    stats
+               :display-type @display-type})))))))
 
 (def trace-with-plan (fc/factory TraceWithPlan))

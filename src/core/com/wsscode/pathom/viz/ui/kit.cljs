@@ -678,7 +678,7 @@
                             value    (gobj/get dd axis)
                             new-size (+ size (if invert? (- value start) (- start value)))]
                         (reset! state new-size)))}
-      (dom/div (merge {:className css} props)))))
+      (apply dom/div (merge {:className css} props) (fc/children this)))))
 
 (def drag-resize (fc/factory DragResize))
 
@@ -719,7 +719,9 @@
                                :border-left    "0"
                                :border-right   "0"
                                :pointer-events "all"
-                               :z-index        "2"}]]
+                               :padding        "4px 8px"
+                               :z-index        "2"}
+                  text-sans-13]]
    :css-include [Button
                  CollapsibleBox
                  Column

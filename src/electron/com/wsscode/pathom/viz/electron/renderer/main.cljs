@@ -26,7 +26,8 @@
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.wsscode.pathom3.viz.plan :as viz-plan]
             [goog.object :as gobj]
-            [helix.core :as h]))
+            [helix.core :as h]
+            [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]))
 
 (>def ::channel any?)
 (>def ::message-type qualified-keyword?)
@@ -109,9 +110,7 @@
          ::request-history/response   response}))
 
     ::log-entry
-    (do
-      (js/console.log "!! new log entry" (:com.wsscode.pathom.viz.ws-connector.core/entry msg))
-      (fc/transact! this [(log-new-entry {:entry (:com.wsscode.pathom.viz.ws-connector.core/entry msg)})]))
+    (fc/transact! this [(log-new-entry {:entry (:com.wsscode.pathom.viz.ws-connector.core/entry msg)})])
 
     (js/console.warn "Unknown message received" msg)))
 
@@ -156,9 +155,8 @@
   {:ident      (fn [_] [:comp/ident :comp/logs-view])
    :query      [::logs-view-id ::logs ::logs-meta ::log-current-value]
    :use-hooks? true}
-  (let [ds         (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)
-        log-val    (with-meta (get logs log-current-value) (get logs-meta log-current-value))
-        graph-size (pvh/use-persistent-state ::graph-size 200)]
+  (let [ds      (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)
+        log-val (with-meta (get logs log-current-value) (get logs-meta log-current-value))]
     (ui/row {:style {:flex "1" :overflow "hidden"}}
       (ui/column {:style {:alignSelf "stretch"}}
         (ui/button {:onClick #(fc/transact! this [(clear-logs {})])} "Clear logs")
@@ -176,7 +174,7 @@
             :pathom.viz.log.type/plan-and-stats
             (fc/fragment
               (ui/section-header {}
-                (ui/row {}
+                (ui/row {:classes [:.center]}
                   (dom/div (ui/gc :.flex) "Graph Viz")
                   (ui/dom-select {:value    @ds
                                   :onChange #(reset! ds %2)}
@@ -190,23 +188,8 @@
             :pathom.viz.log.type/trace
             (fc/fragment
               (ui/section-header {} "Trace")
-              (if-let [stats (some-> log-val meta :com.wsscode.pathom3.connect.runner/run-stats)]
-                (fc/fragment
-                  (dom/div {:style {:height (str @graph-size "px")}}
-                   (trace/d3-trace {::trace/trace-data      (timeline/compute-timeline-tree log-val [])
-                                    ::trace/on-show-details (fn [d e]
-                                                              (js/console.log "!! D" d e))}))
-                  (ui/drag-resize
-                    {:state     graph-size
-                     :direction "up"})
-                  (dom/div {:style {:flex "1" :overflow "hidden" :display "flex"}}
-                   (h/$ viz-plan/PlanGraphView
-                     {:run-stats    stats
-                      :display-type @ds})))
-
-                (trace/d3-trace {::trace/trace-data      log-val
-                                 ::trace/on-show-details (fn [d e]
-                                                           (js/console.log "!! D" d e))})))
+              (trace+plan/trace-with-plan
+                {:com.wsscode.pathom/trace (pvh/response-trace log-val)}))
 
             (pr-str log-val)))))))
 

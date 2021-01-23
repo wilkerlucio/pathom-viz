@@ -71,12 +71,8 @@
       (swap! state update-in ref assoc
         :ui/query-running? false
         ::result (pvh/pprint (dissoc response :com.wsscode.pathom/trace)))
-      (pvh/swap-in! env [] assoc :ui/graph-view (-> response meta :com.wsscode.pathom3.connect.runner/run-stats))
-      (pvh/swap-in! env [:ui/trace-viewer] assoc
-        :com.wsscode.pathom/trace (get response :com.wsscode.pathom/trace))
-      (pvh/swap-in! env [:ui/trace-viewer :ui/plan-viewer] assoc
-        ::pcp/graph nil
-        :ui/node-details nil)))
+      (pvh/swap-in! env [] assoc-in [:ui/trace-viewer :com.wsscode.pathom/trace]
+        (pvh/response-trace response))))
   (error-action [env]
     (js/console.log "QUERY ERROR" env))
   (remote [{:keys [ast]}]
@@ -238,8 +234,7 @@
                             ::result           ""
                             ::query-history    []
                             :ui/show-history?  true
-                            :ui/query-running? false
-                            :ui/trace-viewer   {::trace+plan/id id}}
+                            :ui/query-running? false}
                       current-normalized data-tree)))
 
    :ident       ::id
@@ -254,7 +249,7 @@
                  :ui/show-history?
                  :com.wsscode.pathom/trace
                  :ui/graph-view
-                 {:ui/trace-viewer (fc/get-query trace+plan/TraceWithPlan)}]
+                 :ui/trace-viewer]
    :css         [[:.container {:border         "1px solid #ddd"
                                :display        "flex"
                                :flex-direction "column"
@@ -286,7 +281,7 @@
                  [:.history-container {:width      "250px"
                                        :max-height "100%"
                                        :overflow   "auto"}]]
-   :css-include [pvt/D3Trace Button HistoryView]
+   :css-include [pvt/D3Trace Button HistoryView trace+plan/TraceWithPlan]
    :use-hooks?  true}
   (pvh/use-layout-effect #(init-query-editor this) [])
   (let [run-query     (pvh/use-callback #(run-query! this))
@@ -374,13 +369,14 @@
                   {:run-stats    graph-view
                    :display-type @ds}))))))
 
-      (if (:com.wsscode.pathom/trace trace-viewer)
+      (if trace-viewer
         (fc/fragment
           (ui/drag-resize
             {:direction "down"
              :state     trace-size})
 
           (dom/div :.trace {:style {:height (str @trace-size "px")}}
-            (trace+plan/trace-with-plan trace-viewer)))))))
+            (trace+plan/trace-with-plan
+              trace-viewer)))))))
 
 (def query-editor (fc/computed-factory QueryEditor))

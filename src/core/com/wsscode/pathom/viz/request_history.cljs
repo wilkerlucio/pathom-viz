@@ -13,35 +13,29 @@
   (let [id        (or (::request-id data-tree)
                       (::request-id current-normalized)
                       (random-uuid))
-        trace     (-> data-tree ::response :com.wsscode.pathom/trace)
+        trace     (pvh/response-trace (::response data-tree))
         data-tree (cond-> data-tree
                     trace
                     (assoc ::trace-viewer
-                           {::trace+plan/id           id
-                            :com.wsscode.pathom/trace trace})
-
-                    true
-                    (assoc :ui/graph-view
-                           (-> data-tree ::response meta :com.wsscode.pathom3.connect.runner/run-stats)))]
+                           {:com.wsscode.pathom/trace trace}))]
     (merge {::request-id id}
       current-normalized data-tree)))
 
 (fc/defsc RequestView
-  [this {::keys [request response trace-viewer]
-         :ui/keys [graph-view]}]
+  [this {::keys [request response trace-viewer]}]
   {:pre-merge  pre-merge-request
    :ident      ::request-id
    :query      [::request-id
                 ::request
                 ::response
                 :ui/graph-view
-                {::trace-viewer (fc/get-query trace+plan/TraceWithPlan)}]
+                ::trace-viewer]
    :css        [[:.header {:background    "#f7f7f7"
                            :border-bottom "1px solid #ddd"
                            :padding       "4px 8px"}
                  ui/text-sans-13]
-                [:.trace {:display     "flex"
-                          :overflow    "hidden"}]]
+                [:.trace {:display  "flex"
+                          :overflow "hidden"}]]
    :use-hooks? true}
   (let [response-size (pvh/use-persistent-state ::response-size 400)
         trace-size    (pvh/use-persistent-state ::trace-size 300)
@@ -70,10 +64,10 @@
           (dom/div :.trace {:style {:height (str @trace-size "px")}}
             (trace+plan/trace-with-plan trace-viewer))))
 
-      (if graph-view
-        (fc/fragment
-          (ui/drag-resize {:state trace-size :direction "down"})
+      #_(if graph-view
           (fc/fragment
+            (ui/drag-resize {:state trace-size :direction "down"})
+            (fc/fragment
               (ui/section-header {}
                 (ui/row {}
                   (dom/div (ui/gc :.flex) "Graph Viz")
@@ -81,32 +75,32 @@
                                   :onChange #(reset! ds %2)}
                     (ui/dom-option {:value ::viz-plan/display-type-label} "Display: resolver name")
                     (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))))
-            (dom/div :.trace {:style {:height (str @trace-size "px")}}
+              (dom/div :.trace {:style {:height (str @trace-size "px")}}
                 (h/$ viz-plan/PlanGraphView
                   {:run-stats    graph-view
-                 :display-type @ds}))))))))
+                   :display-type @ds}))))))))
 
 (def request-view (fc/factory RequestView {:keyfn ::request-id}))
 
 (fc/defsc RequestItem
   [this {::keys [request-id request]} {::keys [on-select selected?]}]
-  {:pre-merge  pre-merge-request
-   :ident      ::request-id
-   :query      [::request-id
-                ::request
-                {::trace-viewer (fc/get-query trace+plan/TraceWithPlan)}]
-   :css        [[:.container
-                 {:border-bottom "1px solid #ccc"
-                  :cursor        "pointer"
-                  :font-family   ui/font-code
-                  :max-height    "45px"
-                  :overflow      "auto"
-                  :padding       "5px"
-                  :white-space   "pre"}
-                 [:&:hover {:background ui/color-highlight
-                            :color      "#000"}]
-                 [:&.selected {:background "#cae9fb"}]]
-                [:.code {:white-space "pre"}]]}
+  {:pre-merge pre-merge-request
+   :ident     ::request-id
+   :query     [::request-id
+               ::request
+               ::trace-viewer]
+   :css       [[:.container
+                {:border-bottom "1px solid #ccc"
+                 :cursor        "pointer"
+                 :font-family   ui/font-code
+                 :max-height    "45px"
+                 :overflow      "auto"
+                 :padding       "5px"
+                 :white-space   "pre"}
+                [:&:hover {:background ui/color-highlight
+                           :color      "#000"}]
+                [:&.selected {:background "#cae9fb"}]]
+               [:.code {:white-space "pre"}]]}
   (dom/div :.container {:classes [(if selected? :.selected)] :onClick #(on-select request-id)}
     (pvh/pprint request)))
 
