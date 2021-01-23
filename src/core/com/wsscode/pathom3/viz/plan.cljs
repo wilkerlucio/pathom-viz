@@ -41,7 +41,35 @@
      ::pcp/node-or "node-or"
      ::pcp/node-resolver "node-resolver")})
 
-(def node-extensions-registry [node-type node-label node-type-class])
+(pco/defresolver node-output-state
+  [{::pcr/keys [node-error
+                node-resolver-output
+                node-resolver-output-shape]
+    :as        node}]
+  {::pco/input
+   [(pco/? ::pcr/node-error)
+    (pco/? ::pcr/node-resolver-output)
+    (pco/? ::pcr/node-resolver-output-shape)]}
+  {::node-output-state
+   (cond
+     node-error
+     ::node-state-error
+
+     (or (and (contains? node ::pcr/node-resolver-output)
+              (nil? node-resolver-output))
+         (and (contains? node ::pcr/node-resolver-output-shape)
+              (empty? node-resolver-output-shape)))
+     ::node-state-empty
+
+     (or node-resolver-output
+         node-resolver-output-shape)
+     ::node-state-success)})
+
+(def node-extensions-registry
+  [node-type
+   node-label
+   node-type-class
+   node-output-state])
 
 (defn smart-plan [plan]
   (-> (psm/smart-run-stats plan)
@@ -64,28 +92,21 @@
     frames))
 
 (defn ^:export compute-plan-elements [{::pcp/keys [nodes root highlight-nodes highlight-styles]
-                                       ::keys     [node-in-focus] :as data}]
+                                       ::keys     [node-in-focus]}]
   (let [nodes'  (vals nodes)
         c-nodes (mapv
                   (fn [{::pcp/keys [node-id]
-                        ::pcr/keys [node-resolver-output
-                                    node-resolver-output-shape
-                                    node-error]
-                        ::keys     [node-label node-type-class]
+                        ::keys     [node-label node-type-class node-output-state]
                         :as        node}]
                     (let [hl-style   (get highlight-styles node-id)
-                          node-color (cond
-                                       node-error
+                          node-color (case node-output-state
+                                       ::node-state-error
                                        "node-error"
 
-                                       (or (and (contains? node ::pcr/node-resolver-output)
-                                                (nil? node-resolver-output))
-                                           (and (contains? node ::pcr/node-resolver-output-shape)
-                                                (empty? node-resolver-output-shape)))
+                                       ::node-state-empty
                                        "node-empty-output"
 
-                                       (or node-resolver-output
-                                           node-resolver-output-shape)
+                                       ::node-state-success
                                        "node-success")]
                       {:group   "nodes"
                        :data    {:id          (str node-id)
@@ -210,10 +231,12 @@
                             :fit               false
                             :ready             #(fit-node-and-neighbors cy nodes node-in-focus)})
               (.run))))
-      (let [cy (cytoscape
+      (let [{:strs [nodes]} (group-by :group elements)
+            cy (cytoscape
                  #js {:container @container-ref
                       :layout    #js {:name    "dagre"
-                                      :rankDir "LR"}
+                                      :rankDir "LR"
+                                      :ready   #(fit-node-and-neighbors (gobj/get % "cy") nodes node-in-focus)}
                       :style     #js [#js {:selector "node"
                                            :style    #js {:text-valign         "center"
                                                           :transition-property "border-color border-width"

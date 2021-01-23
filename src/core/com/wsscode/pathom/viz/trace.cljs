@@ -19,14 +19,16 @@
 (defn render-trace [this]
   (let [{::keys [trace-data on-show-details]} (-> this fc/props)
         container (gobj/get this "svgContainer")
-        svg (gobj/get this "svg")]
+        svg       (gobj/get this "svg")]
     (gobj/set svg "innerHTML" "")
-    (gobj/set this "renderedData"
-      (renderPathomTrace svg
-        (clj->js {:svgWidth    (gobj/get container "clientWidth")
-                  :svgHeight   (gobj/get container "clientHeight")
-                  :data        (-> trace-data add-edn-dna (h/stringify-keyword-values))
-                  :showDetails (or on-show-details identity)})))))
+    (try
+      (gobj/set this "renderedData"
+        (renderPathomTrace svg
+          (clj->js {:svgWidth    (gobj/get container "clientWidth")
+                    :svgHeight   (gobj/get container "clientHeight")
+                    :data        (-> trace-data add-edn-dna (h/stringify-keyword-values))
+                    :showDetails (or on-show-details identity)})))
+      (catch :default e (js/console.error "Error rendering trace" e)))))
 
 (defn recompute-trace-size [this]
   (let [container (gobj/get this "svgContainer")]

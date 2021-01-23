@@ -34,7 +34,7 @@
        {:start     (if start
                      (- (:com.wsscode.pathom3.connect.runner.stats/process-run-start-ms run-stats) start)
                      0)
-        :name      (str (peek path))
+        :name      (str (or (peek path) "Process"))
         :run-stats (volatile! run-stats-plain)
         :path      path
         :details   [{:event    "Make plan"
@@ -43,16 +43,18 @@
         :duration  (:com.wsscode.pathom3.connect.runner.stats/process-run-duration-ms run-stats)
         :children  (into []
                          (keep
-                           (fn [{::pcp/keys [nested-process node-id]
-                                 ::pcr/keys [node-run-start-ms
-                                             node-run-duration-ms
-                                             resolver-run-start-ms
-                                             resolver-run-duration-ms
-                                             batch-run-start-ms
-                                             batch-run-duration-ms]
-                                 ::keys     [span-label]
-                                 ::pco/keys [op-name]
-                                 :as        node}]
+                           (fn [{::pcp/keys      [nested-process node-id]
+                                 ::pcr/keys      [node-run-start-ms
+                                                  node-run-duration-ms
+                                                  resolver-run-start-ms
+                                                  resolver-run-duration-ms
+                                                  batch-run-start-ms
+                                                  batch-run-duration-ms]
+                                 ::keys          [span-label]
+                                 ::viz-plan/keys [node-output-state]
+                                 ::pco/keys      [op-name]
+                                 :as             node}]
+                             (js/console.log "!! ST" node-output-state)
                              (if node-run-duration-ms
                                (let [path' (conj path node-id)]
                                  (cond-> {:path      path'
@@ -67,7 +69,12 @@
                                                          {:event    "Run resolver"
                                                           :start    (- resolver-run-start-ms start)
                                                           :duration resolver-run-duration-ms
-                                                          :style    {:fill "#af9df4"}})
+                                                          :style    {:fill
+                                                                     (case node-output-state
+                                                                       ::viz-plan/node-state-error
+                                                                       "#ec6565"
+
+                                                                       "#af9df4")}})
 
                                                        batch-run-duration-ms
                                                        (conj

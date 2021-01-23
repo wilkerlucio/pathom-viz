@@ -76,7 +76,8 @@ function layoutTrace (node, {xScale, yScale, barSize}) {
   };
 
   const pos = {y: node.y1 + 1};
-  node.children.forEach(n => positionNode(n, pos));
+  if (node.children)
+    node.children.forEach(n => positionNode(n, pos));
 
   return node;
 }
