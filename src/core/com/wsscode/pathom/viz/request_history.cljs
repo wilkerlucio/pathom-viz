@@ -74,16 +74,16 @@
         (fc/fragment
           (ui/drag-resize {:state trace-size :direction "down"})
           (fc/fragment
-            (ui/section-header {}
-              (ui/row {}
-                (dom/div (ui/gc :.flex) "Graph Viz")
-                (ui/dom-select {:value    @ds
-                                :onChange #(reset! ds %2)}
-                  (ui/dom-option {:value ::viz-plan/display-type-label} "Display: resolver name")
-                  (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))))
+              (ui/section-header {}
+                (ui/row {}
+                  (dom/div (ui/gc :.flex) "Graph Viz")
+                  (ui/dom-select {:value    @ds
+                                  :onChange #(reset! ds %2)}
+                    (ui/dom-option {:value ::viz-plan/display-type-label} "Display: resolver name")
+                    (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))))
             (dom/div :.trace {:style {:height (str @trace-size "px")}}
-              (h/$ viz-plan/PlanGraphView
-                {:run-stats    graph-view
+                (h/$ viz-plan/PlanGraphView
+                  {:run-stats    graph-view
                  :display-type @ds}))))))))
 
 (def request-view (fc/factory RequestView {:keyfn ::request-id}))

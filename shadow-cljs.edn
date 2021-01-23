@@ -3,8 +3,8 @@
                                 :ns-regexp  "-(test|cards)$"
                                 :output-dir "workspaces/assets/js"
                                 :asset-path "/js"
-                                :dev        {:compiler-options {:external-config {:guardrails {:throw? false}}}}
-                                :devtools   {:preloads  [devtools.preload com.fulcrologic.fulcro.inspect.preload]
+                                ;:dev        {:compiler-options {:external-config {:guardrails {:throw? false}}}}
+                                :devtools   {:preloads  [devtools.preload]
                                              :http-root "workspaces/assets"
                                              :http-port 8086}}
 

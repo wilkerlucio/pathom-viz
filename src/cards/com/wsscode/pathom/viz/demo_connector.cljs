@@ -8,7 +8,9 @@
 (def CONNECT_PARSER? true)
 
 (def registry
-  [(pc/constantly-resolver :works "WORKS!!")])
+  [(pc/constantly-resolver :works "WORKS!!")
+   (pc/constantly-resolver :nested [{:id 1}])
+   (pc/single-attr-resolver :id :x inc)])
 
 (def parser
   (cond->> (p/parser
@@ -26,4 +28,6 @@
       {::p.connector/parser-id ::my-parser})))
 
 (comment
-  (parser {} [:works]))
+  (parser {} [{:nested
+               [:x]}
+              :com.wsscode.pathom/trace]))

@@ -142,7 +142,7 @@ function renderTrace(selection, settings) {
         delete d.y1
 
         return d
-      }));
+      }), d.data);
     })
 
   nodes
@@ -164,13 +164,13 @@ function renderTrace(selection, settings) {
     const label = d.data.name || d.data.hint;
     const details = eventsOnMouse(settings, d, target)
     const detailsTimes = details.map(d => {
-      return (d.duration ? d.duration + ' ms ' : '') + '<strong>' + d.event + '</strong>' + (d.label ? ' ' + d.label : '')
+      return (d.duration ? d.duration.toFixed(3) + ' ms ' : '') + '<strong>' + d.event + '</strong>' + (d.label ? ' ' + d.label : '')
     })
 
     const detailsCount = ' <span class="pathom-details-count">' + d.data.details.length + '</span>'
     const childCount = d.data.children ? ' <span class="pathom-children-count">' + d.data.children.length + '</span>' : '';
 
-    return [d.data.duration + ' ms <strong>' + label + '</strong>' + detailsCount + childCount].concat(detailsTimes).join("<br>");
+    return [d.data.duration.toFixed(3) + ' ms <strong>' + label + '</strong>' + detailsCount + childCount].concat(detailsTimes).join("<br>");
   });
 
   const boundNodes = nodesEnter.append('rect')

@@ -22,13 +22,15 @@
   {::pco/input [::pcp/node-id]}
   {::pcp/node-type (pcp/node-kind (p.ent/entity env))})
 
-(pco/defresolver node-label [env {::pcp/keys [node-type]}]
-  {::pco/cache? false}
+(pco/defresolver node-label
+  [{::pcp/keys [node-type]
+    ::pco/keys [op-name]}]
+  {::pco/input [(pco/? ::pco/op-name) ::pcp/node-type]}
   {::node-label
    (case node-type
      ::pcp/node-and "AND"
      ::pcp/node-or "OR"
-     ::pcp/node-resolver (name (::pco/op-name (p.ent/entity env))))})
+     ::pcp/node-resolver (name op-name))})
 
 (pco/defresolver node-type-class [{::pcp/keys [node-type]}]
   {::node-type-class

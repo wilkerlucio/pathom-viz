@@ -12,7 +12,7 @@
   (walk/postwalk
     (fn [x]
       (if (and (map? x) (contains? x :event))
-        (assoc x :edn-original (pr-str x))
+        (assoc x :edn-original (volatile! x))
         x))
     trace))
 

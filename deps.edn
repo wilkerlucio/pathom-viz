@@ -4,7 +4,7 @@
  :deps
  {com.cognitect/transit-cljs       {:mvn/version "0.8.264"}
   com.cognitect/transit-clj        {:mvn/version "1.0.324"}
-  com.fulcrologic/guardrails       {:mvn/version "0.0.12"}
+  com.fulcrologic/guardrails       {:mvn/version "1.1.2"}
   com.taoensso/sente               {:mvn/version "1.16.0"}
   com.wsscode/async                {:mvn/version "1.0.13"}
   com.wsscode/fuzzy                {:mvn/version "1.0.0"}

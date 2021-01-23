@@ -121,7 +121,7 @@
   {:css [[:.container {:display   "flex"
                        :max-width "100%"}]
          [:.center {:align-items "center"}]
-         [:.stretch {:align-items "center"}]]}
+         [:.stretch {:align-items "stretch"}]]}
   (dom/div :.container props (fc/children this)))
 
 (def row (fc/factory Row))

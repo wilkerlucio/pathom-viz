@@ -136,7 +136,7 @@
       depths)))
 
 (defn events->plan [events]
-  (let [events' (mapv (comp pvh/safe-read #(gobj/get % "edn-original")) events)]
+  (let [events' (mapv #(some-> % (gobj/get "edn-original") deref) events)]
     (if-let [plan (->> (filter (comp #{"reader3-execute"} :event) events')
                        first :plan)]
       (update plan ::pcp/nodes

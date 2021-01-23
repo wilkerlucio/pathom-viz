@@ -9,6 +9,7 @@
             [com.fulcrologic.fulcro.algorithms.merge :as merge]
             [com.fulcrologic.fulcro.application :as fapp]
             [com.fulcrologic.fulcro.components :as fc]
+            [com.fulcrologic.fulcro.mutations :as fm]
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [com.wsscode.async.async-cljs :refer [go-promise <?]]
             [com.wsscode.async.processing :as wap]
@@ -19,11 +20,12 @@
             [com.wsscode.pathom.viz.local-parser :as local.parser]
             [com.wsscode.pathom.viz.parser-assistant :as assistant]
             [com.wsscode.pathom.viz.request-history :as request-history]
-            [com.wsscode.pathom.viz.ui.kit :as ui]
+            [com.wsscode.pathom.viz.timeline :as timeline]
+            [com.wsscode.pathom.viz.trace :as trace]
             [com.wsscode.pathom.viz.transit :as wsst]
-            [goog.object :as gobj]
+            [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.wsscode.pathom3.viz.plan :as viz-plan]
-            [com.fulcrologic.fulcro.mutations :as fm]
+            [goog.object :as gobj]
             [helix.core :as h]))
 
 (>def ::channel any?)
@@ -67,11 +69,14 @@
 (defn reload-parsers-ui! [this]
   (assistant/reload-available-parsers this (multi-parser-ref this)))
 
-(fm/defmutation log-new-entry [entry]
+(fm/defmutation log-new-entry [{:keys [entry]}]
   (action [{:keys [state]}]
     (let [now (js/Date.)]
       (swap! state update-in [:comp/ident :comp/logs-view ::logs]
         assoc now entry)
+      (if (meta entry)
+        (swap! state update-in [:comp/ident :comp/logs-view ::logs-meta]
+          assoc now (meta entry)))
       (swap! state update-in [:comp/ident :comp/logs-view]
         assoc ::log-current-value now)
       (swap! state update-in [:comp/ident :comp/connections-and-logs]
@@ -104,7 +109,9 @@
          ::request-history/response   response}))
 
     ::log-entry
-    (fc/transact! this [(log-new-entry (:com.wsscode.pathom.viz.ws-connector.core/entry msg))])
+    (do
+      (js/console.log "!! new log entry" (:com.wsscode.pathom.viz.ws-connector.core/entry msg))
+      (fc/transact! this [(log-new-entry {:entry (:com.wsscode.pathom.viz.ws-connector.core/entry msg)})]))
 
     (js/console.warn "Unknown message received" msg)))
 
@@ -145,13 +152,14 @@
     (swap! state assoc-in [:comp/ident :comp/logs-view ::log-current-value] nil)))
 
 (fc/defsc LogsView
-  [this {::keys [logs log-current-value]}]
+  [this {::keys [logs logs-meta log-current-value]}]
   {:ident      (fn [_] [:comp/ident :comp/logs-view])
-   :query      [::logs-view-id ::logs ::log-current-value]
+   :query      [::logs-view-id ::logs ::logs-meta ::log-current-value]
    :use-hooks? true}
-  (let [ds      (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)
-        log-val (get logs log-current-value)]
-    (ui/row {:style {:flex "1" :background "#ccc"}}
+  (let [ds         (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)
+        log-val    (with-meta (get logs log-current-value) (get logs-meta log-current-value))
+        graph-size (pvh/use-persistent-state ::graph-size 200)]
+    (ui/row {:style {:flex "1" :overflow "hidden"}}
       (ui/column {:style {:alignSelf "stretch"}}
         (ui/button {:onClick #(fc/transact! this [(clear-logs {})])} "Clear logs")
         (ui/dom-select {:value    log-current-value
@@ -160,9 +168,9 @@
                         :style    {:flex    "1"
                                    :outline "none"}}
           (for [t (sort (keys logs))]
-            (ui/dom-option {:key t :value t}
+            (ui/dom-option {:key (.getTime t) :value t}
               (.toLocaleTimeString t)))))
-      (ui/column {:style {:flex "1"}}
+      (ui/column {:style {:flex "1" :overflow "hidden"}}
         (if log-val
           (case (:pathom.viz.log/type log-val)
             :pathom.viz.log.type/plan-and-stats
@@ -174,12 +182,33 @@
                                   :onChange #(reset! ds %2)}
                     (ui/dom-option {:value ::viz-plan/display-type-label} "Display: resolver name")
                     (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))))
-              (ui/column {:style {:flex 12}}
+              (ui/column {:style {:flex "1"}}
                 (h/$ viz-plan/PlanGraphView
                   {:run-stats    log-val
                    :display-type @ds})))
-            (pr-str log-val))
-          )))))
+
+            :pathom.viz.log.type/trace
+            (fc/fragment
+              (ui/section-header {} "Trace")
+              (if-let [stats (some-> log-val meta :com.wsscode.pathom3.connect.runner/run-stats)]
+                (fc/fragment
+                  (dom/div {:style {:height (str @graph-size "px")}}
+                   (trace/d3-trace {::trace/trace-data      (timeline/compute-timeline-tree log-val [])
+                                    ::trace/on-show-details (fn [d e]
+                                                              (js/console.log "!! D" d e))}))
+                  (ui/drag-resize
+                    {:state     graph-size
+                     :direction "up"})
+                  (dom/div {:style {:flex "1" :overflow "hidden" :display "flex"}}
+                   (h/$ viz-plan/PlanGraphView
+                     {:run-stats    stats
+                      :display-type @ds})))
+
+                (trace/d3-trace {::trace/trace-data      log-val
+                                 ::trace/on-show-details (fn [d e]
+                                                           (js/console.log "!! D" d e))})))
+
+            (pr-str log-val)))))))
 
 (def logs-view (fc/factory LogsView))
 
@@ -187,8 +216,7 @@
   [this {:ui/keys [multi-parser logs-view-data current-tab]}]
   {:pre-merge  (fn [{:keys [current-normalized data-tree]}]
                  (merge {:ui/multi-parser   {}
-                         :ui/logs-view-data {}
-                         :ui/current-tab    ::tab-connections} current-normalized data-tree))
+                         :ui/logs-view-data {}} current-normalized data-tree))
    :ident      (fn [_] [:comp/ident :comp/connections-and-logs])
    :query      [{:ui/multi-parser (fc/get-query assistant/MultiParserManager)}
                 {:ui/logs-view-data (fc/get-query LogsView)}
@@ -196,18 +224,19 @@
    :use-hooks? true}
   (use-electron-ipc #(electron-message-handler this %2))
   (pvh/use-effect #(sync-background-parsers this) [])
-  (ui/tab-container {}
-    (ui/tab-nav {::ui/active-tab-id current-tab}
-      [[{::ui/tab-id ::tab-connections
-         :onClick    #(fm/set-value! this :ui/current-tab ::tab-connections)}
-        "Connections"]
-       [{::ui/tab-id ::tab-logs
-         :onClick    #(fm/set-value! this :ui/current-tab ::tab-logs)}
-        "Logs"]])
-    (case current-tab
-      ::tab-logs
-      (logs-view logs-view-data)
-      (assistant/multi-parser-manager multi-parser))))
+  (let [current-tab (or current-tab ::tab-connections)]
+    (ui/tab-container {}
+      (ui/tab-nav {::ui/active-tab-id current-tab}
+        [[{::ui/tab-id ::tab-connections
+           :onClick    #(fm/set-value! this :ui/current-tab ::tab-connections)}
+          "Connections"]
+         [{::ui/tab-id ::tab-logs
+           :onClick    #(fm/set-value! this :ui/current-tab ::tab-logs)}
+          "Logs"]])
+      (case current-tab
+        ::tab-logs
+        (logs-view logs-view-data)
+        (assistant/multi-parser-manager multi-parser)))))
 
 (def connections-and-logs (fc/factory ConnectionsAndLogs))
 

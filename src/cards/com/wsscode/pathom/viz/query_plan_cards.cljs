@@ -210,7 +210,7 @@
         (dom/div :.trace
           (trace/d3-trace {::trace/trace-data      trace-tree
                            ::trace/on-show-details (fn [events]
-                                                     (let [events' (mapv (comp safe-read #(gobj/get % "edn-original")) events)]
+                                                     (let [events' (mapv #(some-> % (gobj/get "edn-original") deref) events)]
                                                        (if-let [plan (->> (filter (comp #{"reader3-execute"} :event) events')
                                                                           first :plan)]
                                                          (fm/set-value! this :ui/plan (update plan ::pcp/nodes
