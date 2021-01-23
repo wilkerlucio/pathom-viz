@@ -256,9 +256,19 @@ function renderTrace(selection, settings) {
     .attr('class', 'pathom-label-text')
     .attr('dx', 2)
     .attr('dy', 13)
-    .text(function (d) {
-      if (d.data.name) return d.data.name;
+    .html(function (d) {
+      if (d.data.name) return createNameHtml(d.data.name);
     })
+}
+
+function createNameHtml (name) {
+  const matches = name.match(/^[^:]([^/]+\/)(.+)/)
+
+  if (matches) {
+    return "<tspan class='pathom-label-text-fade'>" + matches[1] + "</tspan>" + matches[2];
+  } else {
+    return name;
+  }
 }
 
 const traceDefaults = {

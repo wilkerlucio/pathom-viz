@@ -112,6 +112,9 @@
       :left           "-1000px"
       :z-index        "10"}]
 
+    [:$pathom-label-text-fade
+     {:opacity "0.5"}]
+
     [:$pathom-details-count
      {:background    "#8bdc47"
       :border-radius "7px"
