@@ -336,8 +336,20 @@
 
 (defn use-persistent-state [store-key initial-value]
   (let [[value set-value!] (use-state (ls/get store-key initial-value))
-        set-persistent! (fn [x] (ls/set! store-key x) (doto x set-value!))]
+        set-persistent! (fn [x]
+                          (ls/set! store-key x)
+                          (doto x set-value!))]
     (->FulcroReactAtomState value set-persistent!)))
+
+(defn use-application-state [store-key initial-value]
+  (assert fc/*app*
+    "Application state hooked used outside of a Fulcro app context")
+  (let [app-state* (-> fc/*app* :com.fulcrologic.fulcro.application/state-atom)
+        [value set-value!] (use-state (get-in @app-state* [::hook-state store-key] initial-value))
+        set-state! (fn [x]
+                     (swap! app-state* assoc-in [::hook-state store-key] x)
+                     (doto x set-value!))]
+    (->FulcroReactAtomState value set-state!)))
 
 (deftype FulcroComponentProp [comp prop]
   IDeref
