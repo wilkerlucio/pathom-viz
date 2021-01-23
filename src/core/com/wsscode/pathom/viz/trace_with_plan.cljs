@@ -4,13 +4,16 @@
             [com.fulcrologic.fulcro.mutations :as fm]
             [com.wsscode.pathom.viz.trace :as pvt]
             [com.wsscode.pathom.viz.helpers :as pvh]
-            [com.wsscode.pathom.connect.planner :as pcp]
+            [com.wsscode.pathom3.connect.planner :as pcp]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.wsscode.pathom.viz.timeline :as timeline]
             [com.wsscode.pathom3.viz.plan :as viz-plan]
             [goog.object :as gobj]
-            [helix.core :as h]))
+            [helix.core :as h]
+            [clojure.core.protocols :as d]
+            [com.wsscode.pathom3.interface.smart-map :as psm]
+            [com.wsscode.pathom3.entity-tree :as p.ent]))
 
 (fc/defsc TraceWithPlan
   [this {:com.wsscode.pathom/keys [trace]}]
@@ -36,10 +39,14 @@
         plan-size      (pvh/use-persistent-state ::plan-size 200)
         display-type   (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)
         details-handle (pvh/use-callback
-                         (fn [events node]
-                           (when-let [s (gobj/get node "run-stats")]
-                             (set-show-stats! @s))
-                           (js/console.log "Attribute trace:" events node))
+                         (fn [events el]
+                           (when-let [s (gobj/get el "run-stats")]
+                             (let [node (some-> (gobj/get el "node") deref)]
+                               (set-show-stats! (cond-> @s
+                                                  node
+                                                  (assoc ::viz-plan/node-in-focus
+                                                         (::pcp/node-id node))))))
+                           (js/console.log "Attribute trace:" events el))
                          [])]
     (dom/div :.container
       (if trace

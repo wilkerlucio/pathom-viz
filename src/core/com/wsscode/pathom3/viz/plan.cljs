@@ -15,7 +15,8 @@
     [helix.core :as h]
     [helix.dom :as dom]
     [helix.hooks :as hooks]
-    [com.wsscode.misc.coll :as coll]))
+    [com.wsscode.misc.coll :as coll]
+    [clojure.string :as str]))
 
 (.use cytoscape cytoscape-dagre)
 
@@ -62,7 +63,8 @@
                        (conj (smart-plan (assoc graph ::pcp/snapshot-message "Completed graph."))))]
     frames))
 
-(defn ^:export compute-plan-elements [{::pcp/keys [nodes root highlight-nodes highlight-styles]}]
+(defn ^:export compute-plan-elements [{::pcp/keys [nodes root highlight-nodes highlight-styles]
+                                       ::keys     [node-in-focus] :as data}]
   (let [nodes'  (vals nodes)
         c-nodes (mapv
                   (fn [{::pcp/keys [node-id]
@@ -93,6 +95,7 @@
                                   node-color (conj node-color)
                                   (contains? highlight-nodes node-id) (conj (cond-> "node-highlight"
                                                                               hl-style (str "-" hl-style)))
+                                  (= node-in-focus node-id) (conj "focus")
                                   (= root node-id) (conj "root"))}))
                   nodes')
         all     (into c-nodes
@@ -156,8 +159,28 @@
             (.style "label" label-style)
             (.update))))
 
-(defn cytoscape-plan-view-effect [cy-ref container-ref elements]
-  (hooks/use-effect [elements]
+(defn fit-node-and-neighbors [^js cy nodes node-id]
+  (if node-id
+    (when-let [{:keys [data]} (->> nodes
+                                   (filter #(= (-> % :data :source-node deref ::pcp/node-id)
+                                               node-id))
+                                   first)]
+      (let [node      (-> data :source-node deref)
+            neighbors (into #{(::pcp/node-id node)}
+                            (filter some?)
+                            (concat
+                              [(::pcp/run-next node)]
+                              (::pcp/node-parents node)
+                              (pcp/node-branches node)))
+            query     (str/join ", "
+                        (mapv #(str "[id=\"" % "\"]")
+                          neighbors))]
+        (-> cy
+            (.animation #js {:fit #js {:eles (.nodes cy query)}} 50)
+            (.play))))))
+
+(defn cytoscape-plan-view-effect [cy-ref container-ref elements {::keys [node-in-focus]}]
+  (hooks/use-effect [elements node-in-focus]
     (if @cy-ref
       (let [cy         ^js @cy-ref
             {:strs [nodes edges]} (group-by :group elements)
@@ -165,23 +188,30 @@
             [add-edges remove-edges] (node-diff cy edges (.edges cy))
             remove-all (.add remove-nodes remove-edges)]
         (.batch cy
-                (fn []
-                  (remove-fade-out cy remove-all)
-                  (doseq [{:keys [data classes]} nodes]
-                    (when-let [node ^js (first (.nodes cy (str "[id=\"" (:id data) "\"]")))]
-                      (.classes node (into-array classes))
-                      (vreset! (gobj/get (.data node) "source-node")
-                        @(:source-node data))))
-                  (add-fade-in cy (clj->js add-nodes))
-                  (add-fade-in cy (clj->js add-edges))))
-        (-> cy
-            (.elements)
-            (.difference remove-all)
-            (.layout #js {:name "dagre" :rankDir "LR" :animate true :animationDuration anim-duration})
-            (.run)))
+          (fn []
+            (remove-fade-out cy remove-all)
+            (doseq [{:keys [data classes]} nodes]
+              (let [node-search (.nodes cy (str "[id=\"" (:id data) "\"]"))]
+                (when-let [node ^js (first node-search)]
+                  (.classes node (into-array classes))
+                  (vreset! (gobj/get (.data node) "source-node")
+                    @(:source-node data)))))
+            (add-fade-in cy (clj->js add-nodes))
+            (add-fade-in cy (clj->js add-edges))))
+        (if (zero? (+ (count remove-all) (count add-nodes) (count add-edges)))
+          (fit-node-and-neighbors cy nodes node-in-focus)
+          (-> cy
+              (.elements)
+              (.difference remove-all)
+              (.layout #js {:name              "dagre"
+                            :rankDir           "LR"
+                            :animate           true
+                            :animationDuration anim-duration
+                            :fit               false
+                            :ready             #(fit-node-and-neighbors cy nodes node-in-focus)})
+              (.run))))
       (let [cy (cytoscape
                  #js {:container @container-ref
-                      ;:autoungrabify true
                       :layout    #js {:name    "dagre"
                                       :rankDir "LR"}
                       :style     #js [#js {:selector "node"
@@ -197,6 +227,9 @@
                                       #js {:selector "node.root"
                                            :style    #js {:border-width 3
                                                           :border-color "#000"}}
+                                      #js {:selector "node.focus"
+                                           :style    #js {:border-width 3
+                                                          :border-color "#e00"}}
                                       #js {:selector "node.node-success"
                                            :style    #js {:background-color "#00cc00"}}
                                       #js {:selector "node.node-empty-output"
@@ -236,7 +269,7 @@
                         (or elements (some-> run-stats smart-plan compute-plan-elements)))
         container-ref (hooks/use-ref nil)
         cy-ref        (hooks/use-ref nil)]
-    (cytoscape-plan-view-effect cy-ref container-ref elements')
+    (cytoscape-plan-view-effect cy-ref container-ref elements' run-stats)
     (cytoscape-node-label-effect cy-ref (display-type->label display-type))
     (dom/div {:style {:flex     "1"
                       :overflow "hidden"}
