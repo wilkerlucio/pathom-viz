@@ -3,12 +3,14 @@
             [com.wsscode.pathom3.connect.built-in.resolvers :as pbir]
             [com.wsscode.pathom3.connect.indexes :as pci]
             [com.wsscode.pathom3.viz.plan :as viz-plan]
-            [helix.core :as h]
-            [helix.dom :as dom]
             [com.wsscode.pathom3.connect.runner :as pcr]
             [com.wsscode.pathom3.connect.planner :as pcp]
+            [com.wsscode.pathom3.connect.built-in.plugins :as pbip]
             [com.wsscode.pathom3.connect.operation :as pco]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [com.wsscode.pathom3.connect.runner.stats :as pcrs]
+            [com.wsscode.pathom3.interface.eql :as p.eql]
+            [com.wsscode.pathom3.plugin :as p.plugin]))
 
 (def timeline-env
   (pci/register
@@ -43,41 +45,73 @@
                       []))))
         nested-process))
 
+(def plan-cache* (atom {}))
+
+(def stats-env-base
+  (-> (p.plugin/register pbip/remove-stats-plugin)
+      (pcp/with-plan-cache plan-cache*)
+      (pci/register
+        [pcrs/stats-registry
+         viz-plan/node-extensions-registry
+         timeline-env])))
+
+(defn stats-env [stats]
+  (pci/register stats stats-env-base))
+
 (defn compute-timeline-tree
+  ([data] (compute-timeline-tree data []))
   ([data path] (compute-timeline-tree data path nil))
   ([data path start]
    (let [run-stats-plain (some-> data meta ::pcr/run-stats)
-         run-stats       (some-> run-stats-plain
-                                 (psm/smart-run-stats)
-                                 (psm/sm-update-env pci/register
-                                   [viz-plan/node-extensions-registry
-                                    timeline-env]))
+         {:keys [nodes]
+          :as   run-stats} (p.eql/process (stats-env run-stats-plain)
+                             (assoc run-stats-plain
+                               :nodes (vals (::pcp/nodes run-stats-plain)))
+                             [{:nodes
+                               [::pco/op-name
+                                ::pcp/nested-process
+                                ::pcp/node-id
+                                ::pcr/batch-run-duration-ms
+                                ::pcr/batch-run-start-ms
+                                ::pcr/node-run-duration-ms
+                                ::pcr/node-run-start-ms
+                                ::pcr/resolver-run-duration-ms
+                                ::pcr/resolver-run-start-ms
+                                ::span-label
+                                ::viz-plan/node-output-state]}
+                              ::pcrs/process-run-start-ms
+                              ::pcrs/process-run-duration-ms
+                              ::pcr/compute-plan-run-start-ms
+                              ::pcr/compute-plan-run-duration-ms
+                              ::pcp/nested-process])
          start           (or start
-                             (-> run-stats :com.wsscode.pathom3.connect.runner.stats/process-run-start-ms))]
-     (if run-stats
+                             (::pcrs/process-run-start-ms run-stats))]
+     (if run-stats-plain
        {:start     (if start
-                     (- (:com.wsscode.pathom3.connect.runner.stats/process-run-start-ms run-stats) start)
+                     (- (::pcrs/process-run-start-ms run-stats) start)
                      0)
-        :name      (str (or (peek path) "Process"))
+        :hint      (str (or (peek path) "Process"))
+        :name      (str (peek path))
         :run-stats (volatile! run-stats-plain)
         :path      path
         :details   [{:event    "Make plan"
                      :start    (- (::pcr/compute-plan-run-start-ms run-stats) start)
                      :duration (::pcr/compute-plan-run-duration-ms run-stats)}]
-        :duration  (:com.wsscode.pathom3.connect.runner.stats/process-run-duration-ms run-stats)
+        :duration  (::pcrs/process-run-duration-ms run-stats)
         :children  (->> (into (compute-nested-children data path start
-                                (::pcp/nested-process run-stats))
+                                (::pcp/nested-process run-stats-plain))
                               (keep
-                                (fn [{::pcp/keys      [nested-process node-id]
-                                      ::pcr/keys      [node-run-start-ms
-                                                       node-run-duration-ms
-                                                       resolver-run-start-ms
-                                                       resolver-run-duration-ms
+                                (fn [{::pco/keys      [op-name]
+                                      ::pcp/keys      [nested-process
+                                                       node-id]
+                                      ::pcr/keys      [batch-run-duration-ms
                                                        batch-run-start-ms
-                                                       batch-run-duration-ms]
+                                                       node-run-duration-ms
+                                                       node-run-start-ms
+                                                       resolver-run-duration-ms
+                                                       resolver-run-start-ms]
                                       ::keys          [span-label]
                                       ::viz-plan/keys [node-output-state]
-                                      ::pco/keys      [op-name]
                                       :as             node}]
                                   (if node-run-duration-ms
                                     (let [path'          (conj path node-id)
@@ -111,6 +145,6 @@
                                         (seq nested-process)
                                         (assoc :children
                                                (compute-nested-children data path' start nested-process)))))))
-                              (->> run-stats ::pcp/nodes vals))
+                              nodes)
                         (sort-by :start)
                         vec)}))))
