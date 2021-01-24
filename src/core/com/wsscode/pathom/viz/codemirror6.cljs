@@ -90,5 +90,7 @@
               :ref   mount!})))
 
 (defn clojure-read [source]
-  (h/$ Editor {:source   source
+  (h/$ Editor {:source   (if (string? source)
+                           source
+                           (pvh/pprint-str source))
                :readonly true}))
