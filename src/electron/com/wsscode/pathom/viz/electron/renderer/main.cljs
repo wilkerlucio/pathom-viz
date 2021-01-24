@@ -246,20 +246,18 @@
                  ui/text-sans-13
                  [:a {:text-decoration "none"}]]]
    :use-hooks? true}
-  (let [worker (pvw/use-worker {})]
-    (h/$ (.-Provider pvw/WorkerContext) {:value worker}
-      (h/$ (.-Provider com.wsscode.pathom.viz.fulcro/FulcroAppContext) {:value fc/*app*}
-        (ui/column (ui/gc :.flex)
-          (connections-and-logs stuff)
-          (dom/div :.footer
-            (dom/a {:href    "#"
-                    :onClick (ui/prevent-default #(.openExternal shell "https://github.com/wilkerlucio/pathom-viz"))}
-              "Pathom Viz")
-            (dom/div (ui/gc :.flex))
-            (dom/div "Freely distributed by "
-              (dom/a {:href    "#"
-                      :onClick (ui/prevent-default #(.openExternal shell "https://github.com/wilkerlucio"))}
-                "Wilker Lucio"))))))))
+  (h/$ (.-Provider com.wsscode.pathom.viz.fulcro/FulcroAppContext) {:value fc/*app*}
+    (ui/column (ui/gc :.flex)
+      (connections-and-logs stuff)
+      (dom/div :.footer
+        (dom/a {:href    "#"
+                :onClick (ui/prevent-default #(.openExternal shell "https://github.com/wilkerlucio/pathom-viz"))}
+          "Pathom Viz")
+        (dom/div (ui/gc :.flex))
+        (dom/div "Freely distributed by "
+          (dom/a {:href    "#"
+                  :onClick (ui/prevent-default #(.openExternal shell "https://github.com/wilkerlucio"))}
+            "Wilker Lucio"))))))
 
 (def root (fc/factory Root {:keyfn ::id}))
 
