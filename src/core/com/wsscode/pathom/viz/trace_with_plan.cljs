@@ -30,31 +30,35 @@
                  [:.plan {:display "flex"}]]
    :css-include [pvt/D3Trace]
    :use-hooks?  true}
-  (let [stats          (some-> trace meta :com.wsscode.pathom3.connect.runner/run-stats)
-        trace'         (pvh/use-memo #(if stats
-                                        (timeline/compute-timeline-tree trace [])
-                                        trace)
-                         [trace])
-        [show-stats set-show-stats!] (pvh/use-state nil)
-        plan-size      (pvh/use-persistent-state ::plan-size 200)
-        display-type   (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)
-        details-handle (pvh/use-callback
-                         (fn [events el]
-                           (when-let [s (gobj/get el "run-stats")]
-                             (let [node (some-> (gobj/get el "node") deref)]
-                               (set-show-stats! (cond-> @s
-                                                  node
-                                                  (assoc ::viz-plan/node-in-focus
-                                                         (::pcp/node-id node))))))
-                           (js/console.log "Attribute trace:" events el))
-                         [])]
+  (let [stats             (some-> trace meta :com.wsscode.pathom3.connect.runner/run-stats)
+        trace'            (pvh/use-memo #(if stats
+                                           (timeline/compute-timeline-tree trace [])
+                                           trace)
+                            [trace])
+        !run-stats        (pvh/use-fstate nil)
+        !selected-node-id (pvh/use-fstate nil)
+        plan-size         (pvh/use-persistent-state ::plan-size 200)
+        display-type      (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)
+        details-handle    (pvh/use-callback
+                            (fn [events el]
+                              (when-let [s (gobj/get el "run-stats")]
+                                (!run-stats @s)
+                                (!selected-node-id
+                                  (some-> (gobj/get el "node") deref
+                                          ::pcp/node-id)))
+                              (js/console.log "Attribute trace:" events el))
+                            [])
+        select-node       (pvh/use-callback
+                            (fn [node-id]
+                              (!selected-node-id node-id))
+                            [])]
     (dom/div :.container
       (if trace
         (dom/div :.trace
           (pvt/d3-trace {::pvt/trace-data      trace'
                          ::pvt/on-show-details details-handle})))
 
-      (if show-stats
+      (if @!run-stats
         (fc/fragment
           (ui/drag-resize
             {:state     plan-size
@@ -65,15 +69,13 @@
                               :onChange #(reset! display-type %2)}
                 (ui/dom-option {:value ::viz-plan/display-type-label} "Display: resolver name")
                 (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))
-              (ui/button {:onClick #(set-show-stats! nil)
+              (ui/button {:onClick #(!run-stats nil)
                           :style   {:marginLeft 6}} "Close")))
 
           (dom/div :.plan {:style {:height (str @plan-size "px")}}
             (h/$ viz-plan/PlanGraphWithNodeDetails
-              {:run-stats      show-stats
+              {:run-stats      (assoc @!run-stats ::viz-plan/node-in-focus @!selected-node-id)
                :display-type   @display-type
-               :on-select-node #(set-show-stats! (assoc show-stats
-                                                   ::viz-plan/node-in-focus
-                                                   %))})))))))
+               :on-select-node select-node})))))))
 
 (def trace-with-plan (fc/factory TraceWithPlan))
