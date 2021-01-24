@@ -207,8 +207,9 @@
             (.animation #js {:fit #js {:eles (.nodes cy query)}} 150)
             (.play))))))
 
-(defn cytoscape-plan-view-effect [cy-ref container-ref elements {::keys [node-in-focus]}]
-  (hooks/use-effect [elements node-in-focus]
+(defn cytoscape-plan-view-effect [cy-ref container-ref elements {::keys [node-in-focus]}
+                                  on-select-node]
+  (hooks/use-effect [elements node-in-focus on-select-node]
     (if @cy-ref
       (let [cy         ^js @cy-ref
             {:strs [nodes edges]} (group-by :group elements)
@@ -287,7 +288,8 @@
                       :elements  (clj->js elements)})]
         (.on cy "click" "node"
           (fn [e]
-            (if-let [node-data (some-> e .-target (aget 0) (.data) (gobj/get "source-node") deref)]
+            (when-let [node-data (some-> e .-target (aget 0) (.data) (gobj/get "source-node") deref)]
+              (if on-select-node (on-select-node (::pcp/node-id node-data)))
               (js/console.log (::pcp/node-id node-data)
                 (-> node-data
                     (psm/sm-touch! (vec (keys (d/datafy node-data))))
@@ -295,27 +297,31 @@
                     (->> (coll/remove-vals #{::pco/unknown-value})))))))
         (reset! cy-ref cy)))))
 
-(h/defnc PlanGraphView [{:keys [elements run-stats display-type]}]
+(h/defnc PlanGraphView [{:keys [elements run-stats display-type on-select-node]}]
   (let [elements'     (hooks/use-memo [run-stats elements]
                         (or elements (some-> run-stats smart-plan compute-plan-elements)))
         container-ref (hooks/use-ref nil)
         cy-ref        (hooks/use-ref nil)]
-    (cytoscape-plan-view-effect cy-ref container-ref elements' run-stats)
+    (cytoscape-plan-view-effect cy-ref container-ref elements' run-stats on-select-node)
     (cytoscape-node-label-effect cy-ref (display-type->label display-type))
     (dom/div {:style {:flex     "1"
                       :overflow "hidden"}
               :ref   container-ref})))
 
-(h/defnc PlanGraphWithNodeDetails [{:keys [run-stats display-type]}]
+(h/defnc PlanGraphWithNodeDetails [{:keys [run-stats display-type
+                                           on-select-node]}]
   (let [selected-node (get run-stats ::node-in-focus)
         details-size  (pvh/use-persistent-state ::node-details-size 200)]
     (fc/with-parent-context (hooks/use-context com.wsscode.pathom.viz.fulcro/FulcroAppContext)
       (uip/row {:style {:flex     "1"
                         :overflow "hidden"}}
-        (dom/div {:style {:width   (str @details-size "px")
-                          :display "flex"}}
-          (h/$ PlanGraphView {:run-stats    run-stats
-                              :display-type display-type}))
+        (dom/div {:style (cond-> {:width   (str @details-size "px")
+                                  :display "flex"}
+                           (not selected-node)
+                           (assoc :flex "1"))}
+          (h/$ PlanGraphView {:run-stats      run-stats
+                              :display-type   display-type
+                              :on-select-node on-select-node}))
 
         (if selected-node
           (let [run-stats (smart-plan run-stats)]
@@ -326,7 +332,7 @@
                   (uip/row {:classes [:.center]}
                     "Node Details"
                     (dom/div {:style {:flex "1"}})
-                    (uip/button {} "Unselect node")))
+                    (uip/button {:onClick #(on-select-node nil)} "Unselect node")))
                 (cm6/clojure-read (get-in run-stats [::pcp/nodes selected-node]))))))))))
 
 (h/defnc ^:export PlanSnapshots [{:keys [frames display]}]

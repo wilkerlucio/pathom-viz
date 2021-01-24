@@ -66,11 +66,14 @@
                 (ui/dom-option {:value ::viz-plan/display-type-label} "Display: resolver name")
                 (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))
               (ui/button {:onClick #(set-show-stats! nil)
-                          :style {:marginLeft 6}} "Close")))
+                          :style   {:marginLeft 6}} "Close")))
 
           (dom/div :.plan {:style {:height (str @plan-size "px")}}
             (h/$ viz-plan/PlanGraphWithNodeDetails
-              {:run-stats    show-stats
-               :display-type @display-type})))))))
+              {:run-stats      show-stats
+               :display-type   @display-type
+               :on-select-node #(set-show-stats! (assoc show-stats
+                                                   ::viz-plan/node-in-focus
+                                                   %))})))))))
 
 (def trace-with-plan (fc/factory TraceWithPlan))
