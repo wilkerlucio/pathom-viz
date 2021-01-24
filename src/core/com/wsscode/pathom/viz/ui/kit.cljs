@@ -119,7 +119,8 @@
 (fc/defsc Row
   [this props]
   {:css [[:.container {:display   "flex"
-                       :max-width "100%"}]
+                       :max-width "100%"
+                       :overflow  "hidden"}]
          [:.center {:align-items "center"}]
          [:.stretch {:align-items "stretch"}]]}
   (dom/div :.container props (fc/children this)))

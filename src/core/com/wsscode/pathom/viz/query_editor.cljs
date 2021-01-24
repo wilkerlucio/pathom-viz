@@ -341,8 +341,7 @@
           {:direction "left"
            :state     query-size})
 
-        (h/$ cm6/Editor {:source   result
-                         :readonly true}))
+        (cm6/clojure-read result))
 
       (let [ds (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)]
         (if graph-view

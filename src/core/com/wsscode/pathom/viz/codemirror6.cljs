@@ -88,3 +88,7 @@
                       :overflow   "auto"
                       :whiteSpace "nowrap"}
               :ref   mount!})))
+
+(defn clojure-read [source]
+  (h/$ Editor {:source   source
+               :readonly true}))
