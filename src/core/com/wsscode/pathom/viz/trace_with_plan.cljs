@@ -69,7 +69,7 @@
                           :style {:marginLeft 6}} "Close")))
 
           (dom/div :.plan {:style {:height (str @plan-size "px")}}
-            (h/$ viz-plan/PlanGraphView
+            (h/$ viz-plan/PlanGraphWithNodeDetails
               {:run-stats    show-stats
                :display-type @display-type})))))))
 

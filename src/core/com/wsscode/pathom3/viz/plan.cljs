@@ -16,7 +16,12 @@
     [helix.dom :as dom]
     [helix.hooks :as hooks]
     [com.wsscode.misc.coll :as coll]
-    [clojure.string :as str]))
+    [clojure.string :as str]
+    [com.wsscode.pathom.viz.fulcro]
+    [com.wsscode.pathom.viz.ui.kit :as uip]
+    [com.wsscode.pathom.viz.codemirror6 :as cm6]
+    [com.fulcrologic.fulcro.components :as fc]
+    [com.wsscode.pathom.viz.helpers :as pvh]))
 
 (.use cytoscape cytoscape-dagre)
 
@@ -301,7 +306,30 @@
                       :overflow "hidden"}
               :ref   container-ref})))
 
-(h/defnc ^:export PlanCytoscape [{:keys [frames display]}]
+(h/defnc PlanGraphWithNodeDetails [{:keys [run-stats display-type]}]
+  (let [selected-node (get run-stats ::node-in-focus)
+        details-size  (pvh/use-persistent-state ::node-details-size 200)]
+    (fc/with-parent-context (hooks/use-context com.wsscode.pathom.viz.fulcro/FulcroAppContext)
+      (uip/row {:style {:flex     "1"
+                        :overflow "hidden"}}
+        (dom/div {:style {:width   (str @details-size "px")
+                          :display "flex"}}
+          (h/$ PlanGraphView {:run-stats    run-stats
+                              :display-type display-type}))
+
+        (if selected-node
+          (let [run-stats (smart-plan run-stats)]
+            (h/<>
+              (uip/drag-resize {:state details-size :direction "left"})
+              (uip/column {:style {:flex "1"}}
+                (uip/section-header {}
+                  (uip/row {:classes [:.center]}
+                    "Node Details"
+                    (dom/div {:style {:flex "1"}})
+                    (uip/button {} "Unselect node")))
+                (cm6/clojure-read (get-in run-stats [::pcp/nodes selected-node]))))))))))
+
+(h/defnc ^:export PlanSnapshots [{:keys [frames display]}]
   (let [[current-frame :as frame-state] (hooks/use-state (dec (count frames)))
         [{::pcp/keys [snapshot-message] :as graph} elements] (get frames current-frame)
         [display-type :as display-type-state] (hooks/use-state (or display ::display-type-node-id))]
