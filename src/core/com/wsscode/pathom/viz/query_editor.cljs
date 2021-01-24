@@ -22,7 +22,8 @@
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [helix.core :as h]
             [com.wsscode.pathom3.viz.plan :as viz-plan]
-            [helix.hooks :as hooks]))
+            [helix.hooks :as hooks]
+            [clojure.string :as str]))
 
 (declare QueryEditor TransactionResponse)
 
@@ -162,7 +163,7 @@
                       ::cp/client-parser-request query'}]
           (fc/transact! this [(run-query props')
                               (add-query-to-history {::cp/parser-id parser-id
-                                                     ::query        query})]))))))
+                                                     ::query        (str/trim query)})]))))))
 
 (fc/defsc HistoryView
   [this {::keys [query-history
