@@ -9,6 +9,8 @@
   com.wsscode/async                {:mvn/version "1.0.13"}
   com.wsscode/fuzzy                {:mvn/version "1.0.0"}
   com.wsscode/pathom-viz-connector {:mvn/version "2021.01.22"}
+  nextjournal.clojure-mode         {:git/url "https://github.com/nextjournal/clojure-mode"
+                                    :sha     "f46688eba79953648e7a8920ca79e48fc1414867"}
   lilactown/helix                  {:git/url "https://github.com/lilactown/helix" :sha "5785e9332534cb16da749699634556d573e44bb2"}}
 
  :aliases
