@@ -112,5 +112,5 @@
                                         (assoc :children
                                                (compute-nested-children data path' start nested-process)))))))
                               (->> run-stats ::pcp/nodes vals))
-                        (sort-by ::pcr/node-run-start-ms)
+                        (sort-by :start)
                         vec)}))))
