@@ -61,7 +61,7 @@
                (random-uuid)
 
                ::wap/timeout
-               60000}))
+               180000}))
         (catch :default e
           (js/console.error "response failed" e))))))
 
