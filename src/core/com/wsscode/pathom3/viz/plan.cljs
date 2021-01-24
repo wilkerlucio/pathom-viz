@@ -199,7 +199,7 @@
                         (mapv #(str "[id=\"" % "\"]")
                           neighbors))]
         (-> cy
-            (.animation #js {:fit #js {:eles (.nodes cy query)}} 50)
+            (.animation #js {:fit #js {:eles (.nodes cy query)}} 150)
             (.play))))))
 
 (defn cytoscape-plan-view-effect [cy-ref container-ref elements {::keys [node-in-focus]}]
@@ -216,6 +216,7 @@
             (doseq [{:keys [data classes]} nodes]
               (let [node-search (.nodes cy (str "[id=\"" (:id data) "\"]"))]
                 (when-let [node ^js (first node-search)]
+                  (.data node "label" (:label data))
                   (.classes node (into-array classes))
                   (vreset! (gobj/get (.data node) "source-node")
                     @(:source-node data)))))
