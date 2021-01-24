@@ -343,29 +343,6 @@
 
         (cm6/clojure-read result))
 
-      (let [ds (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)]
-        (if graph-view
-          (fc/fragment
-            (ui/drag-resize
-              {:direction "down"
-               :state     trace-size})
-
-            (fc/fragment
-              (ui/section-header {}
-                (ui/row {}
-                  (dom/div (ui/gc :.flex) "Graph Viz")
-                  (ui/dom-select {:value    @ds
-                                  :onChange #(reset! ds %2)}
-                    (ui/dom-option {:value ::viz-plan/display-type-label} "Display: resolver name")
-                    (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))))
-              (dom/div {:style {:display    "flex"
-                                :paddingTop "18px"
-                                :overflow   "hidden"
-                                :height     (str @trace-size "px")}}
-                (h/$ viz-plan/PlanGraphView
-                  {:run-stats    graph-view
-                   :display-type @ds}))))))
-
       (if trace-viewer
         (fc/fragment
           (ui/drag-resize
