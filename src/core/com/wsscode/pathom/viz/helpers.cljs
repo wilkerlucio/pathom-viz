@@ -317,7 +317,18 @@
   ([value formatter]
    (react/useDebugValue value formatter)))
 
-(deftype FulcroReactAtomState [value set-value!]
+(deftype ReactFnState [value set-value!]
+  IDeref
+  (-deref [o] value)
+
+  IFn
+  (-invoke [o x] (set-value! x)))
+
+(defn use-fstate [initial-value]
+  (let [[value set-value!] (use-state initial-value)]
+    (->ReactFnState value set-value!)))
+
+(deftype ReactAtomState [value set-value!]
   IDeref
   (-deref [o] value)
 
@@ -332,14 +343,14 @@
 
 (defn use-atom-state [initial-value]
   (let [[value set-value!] (use-state initial-value)]
-    (->FulcroReactAtomState value set-value!)))
+    (->ReactAtomState value set-value!)))
 
 (defn use-persistent-state [store-key initial-value]
   (let [[value set-value!] (use-state (ls/get store-key initial-value))
         set-persistent! (fn [x]
                           (ls/set! store-key x)
                           (doto x set-value!))]
-    (->FulcroReactAtomState value set-persistent!)))
+    (->ReactAtomState value set-persistent!)))
 
 (defn use-application-state [store-key initial-value]
   (assert fc/*app*
@@ -349,7 +360,7 @@
         set-state! (fn [x]
                      (swap! app-state* assoc-in [::hook-state store-key] x)
                      (doto x set-value!))]
-    (->FulcroReactAtomState value set-state!)))
+    (->ReactAtomState value set-state!)))
 
 (deftype FulcroComponentProp [comp prop]
   IDeref
