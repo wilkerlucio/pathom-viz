@@ -32,6 +32,8 @@
     "dagre": "^0.8.5",
     "highlight.js": "^9.12.0",
     "lezer-clojure": "0.1.10",
+    "lezer-generator": "^0.13.0",
+    "lezer-tree": "^0.13.0",
     "parinfer": "^3.12.0",
     "parinfer-codemirror": "^1.4.2",
     "react": "^16.8.4",

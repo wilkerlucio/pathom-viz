@@ -1,20 +1,21 @@
 {:deps   {:aliases [:provided :dev :electron :embed]}
- :builds {:workspaces          {:target     nubank.workspaces.shadow-cljs.target
-                                :ns-regexp  "-(test|cards)$"
-                                :output-dir "workspaces/assets/js"
-                                :asset-path "/js"
-                                ;:dev        {:compiler-options {:external-config {:guardrails {:throw? false}}}}
-                                :devtools   {:preloads  [devtools.preload]
-                                             :http-root "workspaces/assets"
-                                             :http-port 8086}}
-
-          :embed               {:target           :browser
-                                :output-dir       "shells/embed/js"
+ :builds {:workspaces          {:target           nubank.workspaces.shadow-cljs.target
+                                :ns-regexp        "-(test|cards)$"
+                                :output-dir       "workspaces/assets/js"
                                 :asset-path       "/js"
-                                :modules          {:main {:entries [com.wsscode.pathom.viz.embed.main]}}
-                                :devtools         {:preloads  [devtools.preload fulcro.inspect.preload]
-                                                   :http-root "shells/embed"
-                                                   :http-port 8087}}
+                                :compiler-options {:output-feature-set :es8}
+                                ;:dev        {:compiler-options {:external-config {:guardrails {:throw? false}}}}
+                                :devtools         {:preloads  [devtools.preload]
+                                                   :http-root "workspaces/assets"
+                                                   :http-port 8086}}
+
+          :embed               {:target     :browser
+                                :output-dir "shells/embed/js"
+                                :asset-path "/js"
+                                :modules    {:main {:entries [com.wsscode.pathom.viz.embed.main]}}
+                                :devtools   {:preloads  [devtools.preload fulcro.inspect.preload]
+                                             :http-root "shells/embed"
+                                             :http-port 8087}}
 
           :electron-background {:target           :node-script
                                 :main             com.wsscode.pathom.viz.electron.background.main/init
@@ -24,10 +25,15 @@
                                 :output-to        "shells/electron/js/background/main.js"}
 
           :electron-renderer   {:target           :browser
-                                :modules          {:main {:entries [com.wsscode.pathom.viz.electron.renderer.main]}}
+                                :modules          {:shared {:entries []}
+                                                   :main   {:entries    [com.wsscode.pathom.viz.electron.renderer.main]
+                                                            :depends-on #{:shared}}
+                                                   :worker {:entries    [com.wsscode.pathom.viz.electron.renderer.worker]
+                                                            :web-worker true
+                                                            :depends-on #{:shared}}}
                                 ;:dev              {:compiler-options {:external-config {:guardrails {:throw? false}}}}
-                                :devtools         {:preloads     [devtools.preload com.fulcrologic.fulcro.inspect.websocket-preload
-                                                                  com.fulcrologic.fulcro.inspect.dom-picker-preload]}
+                                :devtools         {:preloads [devtools.preload com.fulcrologic.fulcro.inspect.websocket-preload
+                                                              com.fulcrologic.fulcro.inspect.dom-picker-preload]}
                                 :compiler-options {:optimizations :simple}
                                 :output-dir       "shells/electron/js/renderer"
                                 :asset-path       "js/renderer"}}}

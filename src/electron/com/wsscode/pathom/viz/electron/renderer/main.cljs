@@ -22,7 +22,9 @@
             [com.wsscode.pathom.viz.request-history :as request-history]
             [com.wsscode.pathom.viz.timeline :as timeline]
             [com.wsscode.pathom.viz.trace :as trace]
+            [com.wsscode.pathom.viz.worker :as pvw]
             [com.wsscode.pathom.viz.transit :as wsst]
+            [com.wsscode.pathom.viz.fulcro]
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.wsscode.pathom3.viz.plan :as viz-plan]
             [goog.object :as gobj]
@@ -46,16 +48,16 @@
     (go-promise
       (try
         (<? (message-background!
-                        {:com.wsscode.pathom.viz.electron.background.server/type
-                         :com.wsscode.pathom.viz.electron.background.server/request-parser
+              {:com.wsscode.pathom.viz.electron.background.server/type
+               :com.wsscode.pathom.viz.electron.background.server/request-parser
 
-                         :edn-query-language.core/query
-                         tx
+               :edn-query-language.core/query
+               tx
 
-                         :com.wsscode.node-ws-server/client-id
-                         client-id
+               :com.wsscode.node-ws-server/client-id
+               client-id
 
-                         ::wap/request-id
+               ::wap/request-id
                (random-uuid)}))
         (catch :default e
           (js/console.error "response failed" e))))))
@@ -130,13 +132,12 @@
         (doseq [client-id missing]
           (add-background-parser! this client-id))
 
-        #_
-        (fc/transact! this
-          (into []
-                (map (fn [cid]
-                       `(assistant/remove-parser {:com.wsscode.pathom.viz.client-parser/parser-id cid})))
-                remove)
-          {:ref (multi-parser-ref this)})
+        #_(fc/transact! this
+            (into []
+                  (map (fn [cid]
+                         `(assistant/remove-parser {:com.wsscode.pathom.viz.client-parser/parser-id cid})))
+                  remove)
+            {:ref (multi-parser-ref this)})
 
         (reload-parsers-ui! this))
       (catch :default e
@@ -242,17 +243,20 @@
                  ui/text-sans-13
                  [:a {:text-decoration "none"}]]]
    :use-hooks? true}
-  (ui/column (ui/gc :.flex)
-    (connections-and-logs stuff)
-    (dom/div :.footer
-      (dom/a {:href    "#"
-              :onClick (ui/prevent-default #(.openExternal shell "https://github.com/wilkerlucio/pathom-viz"))}
-        "Pathom Viz")
-      (dom/div (ui/gc :.flex))
-      (dom/div "Freely distributed by "
-        (dom/a {:href    "#"
-                :onClick (ui/prevent-default #(.openExternal shell "https://github.com/wilkerlucio"))}
-          "Wilker Lucio")))))
+  (let [worker (pvw/use-worker {})]
+    (h/$ (.-Provider pvw/WorkerContext) {:value worker}
+      (h/$ (.-Provider com.wsscode.pathom.viz.fulcro/FulcroAppContext) {:value fc/*app*}
+        (ui/column (ui/gc :.flex)
+          (connections-and-logs stuff)
+          (dom/div :.footer
+            (dom/a {:href    "#"
+                    :onClick (ui/prevent-default #(.openExternal shell "https://github.com/wilkerlucio/pathom-viz"))}
+              "Pathom Viz")
+            (dom/div (ui/gc :.flex))
+            (dom/div "Freely distributed by "
+              (dom/a {:href    "#"
+                      :onClick (ui/prevent-default #(.openExternal shell "https://github.com/wilkerlucio"))}
+                "Wilker Lucio"))))))))
 
 (def root (fc/factory Root {:keyfn ::id}))
 
