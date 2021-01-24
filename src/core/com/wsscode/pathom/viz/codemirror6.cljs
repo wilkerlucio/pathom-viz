@@ -90,7 +90,13 @@
               :ref   mount!})))
 
 (defn clojure-read [source]
-  (h/$ Editor {:source   (if (string? source)
+  (h/$ Editor {:source   (cond
+                           (string? source)
                            source
+
+                           (map? source)
+                           (pvh/pprint-str (into (sorted-map) source))
+
+                           :else
                            (pvh/pprint-str source))
                :readonly true}))
