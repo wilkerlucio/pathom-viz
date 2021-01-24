@@ -23,7 +23,8 @@
             [helix.core :as h]
             [com.wsscode.pathom3.viz.plan :as viz-plan]
             [helix.hooks :as hooks]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [com.wsscode.pathom.viz.codemirror6 :as cm6]))
 
 (declare QueryEditor TransactionResponse)
 
@@ -340,12 +341,8 @@
           {:direction "left"
            :state     query-size})
 
-        (cm/clojure
-          (merge {:className   (:result css)
-                  :value       result
-                  ::cm/options {::cm/readOnly    true
-                                ::cm/lineNumbers true}}
-            editor-props)))
+        (h/$ cm6/Editor {:source   result
+                         :readonly true}))
 
       (let [ds (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)]
         (if graph-view

@@ -53,22 +53,38 @@
                         cm-clj/default-extensions
                         (.of view/keymap cm-clj/complete-keymap)
                         (.of view/keymap historyKeymap)
-                        (.of (.-editable EditorView) "false")])
+                        #_(.of (.-lineWrapping EditorView) "false")])
 
-(h/defnc Editor [{:keys [source]}]
-  (let [view   (pvh/use-fstate nil)
+(h/defnc Editor [{:keys [source readonly]
+                  :or   {readonly false}}]
+  (let [!view  (pvh/use-fstate nil)
         mount! (hooks/use-callback []
                  (fn [el]
                    (let [state (.create EditorState #js {:doc        source
-                                                         :extensions extensions})
-                         v (new EditorView
+                                                         :extensions (if readonly
+                                                                       #js [extensions
+                                                                            (.of (.-editable EditorView) "false")]
+                                                                       extensions)})
+                         v     (new EditorView
                                  (j/obj :state
                                    state
                                    :parent el
+                                   :lineWrapping false
                                    :editable false))]
-                     (view v))))]
+                     (!view v))))]
 
-    (hooks/use-effect [@view] #(some-> @view (j/call :destroy)))
+    (hooks/use-effect [source]
+      (when @!view
+        (.setState @!view
+          (.create EditorState #js {:doc        source
+                                    :extensions (if readonly
+                                                  #js [extensions
+                                                       (.of (.-editable EditorView) "false")]
+                                                  extensions)}))))
+    (hooks/use-effect [@!view] #(some-> @!view (j/call :destroy)))
 
-    (dom/div
-      (dom/div {:ref mount!}))))
+    (dom/div {:style {:flex       "1"
+                      :display    "flex"
+                      :overflow   "auto"
+                      :whiteSpace "nowrap"}
+              :ref   mount!})))

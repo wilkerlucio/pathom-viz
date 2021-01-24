@@ -377,3 +377,20 @@ li.CodeMirror-hint-active {
     background: #08f;
     color: white;
 }
+
+/* CM6 */
+
+.ͼ1.ͼm .cm-line {
+    font-size: 13px;
+    white-space: pre;
+}
+
+.ͼ1.ͼm .cm-gutters {
+    border-right: 1px solid #ddd;
+    background-color: #f7f7f7;
+    padding-right: 4px;
+}
+
+.cm-wrap {
+    overflow: auto;
+}

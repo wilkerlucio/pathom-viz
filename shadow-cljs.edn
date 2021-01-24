@@ -34,6 +34,7 @@
                                 ;:dev              {:compiler-options {:external-config {:guardrails {:throw? false}}}}
                                 :devtools         {:preloads [devtools.preload com.fulcrologic.fulcro.inspect.websocket-preload
                                                               com.fulcrologic.fulcro.inspect.dom-picker-preload]}
-                                :compiler-options {:optimizations :simple}
+                                :compiler-options {:optimizations      :simple
+                                                   :output-feature-set :es8}
                                 :output-dir       "shells/electron/js/renderer"
                                 :asset-path       "js/renderer"}}}
