@@ -58,7 +58,10 @@
                client-id
 
                ::wap/request-id
-               (random-uuid)}))
+               (random-uuid)
+
+               ::wap/timeout
+               60000}))
         (catch :default e
           (js/console.error "response failed" e))))))
 
