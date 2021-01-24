@@ -107,6 +107,14 @@ function eventsOnMouse({xScale}, d, target) {
   })
 }
 
+function fixedNumber(n, x) {
+  if (typeof n === "number") {
+    return n.toFixed(x);
+  } else {
+    return n
+  }
+}
+
 function renderTrace(selection, settings) {
   const {data, transitionDuration, xScale, showDetails, svgHeight} = settings
 
@@ -165,13 +173,13 @@ function renderTrace(selection, settings) {
     const label = d.data.name || d.data.hint;
     const details = eventsOnMouse(settings, d, target)
     const detailsTimes = details.map(d => {
-      return (d.duration ? d.duration.toFixed(3) + ' ms ' : '') + '<strong>' + d.event + '</strong>' + (d.label ? ' ' + d.label : '')
+      return (d.duration ? fixedNumber(d.duration, 3) + ' ms ' : '') + '<strong>' + d.event + '</strong>' + (d.label ? ' ' + d.label : '')
     })
 
     const detailsCount = ' <span class="pathom-details-count">' + d.data.details.length + '</span>'
     const childCount = d.data.children ? ' <span class="pathom-children-count">' + d.data.children.length + '</span>' : '';
 
-    return [d.data.duration.toFixed(3) + ' ms <strong>' + label + '</strong>' + detailsCount + childCount].concat(detailsTimes).join("<br>");
+    return [fixedNumber(d.data.duration, 3) + ' ms <strong>' + label + '</strong>' + detailsCount + childCount].concat(detailsTimes).join("<br>");
   });
 
   const boundNodes = nodesEnter.append('rect')
