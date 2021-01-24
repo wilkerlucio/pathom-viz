@@ -333,7 +333,11 @@
                     "Node Details"
                     (dom/div {:style {:flex "1"}})
                     (uip/button {:onClick #(on-select-node nil)} "Unselect node")))
-                (cm6/clojure-read (get-in run-stats [::pcp/nodes selected-node]))))))))))
+                (cm6/clojure-read
+                  (-> (get-in run-stats [::pcp/nodes selected-node])
+                      (psm/sm-touch!
+                        [::pcr/node-run-duration-ms])
+                      (psm/sm-entity)))))))))))
 
 (h/defnc ^:export PlanSnapshots [{:keys [frames display]}]
   (let [[current-frame :as frame-state] (hooks/use-state (dec (count frames)))
