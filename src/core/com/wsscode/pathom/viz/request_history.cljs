@@ -7,7 +7,6 @@
             [com.wsscode.pathom.viz.codemirror :as cm]
             [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
             [com.wsscode.pathom3.viz.plan :as viz-plan]
-            [helix.core :as h]
             [com.wsscode.pathom.viz.codemirror6 :as cm6]))
 
 (defn pre-merge-request [{:keys [current-normalized data-tree]}]
@@ -53,7 +52,7 @@
         (ui/drag-resize {:state response-size :direction "right"})
         (ui/column {:style {:width (str @response-size "px")}}
           (dom/div :.header "Response")
-          (cm6/clojure-read (pvh/pprint (dissoc response :com.wsscode.pathom/trace)))))
+          (cm6/clojure-read (dissoc response :com.wsscode.pathom/trace))))
       (if trace-viewer
         (fc/fragment
           (ui/drag-resize {:state trace-size :direction "down"})
