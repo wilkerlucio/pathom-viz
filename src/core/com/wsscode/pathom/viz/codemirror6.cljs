@@ -89,14 +89,19 @@
                       :whiteSpace "nowrap"}
               :ref   mount!})))
 
+(h/defnc EditorReadWrap [{:keys [source]}]
+  (let [source' (hooks/use-memo [(hash source)]
+                  (cond
+                    (string? source)
+                    source
+
+                    (map? source)
+                    (pvh/pprint-str (into (sorted-map) source))
+
+                    :else
+                    (pvh/pprint-str source)))]
+    (h/$ Editor {:source   source'
+                 :readonly true})))
+
 (defn clojure-read [source]
-  (h/$ Editor {:source   (cond
-                           (string? source)
-                           source
-
-                           (map? source)
-                           (pvh/pprint-str (into (sorted-map) source))
-
-                           :else
-                           (pvh/pprint-str source))
-               :readonly true}))
+  (h/$ EditorReadWrap {:source source}))

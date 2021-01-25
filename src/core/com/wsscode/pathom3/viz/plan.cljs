@@ -302,7 +302,7 @@
         (fit-node-and-neighbors cy nodes node-in-focus)))))
 
 (h/defnc PlanGraphView [{:keys [elements run-stats display-type on-select-node]}]
-  (let [elements'     (hooks/use-memo [run-stats elements]
+  (let [elements'     (hooks/use-memo [(hash run-stats) (hash elements)]
                         (or elements (some-> run-stats smart-plan compute-plan-elements)))
         container-ref (hooks/use-ref nil)
         cy-ref        (hooks/use-ref nil)]
