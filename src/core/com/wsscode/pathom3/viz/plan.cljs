@@ -231,15 +231,16 @@
                       @(:source-node data)))))
               (add-fade-in cy (clj->js add-nodes))
               (add-fade-in cy (clj->js add-edges))))
-          (-> cy
-              (.elements)
-              (.difference remove-all)
-              (.layout #js {:name              "dagre"
-                            :rankDir           "LR"
-                            :animate           true
-                            :animationDuration anim-duration
-                            :fit               false})
-              (.run)))
+          (if (pos? (+ (count add-nodes) (count add-edges) (count remove-all)))
+            (-> cy
+                (.elements)
+                (.difference remove-all)
+                (.layout #js {:name              "dagre"
+                              :rankDir           "LR"
+                              :animate           true
+                              :animationDuration anim-duration
+                              :fit               false})
+                (.run))))
         (let [cy (cytoscape
                    #js {:container @container-ref
                         :layout    #js {:name    "dagre"
