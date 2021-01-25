@@ -23,7 +23,8 @@
             [helix.hooks :as hooks]
             [helix.core :as h]
             [helix.dom :as dom]
-            [com.wsscode.pathom.viz.helpers :as pvh]))
+            [com.wsscode.pathom.viz.helpers :as pvh]
+            [clojure.walk :as walk]))
 
 (def theme
   (.theme EditorView
@@ -89,17 +90,22 @@
                       :whiteSpace "nowrap"}
               :ref   mount!})))
 
+(defn sorted-maps [x]
+  (walk/postwalk
+    (fn [x]
+      (if (map? x)
+        (into (sorted-map) x)
+        x))
+    x))
+
 (h/defnc EditorReadWrap [{:keys [source]}]
   (let [source' (hooks/use-memo [(hash source)]
                   (cond
                     (string? source)
                     source
 
-                    (map? source)
-                    (pvh/pprint-str (into (sorted-map) source))
-
                     :else
-                    (pvh/pprint-str source)))]
+                    (pvh/pprint-str (sorted-maps source))))]
     (h/$ Editor {:source   source'
                  :readonly true})))
 
