@@ -10,7 +10,8 @@
             [com.wsscode.pathom.misc :as p.misc]
             [com.wsscode.pathom.viz.helpers :as h]
             [goog.object :as gobj]
-            [goog.string :as gstr]))
+            [goog.string :as gstr]
+            [garden.selectors :as gs]))
 
 (declare gc css ccss)
 
@@ -111,7 +112,8 @@
                        :flex-direction "column"
                        :max-width      "100%"
                        :height         "100%"
-                       :overflow       "hidden"}]]}
+                       :overflow       "hidden"}]
+         [(gs/> :.container "*") {:min-height "10px"}]]}
   (dom/div :.container props
     (fc/children this)))
 
@@ -122,6 +124,8 @@
   {:css [[:.container {:display   "flex"
                        :max-width "100%"
                        :overflow  "hidden"}]
+         [(gs/> :.container "*") {:min-width "10px"}]
+         #_[:* {:min-width "10px"}]
          [:.center {:align-items "center"}]
          [:.stretch {:align-items "stretch"}]]}
   (dom/div :.container props (fc/children this)))
