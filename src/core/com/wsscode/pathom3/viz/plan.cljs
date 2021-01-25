@@ -78,7 +78,6 @@
 
 (defn smart-plan [plan]
   (-> (psm/smart-run-stats plan)
-      (psm/sm-update-env assoc ::pcr/resolver-cache* nil)
       (psm/sm-update-env pci/register node-extensions-registry)))
 
 (defn ^:export compute-frames
@@ -189,47 +188,49 @@
 
 (defn fit-node-and-neighbors [^js cy nodes node-id]
   (if node-id
-    (when-let [{:keys [data]} (->> nodes
-                                   (filter #(= (-> % :data :source-node deref ::pcp/node-id)
-                                               node-id))
-                                   first)]
-      (let [node      (-> data :source-node deref)
-            neighbors (into #{(::pcp/node-id node)}
-                            (filter some?)
-                            (concat
-                              [(::pcp/run-next node)]
-                              (::pcp/node-parents node)
-                              (pcp/node-branches node)))
-            query     (str/join ", "
-                        (mapv #(str "[id=\"" % "\"]")
-                          neighbors))]
-        (-> cy
-            (.animation #js {:fit #js {:eles (.nodes cy query)}} 150)
-            (.play))))))
+    (js/setTimeout
+      (fn []
+        (when-let [{:keys [data]} (->> nodes
+                                       (filter #(= (-> % :data :source-node deref ::pcp/node-id)
+                                                   node-id))
+                                       first)]
+          (let [node      (-> data :source-node deref)
+                neighbors (into #{(::pcp/node-id node)}
+                                (filter some?)
+                                (concat
+                                  [(::pcp/run-next node)]
+                                  (::pcp/node-parents node)
+                                  (pcp/node-branches node)))
+                query     (str/join ", "
+                            (mapv #(str "[id=\"" % "\"]")
+                              neighbors))]
+            (-> cy
+                (.animation #js {:fit #js {:eles (.nodes cy query)}} 150)
+                (.play)))))
+      500)))
 
 (defn cytoscape-plan-view-effect [cy-ref container-ref elements {::keys [node-in-focus]}
                                   on-select-node]
-  (hooks/use-effect [elements node-in-focus on-select-node]
-    (if @cy-ref
-      (let [cy         ^js @cy-ref
-            {:strs [nodes edges]} (group-by :group elements)
-            [add-nodes remove-nodes] (node-diff cy nodes (.nodes cy))
-            [add-edges remove-edges] (node-diff cy edges (.edges cy))
-            remove-all (.add remove-nodes remove-edges)]
-        (.batch cy
-          (fn []
-            (remove-fade-out cy remove-all)
-            (doseq [{:keys [data classes]} nodes]
-              (let [node-search (.nodes cy (str "[id=\"" (:id data) "\"]"))]
-                (when-let [node ^js (first node-search)]
-                  (.data node "label" (:label data))
-                  (.classes node (into-array classes))
-                  (vreset! (gobj/get (.data node) "source-node")
-                    @(:source-node data)))))
-            (add-fade-in cy (clj->js add-nodes))
-            (add-fade-in cy (clj->js add-edges))))
-        (if (zero? (+ (count remove-all) (count add-nodes) (count add-edges)))
-          (fit-node-and-neighbors cy nodes node-in-focus)
+  (let [{:strs [nodes edges]} (group-by :group elements)
+        cy ^js @cy-ref]
+
+    (hooks/use-effect [elements on-select-node]
+      (if cy
+        (let [[add-nodes remove-nodes] (node-diff cy nodes (.nodes cy))
+              [add-edges remove-edges] (node-diff cy edges (.edges cy))
+              remove-all (.add remove-nodes remove-edges)]
+          (.batch cy
+            (fn []
+              (remove-fade-out cy remove-all)
+              (doseq [{:keys [data classes]} nodes]
+                (let [node-search (.nodes cy (str "[id=\"" (:id data) "\"]"))]
+                  (when-let [node ^js (first node-search)]
+                    (.data node "label" (:label data))
+                    (.classes node (into-array classes))
+                    (vreset! (gobj/get (.data node) "source-node")
+                      @(:source-node data)))))
+              (add-fade-in cy (clj->js add-nodes))
+              (add-fade-in cy (clj->js add-edges))))
           (-> cy
               (.elements)
               (.difference remove-all)
@@ -237,65 +238,68 @@
                             :rankDir           "LR"
                             :animate           true
                             :animationDuration anim-duration
-                            :fit               false
-                            :ready             #(fit-node-and-neighbors cy nodes node-in-focus)})
-              (.run))))
-      (let [{:strs [nodes]} (group-by :group elements)
-            cy (cytoscape
-                 #js {:container @container-ref
-                      :layout    #js {:name    "dagre"
-                                      :rankDir "LR"
-                                      :ready   #(fit-node-and-neighbors (gobj/get % "cy") nodes node-in-focus)}
-                      :style     #js [#js {:selector "node"
-                                           :style    #js {:text-valign         "center"
-                                                          :transition-property "border-color border-width"
-                                                          :transition-duration (str anim-duration "ms")}}
-                                      #js {:selector "node.node-and"
-                                           :style    #js {:background-color "#be8cd8"}}
-                                      #js {:selector "node.node-or"
-                                           :style    #js {:background-color "#17becf"}}
-                                      #js {:selector "node.node-resolver"
-                                           :style    #js {:background-color "#7f7f7f"}}
-                                      #js {:selector "node.root"
-                                           :style    #js {:border-width 3
-                                                          :border-color "#000"}}
-                                      #js {:selector "node.focus"
-                                           :style    #js {:border-width 3
-                                                          :border-color "#e00"}}
-                                      #js {:selector "node.node-success"
-                                           :style    #js {:background-color "#00cc00"}}
-                                      #js {:selector "node.node-empty-output"
-                                           :style    #js {:background-color "#cccc00"}}
-                                      #js {:selector "node.node-error"
-                                           :style    #js {:background-color "#ec6565"}}
-                                      #js {:selector "node.node-highlight"
-                                           :style    #js {:border-width 3
-                                                          :border-color "#00aa00"}}
-                                      #js {:selector "node.node-highlight-1"
-                                           :style    #js {:border-width 3
-                                                          :border-color "#0000aa"}}
-                                      #js {:selector "edge"
-                                           :style    #js {:curve-style        "bezier"
-                                                          :width              2
-                                                          :arrow-scale        0.8
-                                                          :target-arrow-shape "triangle"}}
-                                      #js {:selector "edge.branch"
-                                           :style    #js {:line-color         "#ff7f0e"
-                                                          :target-arrow-color "#ff7f0e"}}
-                                      #js {:selector "edge.next"
-                                           :style    #js {:line-color         "#000"
-                                                          :target-arrow-color "#000"}}]
-                      :elements  (clj->js elements)})]
-        (.on cy "click" "node"
-          (fn [e]
-            (when-let [node-data (some-> e .-target (aget 0) (.data) (gobj/get "source-node") deref)]
-              (if on-select-node (on-select-node (::pcp/node-id node-data)))
-              (js/console.log (::pcp/node-id node-data)
-                (-> node-data
-                    (psm/sm-touch! (vec (keys (d/datafy node-data))))
-                    d/datafy
-                    (->> (coll/remove-vals #{::pco/unknown-value})))))))
-        (reset! cy-ref cy)))))
+                            :fit               false})
+              (.run)))
+        (let [cy (cytoscape
+                   #js {:container @container-ref
+                        :layout    #js {:name    "dagre"
+                                        :rankDir "LR"
+                                        ;:ready   #(fit-node-and-neighbors (gobj/get % "cy") nodes node-in-focus)
+                                        }
+                        :style     #js [#js {:selector "node"
+                                             :style    #js {:text-valign         "center"
+                                                            :transition-property "border-color border-width"
+                                                            :transition-duration (str anim-duration "ms")}}
+                                        #js {:selector "node.node-and"
+                                             :style    #js {:background-color "#be8cd8"}}
+                                        #js {:selector "node.node-or"
+                                             :style    #js {:background-color "#17becf"}}
+                                        #js {:selector "node.node-resolver"
+                                             :style    #js {:background-color "#7f7f7f"}}
+                                        #js {:selector "node.root"
+                                             :style    #js {:border-width 3
+                                                            :border-color "#000"}}
+                                        #js {:selector "node.focus"
+                                             :style    #js {:border-width 3
+                                                            :border-color "#e00"}}
+                                        #js {:selector "node.node-success"
+                                             :style    #js {:background-color "#00cc00"}}
+                                        #js {:selector "node.node-empty-output"
+                                             :style    #js {:background-color "#cccc00"}}
+                                        #js {:selector "node.node-error"
+                                             :style    #js {:background-color "#ec6565"}}
+                                        #js {:selector "node.node-highlight"
+                                             :style    #js {:border-width 3
+                                                            :border-color "#00aa00"}}
+                                        #js {:selector "node.node-highlight-1"
+                                             :style    #js {:border-width 3
+                                                            :border-color "#0000aa"}}
+                                        #js {:selector "edge"
+                                             :style    #js {:curve-style        "bezier"
+                                                            :width              2
+                                                            :arrow-scale        0.8
+                                                            :target-arrow-shape "triangle"}}
+                                        #js {:selector "edge.branch"
+                                             :style    #js {:line-color         "#ff7f0e"
+                                                            :target-arrow-color "#ff7f0e"}}
+                                        #js {:selector "edge.next"
+                                             :style    #js {:line-color         "#000"
+                                                            :target-arrow-color "#000"}}]
+                        :elements  (clj->js elements)})]
+          (.on cy "click" "node"
+            (fn [e]
+              (when-let [node-data (some-> e .-target (aget 0) (.data) (gobj/get "source-node") deref)]
+                (if on-select-node (on-select-node (::pcp/node-id node-data)))
+                (js/console.log (::pcp/node-id node-data)
+                  (-> node-data
+                      (psm/sm-touch! (vec (keys (d/datafy node-data))))
+                      d/datafy
+                      (->> (coll/remove-vals #{::pco/unknown-value})))))))
+          (reset! cy-ref cy))))
+
+    (hooks/use-effect [node-in-focus]
+      (if cy
+        (fit-node-and-neighbors cy nodes node-in-focus)))))
 
 (h/defnc PlanGraphView [{:keys [elements run-stats display-type on-select-node]}]
   (let [elements'     (hooks/use-memo [run-stats elements]
@@ -334,10 +338,11 @@
                     (dom/div {:style {:flex "1"}})
                     (uip/button {:onClick #(on-select-node nil)} "Unselect node")))
                 (cm6/clojure-read
-                  (-> (get-in run-stats [::pcp/nodes selected-node])
-                      (psm/sm-touch!
-                        [::pcr/node-run-duration-ms])
-                      (psm/sm-entity)))))))))))
+                  (do
+                    (some-> (get-in run-stats [::pcp/nodes selected-node])
+                            (psm/sm-touch!
+                              [::pcr/node-run-duration-ms])
+                            (psm/sm-entity))))))))))))
 
 (h/defnc ^:export PlanSnapshots [{:keys [frames display]}]
   (let [[current-frame :as frame-state] (hooks/use-state (dec (count frames)))
