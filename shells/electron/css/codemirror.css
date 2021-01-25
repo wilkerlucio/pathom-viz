@@ -393,4 +393,5 @@ li.CodeMirror-hint-active {
 
 .cm-wrap {
     overflow: auto;
+    flex: 1;
 }
