@@ -26,7 +26,7 @@ If you want to develop the app:
 
 [source]
 ----
-./scripts/build-electron
+./scripts/dev-electron
 cd shells/electron
 npm install
 npx electron .
