@@ -21,9 +21,9 @@
      (pbir/alias-resolver ::pcr/compute-plan-run-finish-ms ::span-finish-ms)
      (pbir/alias-resolver ::pcr/compute-plan-run-duration-ms ::span-duration-ms)
      (pbir/alias-resolver ::viz-plan/node-label ::span-label)
-     (pbir/equivalence-resolver ::pcr/process-run-start-ms ::pcrs/process-run-start-ms)
-     (pbir/equivalence-resolver ::pcr/process-run-duration-ms ::pcrs/process-run-duration-ms)
-     (pbir/equivalence-resolver ::pcr/process-run-finish-ms ::pcrs/process-run-finish-ms)]))
+     (pbir/alias-resolver ::pcr/process-run-start-ms ::pcrs/process-run-start-ms)
+     (pbir/alias-resolver ::pcr/process-run-duration-ms ::pcrs/process-run-duration-ms)
+     (pbir/alias-resolver ::pcr/process-run-finish-ms ::pcrs/process-run-finish-ms)]))
 
 (declare compute-timeline-tree)
 
