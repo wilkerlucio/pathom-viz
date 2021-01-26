@@ -36,7 +36,7 @@ jobs:
         run: ./scripts/build-electron
 
       - name: Electron Builder Action
-        uses: samuelmeuli/action-electron-builder@v1.6.0
+        uses: samuelmeuli/action-electron-builder@v1.4.0
         with:
           # GitHub authentication token
           github_token: ${{ secrets.github_token }}
