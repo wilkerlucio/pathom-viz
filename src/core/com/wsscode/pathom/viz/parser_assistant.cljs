@@ -202,7 +202,13 @@
                           :onClick #(do
                                       (.preventDefault %)
                                       (fc/transact! this [(mf/open-external {:url "https://roamresearch.com/#/app/wsscode/page/RG9C93Sip"})]))}
-                    "Check the docs")
+                    "Docs for Pathom 2")
+                  " | "
+                  (dom/a {:href    "#"
+                          :onClick #(do
+                                      (.preventDefault %)
+                                      (fc/transact! this [(mf/open-external {:url "https://pathom3.wsscode.com/docs/debugging/#debug-with-pathom-viz"})]))}
+                    "Docs for Pathom 3")
                   ".")))))))))
 
 (def multi-parser-manager (fc/computed-factory MultiParserManager {:keyfn ::manager-id}))
