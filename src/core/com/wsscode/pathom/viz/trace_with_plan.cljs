@@ -34,7 +34,7 @@
         trace'            (pvh/use-memo #(if stats
                                            (timeline/compute-timeline-tree trace [])
                                            trace)
-                            [(hash trace)])
+                            [(hash trace) (hash stats)])
         !run-stats        (pvh/use-fstate nil)
         !selected-node-id (pvh/use-fstate nil)
         plan-size         (pvh/use-persistent-state ::plan-size 200)
