@@ -32,6 +32,9 @@ npm install
 npx electron .
 ----
 
+If you just want to run locally with prod performance, do the same replacing
+`./scripts/dev-electron` with `./scripts/build-electron`.
+
 === Creating Electron app
 
 To package the app do the following:
