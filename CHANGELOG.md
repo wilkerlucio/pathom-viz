@@ -5,6 +5,7 @@
 - Support ident in Pathom 3 trace
 - Render attributes for nested traces
 - Clear graph viz when trace updates
+- Ability to remove queries from query history
 
 ## [2021.01.26]
 - Fix trace not reloading on query editor

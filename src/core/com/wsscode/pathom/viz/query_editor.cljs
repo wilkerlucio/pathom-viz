@@ -35,6 +35,9 @@
 
 (def history-max-size 100)
 
+(defn history-remove [history query]
+  (into [] (remove #{query}) history))
+
 (defn history-append [history query]
   (-> (into [] (comp (remove #{query})
                      (take (dec history-max-size))) history)
@@ -49,12 +52,22 @@
         new-history     (history-append current-history query)]
     (ls/set! store-key new-history)))
 
+(pc/defmutation remove-query-from-history-remote [_ {::keys [query] ::cp/keys [parser-id]}]
+  {::pc/params [::query ::cp/parser-id]}
+  (let [store-key       [::query-history parser-id]
+        current-history (ls/get store-key [])
+        new-history     (history-remove current-history query)]
+    (ls/set! store-key new-history)))
+
 (pc/defresolver query-history-resolver [env {::cp/keys [parser-id]}]
   {::pc/input  #{::cp/parser-id}
    ::pc/output [::query-history]}
   {::query-history (ls/get [::query-history parser-id] [])})
 
-(def registry [add-query-to-history-remote query-history-resolver])
+(def registry
+  [add-query-to-history-remote
+   remove-query-from-history-remote
+   query-history-resolver])
 
 ;; Parser
 
@@ -102,6 +115,12 @@
     (swap! state update-in (conj ref ::query-history) history-append query))
   (remote [{:keys [ast]}]
     (assoc ast :key `add-query-to-history-remote)))
+
+(fm/defmutation remove-query-from-history [{::keys [query]}]
+  (action [{:keys [state ref]}]
+    (swap! state update-in (conj ref ::query-history) history-remove query))
+  (remote [{:keys [ast]}]
+    (assoc ast :key `remove-query-from-history-remote)))
 
 (defn load-indexes
   [app {::keys    [id]
@@ -168,27 +187,37 @@
 
 (fc/defsc HistoryView
   [this {::keys [query-history
-                 on-pick-query]
-         :or    {on-pick-query identity}}]
+                 on-pick-query
+                 on-delete-query]
+         :or    {on-pick-query   identity
+                 on-delete-query identity}}]
   {:css [[:.container {}]
-         [:.title {:background "#eee"
+         [:.title {:background    "#eee"
                    :border-bottom "1px solid #ccc"
-                   :padding "6px"}
+                   :padding       "6px"}
           ui/text-sans-13]
+         [:.actions {:display "none"}]
          [:.history-item {:border-bottom "1px solid #ccc"
                           :cursor        "pointer"
                           :font-family   ui/font-code
                           :max-height    "45px"
                           :overflow      "auto"
                           :padding       "5px"
-                          :white-space   "pre"}
-          [:&:hover {:background ui/color-highlight}]]]}
+                          :white-space   "pre"
+                          :display       "flex"}
+          [:&:hover {:background ui/color-highlight}
+           [:.actions {:display "flex"}]]]]}
   (dom/div :.container
     (dom/div :.title "History")
     (for [query (rseq query-history)]
       (dom/div :.history-item {:key     (hash query)
                                :onClick #(on-pick-query query %)}
-        (str query)))))
+        (dom/div {:style {:flex "1"}} (str query))
+        (dom/div :.actions
+          {:onClick (fn [e]
+                      (.stopPropagation e)
+                      (on-delete-query query e))}
+          (dom/i {:classes ["fa" "fa-trash"]}))))))
 
 (def history-view (fc/factory HistoryView))
 
@@ -220,6 +249,7 @@
   [this
    {::keys    [query result request-trace? query-history]
     ::pc/keys [indexes]
+    ::cp/keys [parser-id]
     :ui/keys  [query-running? trace-viewer graph-view]}
    {::keys [editor-props enable-trace?
             default-trace-size
@@ -316,8 +346,10 @@
         (if (and @show-history? (seq query-history))
           (fc/fragment
             (dom/div :.history-container {:style {:width (str @history-size "px")}}
-              (history-view {::query-history query-history
-                             ::on-pick-query #(fm/set-value! this ::query %)}))
+              (history-view {::query-history   query-history
+                             ::on-pick-query   #(fm/set-value! this ::query %)
+                             ::on-delete-query #(fc/transact! this [(remove-query-from-history {::query        %
+                                                                                                ::cp/parser-id parser-id})])}))
             (ui/drag-resize
               {:direction "left"
                :key       "dragHandlerHistory"
