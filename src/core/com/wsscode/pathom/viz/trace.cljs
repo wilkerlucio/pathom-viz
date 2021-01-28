@@ -20,7 +20,6 @@
   (let [{::keys [trace-data on-show-details]} (-> this fc/props)
         container (gobj/get this "svgContainer")
         svg       (gobj/get this "svg")]
-    (js/console.log "!! TRACE" trace-data)
     (gobj/set svg "innerHTML" "")
     (try
       (gobj/set this "renderedData"
