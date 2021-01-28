@@ -40,50 +40,68 @@
 
 (declare compute-timeline-tree)
 
+(defn compute-children-trace [data path start attr]
+  (let [val (get data attr)]
+    (cond
+      (map? val)
+      [(compute-timeline-tree (get data attr)
+         (conj path attr)
+         start)]
+
+      (sequential? val)
+      (into []
+            (map-indexed #(compute-timeline-tree %2
+                            (conj path %)
+                            start))
+            val)
+
+      :else
+      [])))
+
 (defn compute-nested-data-children
   [data path start {::pcp/keys [nested-process idents]}]
   (into []
-        (mapcat (fn [attr]
-                  (let [val (get data attr)]
-                    (cond
-                      (map? val)
-                      [(compute-timeline-tree (get data attr)
-                         (conj path attr)
-                         start)]
-
-                      (sequential? val)
-                      (into []
-                            (map-indexed #(compute-timeline-tree %2
-                                            (conj path %)
-                                            start))
-                            val)
-
-                      :else
-                      []))))
+        (mapcat #(compute-children-trace data path start %))
         (concat nested-process idents)))
 
 (defn compute-mutation-children
-  [data path start {::pcp/keys [mutations] :as run-stats-plain} run-stats]
+  [data path start {::pcp/keys [mutations]} run-stats]
   (into []
         (keep
           (fn [{:keys [key]}]
-            (let [path'  (conj path key)
-                  {::pcr/keys [mutation-run-start-ms
-                               mutation-run-duration-ms]} (get-in run-stats [::pcr/node-run-stats key])
+            (let [path'        (conj path key)
+                  {::pcr/keys [node-run-start-ms
+                               node-run-duration-ms
+                               mutation-run-start-ms
+                               mutation-run-duration-ms
+                               ]} (get-in run-stats [::pcr/node-run-stats key])
 
-                  error? (contains? (get data key) ::pcr/mutation-error)]
+                  response     (get data key)
+                  error?       (contains? response ::pcr/mutation-error)
+                  sub-timeline (cond
+                                 error?
+                                 nil
+
+                                 (map? response)
+                                 (compute-timeline-tree response path' start))]
               {:path      path'
-               :run-stats (volatile! run-stats-plain)
-               :start     (- mutation-run-start-ms start)
-               :duration  mutation-run-duration-ms
+               :run-stats (if sub-timeline
+                            (:run-stats sub-timeline))
+               :start     (- node-run-start-ms start)
+               :duration  node-run-duration-ms
                :name      (str key)
-               :details   [{:start    (- mutation-run-start-ms start)
-                            :duration mutation-run-duration-ms
-                            :event    "Call mutation"
-                            :style    {:fill
-                                       (if error?
-                                         "#ec6565"
-                                         "#f49def")}}]})))
+               :details   (cond-> [{:start    (- mutation-run-start-ms start)
+                                    :duration mutation-run-duration-ms
+                                    :event    "Call mutation"
+                                    :style    {:fill
+                                               (if error?
+                                                 "#ec6565"
+                                                 "#f49def")}}]
+                            sub-timeline
+                            (into (:details sub-timeline)))
+               :children  (if sub-timeline
+                            (:children sub-timeline)
+                            [])})))
         mutations))
 
 (defn compute-nodes-children

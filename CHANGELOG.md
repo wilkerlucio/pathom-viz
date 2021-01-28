@@ -1,5 +1,9 @@
 # Change Log
 
+## Next
+- Support mutations in Pathom 3 trace
+- Support ident in Pathom 3 trace
+
 ## [1.2.0]
 - Add Logs Tab
 - Support graph render for Pathom 3
