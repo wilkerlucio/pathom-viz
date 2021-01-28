@@ -3,7 +3,7 @@
 ## Next
 - Support mutations in Pathom 3 trace
 - Support ident in Pathom 3 trace
-  
+
 ## [2021.01.26]
 - Fix trace not reloading on query editor
 

@@ -52,6 +52,11 @@
                             (fn [node-id]
                               (!selected-node-id node-id))
                             [])]
+    (pvh/use-effect
+      (fn []
+        (!run-stats nil))
+      [(hash trace')])
+
     (dom/div :.container
       (if trace
         (dom/div :.trace

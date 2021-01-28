@@ -1,29 +1,30 @@
 (ns com.wsscode.pathom.viz.timeline
-  (:require [com.wsscode.pathom3.interface.smart-map :as psm]
+  (:require [clojure.set :as set]
+            [com.wsscode.pathom3.connect.built-in.plugins :as pbip]
             [com.wsscode.pathom3.connect.built-in.resolvers :as pbir]
             [com.wsscode.pathom3.connect.indexes :as pci]
-            [com.wsscode.pathom3.viz.plan :as viz-plan]
-            [com.wsscode.pathom3.connect.runner :as pcr]
-            [com.wsscode.pathom3.connect.planner :as pcp]
-            [com.wsscode.pathom3.connect.built-in.plugins :as pbip]
             [com.wsscode.pathom3.connect.operation :as pco]
-            [clojure.set :as set]
+            [com.wsscode.pathom3.connect.planner :as pcp]
+            [com.wsscode.pathom3.connect.runner :as pcr]
             [com.wsscode.pathom3.connect.runner.stats :as pcrs]
             [com.wsscode.pathom3.interface.eql :as p.eql]
-            [com.wsscode.pathom3.plugin :as p.plugin]))
+            [com.wsscode.pathom3.interface.smart-map :as psm]
+            [com.wsscode.pathom3.plugin :as p.plugin]
+            [com.wsscode.pathom3.viz.plan :as viz-plan]
+            [com.wsscode.misc.coll :as coll]))
 
 (def timeline-env
   (pci/register
-    [(pbir/alias-resolver ::pcr/node-run-start-ms ::span-start-ms)
-     (pbir/alias-resolver ::pcr/node-run-finish-ms ::span-finish-ms)
-     (pbir/alias-resolver ::pcr/node-run-duration-ms ::span-duration-ms)
-     (pbir/alias-resolver ::pcr/compute-plan-run-start-ms ::span-start-ms)
+    [(pbir/alias-resolver ::pcr/compute-plan-run-duration-ms ::span-duration-ms)
      (pbir/alias-resolver ::pcr/compute-plan-run-finish-ms ::span-finish-ms)
-     (pbir/alias-resolver ::pcr/compute-plan-run-duration-ms ::span-duration-ms)
-     (pbir/alias-resolver ::viz-plan/node-label ::span-label)
-     (pbir/alias-resolver ::pcr/process-run-start-ms ::pcrs/process-run-start-ms)
+     (pbir/alias-resolver ::pcr/compute-plan-run-start-ms ::span-start-ms)
+     (pbir/alias-resolver ::pcr/node-run-duration-ms ::span-duration-ms)
+     (pbir/alias-resolver ::pcr/node-run-finish-ms ::span-finish-ms)
+     (pbir/alias-resolver ::pcr/node-run-start-ms ::span-start-ms)
      (pbir/alias-resolver ::pcr/process-run-duration-ms ::pcrs/process-run-duration-ms)
-     (pbir/alias-resolver ::pcr/process-run-finish-ms ::pcrs/process-run-finish-ms)]))
+     (pbir/alias-resolver ::pcr/process-run-finish-ms ::pcrs/process-run-finish-ms)
+     (pbir/alias-resolver ::pcr/process-run-start-ms ::pcrs/process-run-start-ms)
+     (pbir/alias-resolver ::viz-plan/node-label ::span-label)]))
 
 (def plan-cache* (atom {}))
 
@@ -45,24 +46,57 @@
     (cond
       (map? val)
       [(compute-timeline-tree (get data attr)
-         (conj path attr)
+         path
          start)]
 
       (sequential? val)
-      (into []
-            (map-indexed #(compute-timeline-tree %2
-                            (conj path %)
-                            start))
-            val)
+      (let [children
+                  (into []
+                        (map-indexed #(compute-timeline-tree %2
+                                        (conj path %)
+                                        start))
+                        val)
+
+            start (:start (first (sort-by :start children)))
+            end   (->> children
+                       (mapv #(+ (:start %) (:duration %)))
+                       (sort #(compare %2 %))
+                       first)
+            duration (- end start)]
+        [{:start     start
+          :duration  duration
+          :name      (str (peek path))
+          :path      path
+          :details   []
+          :children  children}])
 
       :else
       [])))
 
+(defn merge-sub-timeline [entry sub-entry]
+  (if sub-entry
+    (-> entry
+        (assoc :run-stats (:run-stats sub-entry))
+        (update :details into (:details sub-entry))
+        (update :children into (:children sub-entry))
+        (update :children #(->> % (sort-by :start) vec)))
+    entry))
+
 (defn compute-nested-data-children
   [data path start {::pcp/keys [nested-process idents]}]
-  (into []
-        (mapcat #(compute-children-trace data path start %))
-        (concat nested-process idents)))
+  (let [nested-process (keys (coll/filter-vals
+                               (fn [x]
+                                 (cond
+                                   (map? x)
+                                   (-> x meta (contains? ::pcr/run-stats))
+
+                                   (coll? x)
+                                   (-> x first meta (contains? ::pcr/run-stats))))
+                               data))]
+    (into []
+          (mapcat (fn [attr]
+                    (compute-children-trace data (conj path attr) start attr)))
+          nested-process)))
 
 (defn compute-mutation-children
   [data path start {::pcp/keys [mutations]} run-stats]
@@ -84,24 +118,20 @@
 
                                  (map? response)
                                  (compute-timeline-tree response path' start))]
-              {:path      path'
-               :run-stats (if sub-timeline
-                            (:run-stats sub-timeline))
-               :start     (- node-run-start-ms start)
-               :duration  node-run-duration-ms
-               :name      (str key)
-               :details   (cond-> [{:start    (- mutation-run-start-ms start)
-                                    :duration mutation-run-duration-ms
-                                    :event    "Call mutation"
-                                    :style    {:fill
-                                               (if error?
-                                                 "#ec6565"
-                                                 "#f49def")}}]
-                            sub-timeline
-                            (into (:details sub-timeline)))
-               :children  (if sub-timeline
-                            (:children sub-timeline)
-                            [])})))
+              (-> {:path      path'
+                   :run-stats (volatile! nil)
+                   :start     (- node-run-start-ms start)
+                   :duration  node-run-duration-ms
+                   :name      (str key)
+                   :details   [{:start    (- mutation-run-start-ms start)
+                                :duration mutation-run-duration-ms
+                                :event    "Call mutation"
+                                :style    {:fill
+                                           (if error?
+                                             "#ec6565"
+                                             "#f49def")}}]
+                   :children  []}
+                  (merge-sub-timeline sub-timeline)))))
         mutations))
 
 (defn compute-nodes-children
@@ -113,8 +143,7 @@
   (into []
         (keep
           (fn [{::pco/keys      [op-name]
-                ::pcp/keys      [nested-process
-                                 node-id]
+                ::pcp/keys      [node-id]
                 ::pcr/keys      [batch-run-duration-ms
                                  batch-run-start-ms
                                  node-run-duration-ms
@@ -125,9 +154,7 @@
                 ::viz-plan/keys [node-output-state]
                 :as             node}]
             (if node-run-duration-ms
-              (let [path'          (conj path node-id)
-                    nested-process (set/difference nested-process
-                                     (::pcp/nested-process run-stats))]
+              (let [path' (conj path node-id)]
                 (cond-> {:path      path'
                          :node      (volatile! node)
                          :run-stats (volatile! run-stats-plain)
@@ -152,10 +179,7 @@
                                         {:event    "Batch run"
                                          :start    (- batch-run-start-ms start)
                                          :duration batch-run-duration-ms
-                                         :style    {:fill "#6ac5ec"}}))}
-                  (seq nested-process)
-                  (assoc :children
-                         (compute-nested-data-children data path' start nested-process)))))))
+                                         :style    {:fill "#6ac5ec"}}))})))))
         nodes))
 
 (defn compute-timeline-tree
