@@ -25,9 +25,22 @@
      (pbir/alias-resolver ::pcr/process-run-duration-ms ::pcrs/process-run-duration-ms)
      (pbir/alias-resolver ::pcr/process-run-finish-ms ::pcrs/process-run-finish-ms)]))
 
+(def plan-cache* (atom {}))
+
+(def stats-env-base
+  (-> (p.plugin/register pbip/remove-stats-plugin)
+      (pcp/with-plan-cache plan-cache*)
+      (pci/register
+        [pcrs/stats-registry
+         viz-plan/node-extensions-registry
+         timeline-env])))
+
+(defn stats-env [stats]
+  (pci/register stats stats-env-base))
+
 (declare compute-timeline-tree)
 
-(defn compute-nested-children [data path start nested-process]
+(defn compute-nested-data-children [data path start nested-process]
   (into []
         (mapcat (fn [attr]
                   (let [val (get data attr)]
@@ -48,48 +61,115 @@
                       []))))
         nested-process))
 
-(def plan-cache* (atom {}))
+(defn compute-mutation-children
+  [data path start {::pcp/keys [mutations] :as run-stats-plain} run-stats]
+  (into []
+        (keep
+          (fn [{:keys [key]}]
+            (let [path'  (conj path key)
+                  {::pcr/keys [mutation-run-start-ms
+                               mutation-run-duration-ms]} (get-in run-stats [::pcr/node-run-stats key])
 
-(def stats-env-base
-  (-> (p.plugin/register pbip/remove-stats-plugin)
-      (pcp/with-plan-cache plan-cache*)
-      (pci/register
-        [pcrs/stats-registry
-         viz-plan/node-extensions-registry
-         timeline-env])))
+                  error? (contains? (get data key) ::pcr/mutation-error)]
+              {:path      path'
+               :run-stats (volatile! run-stats-plain)
+               :start     (- mutation-run-start-ms start)
+               :duration  mutation-run-duration-ms
+               :name      (str key)
+               :details   [{:start    (- mutation-run-start-ms start)
+                            :duration mutation-run-duration-ms
+                            :event    "Call mutation"
+                            :style    {:fill
+                                       (if error?
+                                         "#ec6565"
+                                         "#f49def")}}]})))
+        mutations))
 
-(defn stats-env [stats]
-  (pci/register stats stats-env-base))
+(defn compute-nodes-children
+  [data
+   path
+   start
+   run-stats-plain
+   {:keys [nodes] :as run-stats}]
+  (into []
+        (keep
+          (fn [{::pco/keys      [op-name]
+                ::pcp/keys      [nested-process
+                                 node-id]
+                ::pcr/keys      [batch-run-duration-ms
+                                 batch-run-start-ms
+                                 node-run-duration-ms
+                                 node-run-start-ms
+                                 resolver-run-duration-ms
+                                 resolver-run-start-ms]
+                ::keys          [span-label]
+                ::viz-plan/keys [node-output-state]
+                :as             node}]
+            (if node-run-duration-ms
+              (let [path'          (conj path node-id)
+                    nested-process (set/difference nested-process
+                                     (::pcp/nested-process run-stats))]
+                (cond-> {:path      path'
+                         :node      (volatile! node)
+                         :run-stats (volatile! run-stats-plain)
+                         :start     (- node-run-start-ms start)
+                         :duration  node-run-duration-ms
+                         :name      (if op-name (str op-name) (str span-label))
+                         :details   (cond-> []
+                                      resolver-run-duration-ms
+                                      (conj
+                                        {:event    "Run resolver"
+                                         :start    (- resolver-run-start-ms start)
+                                         :duration resolver-run-duration-ms
+                                         :style    {:fill
+                                                    (case node-output-state
+                                                      ::viz-plan/node-state-error
+                                                      "#ec6565"
+
+                                                      "#af9df4")}})
+
+                                      batch-run-duration-ms
+                                      (conj
+                                        {:event    "Batch run"
+                                         :start    (- batch-run-start-ms start)
+                                         :duration batch-run-duration-ms
+                                         :style    {:fill "#6ac5ec"}}))}
+                  (seq nested-process)
+                  (assoc :children
+                         (compute-nested-data-children data path' start nested-process)))))))
+        nodes))
 
 (defn compute-timeline-tree
   ([data] (compute-timeline-tree data []))
   ([data path] (compute-timeline-tree data path nil))
   ([data path start]
-   (let [run-stats-plain (some-> data meta ::pcr/run-stats)
-         {:keys [nodes]
-          :as   run-stats} (p.eql/process (stats-env run-stats-plain)
-                             (assoc run-stats-plain
-                               :nodes (vals (::pcp/nodes run-stats-plain)))
-                             [{:nodes
-                               [::pco/op-name
-                                ::pcp/nested-process
-                                ::pcp/node-id
-                                ::pcr/batch-run-duration-ms
-                                ::pcr/batch-run-start-ms
-                                ::pcr/node-run-duration-ms
-                                ::pcr/node-run-start-ms
-                                ::pcr/resolver-run-duration-ms
-                                ::pcr/resolver-run-start-ms
-                                ::span-label
-                                ::viz-plan/node-output-state]}
-                              ::pcrs/process-run-start-ms
-                              ::pcrs/process-run-duration-ms
-                              ::pcr/compute-plan-run-start-ms
-                              ::pcr/compute-plan-run-duration-ms
-                              ::pcp/nested-process])
-         start           (or start
-                             (::pcrs/process-run-start-ms run-stats))]
-     (if run-stats-plain
+   (when-let [run-stats-plain (some-> data meta ::pcr/run-stats)]
+     (let [run-stats (p.eql/process (stats-env run-stats-plain)
+                       (assoc run-stats-plain
+                         :nodes (vals (::pcp/nodes run-stats-plain)))
+                       [{:nodes
+                         [::pco/op-name
+                          ::pcp/nested-process
+                          ::pcp/node-id
+                          ::pcr/batch-run-duration-ms
+                          ::pcr/batch-run-start-ms
+                          ::pcr/node-run-duration-ms
+                          ::pcr/node-run-start-ms
+                          ::pcr/resolver-run-duration-ms
+                          ::pcr/resolver-run-start-ms
+                          ::span-label
+                          ::viz-plan/node-output-state]}
+                        {::pcr/node-run-stats
+                         [::pcr/node-run-duration-ms
+                          ::pcr/mutation-run-duration-ms
+                          '*]}
+                        ::pcrs/process-run-start-ms
+                        ::pcrs/process-run-duration-ms
+                        ::pcr/compute-plan-run-start-ms
+                        ::pcr/compute-plan-run-duration-ms
+                        ::pcp/nested-process])
+           start     (or start
+                         (::pcrs/process-run-start-ms run-stats))]
        {:start     (if start
                      (- (::pcrs/process-run-start-ms run-stats) start)
                      0)
@@ -101,53 +181,10 @@
                      :start    (- (::pcr/compute-plan-run-start-ms run-stats) start)
                      :duration (::pcr/compute-plan-run-duration-ms run-stats)}]
         :duration  (::pcrs/process-run-duration-ms run-stats)
-        :children  (->> (into (compute-nested-children data path start
-                                (::pcp/nested-process run-stats-plain))
-                              (keep
-                                (fn [{::pco/keys      [op-name]
-                                      ::pcp/keys      [nested-process
-                                                       node-id]
-                                      ::pcr/keys      [batch-run-duration-ms
-                                                       batch-run-start-ms
-                                                       node-run-duration-ms
-                                                       node-run-start-ms
-                                                       resolver-run-duration-ms
-                                                       resolver-run-start-ms]
-                                      ::keys          [span-label]
-                                      ::viz-plan/keys [node-output-state]
-                                      :as             node}]
-                                  (if node-run-duration-ms
-                                    (let [path'          (conj path node-id)
-                                          nested-process (set/difference nested-process
-                                                           (::pcp/nested-process run-stats))]
-                                      (cond-> {:path      path'
-                                               :node      (volatile! node)
-                                               :run-stats (volatile! run-stats-plain)
-                                               :start     (- node-run-start-ms start)
-                                               :duration  node-run-duration-ms
-                                               :name      (if op-name (str op-name) (str span-label))
-                                               :details   (cond-> []
-                                                            resolver-run-duration-ms
-                                                            (conj
-                                                              {:event    "Run resolver"
-                                                               :start    (- resolver-run-start-ms start)
-                                                               :duration resolver-run-duration-ms
-                                                               :style    {:fill
-                                                                          (case node-output-state
-                                                                            ::viz-plan/node-state-error
-                                                                            "#ec6565"
-
-                                                                            "#af9df4")}})
-
-                                                            batch-run-duration-ms
-                                                            (conj
-                                                              {:event    "Batch run"
-                                                               :start    (- batch-run-start-ms start)
-                                                               :duration batch-run-duration-ms
-                                                               :style    {:fill "#6ac5ec"}}))}
-                                        (seq nested-process)
-                                        (assoc :children
-                                               (compute-nested-children data path' start nested-process)))))))
-                              nodes)
+        :children  (->> (into []
+                              (concat
+                                (compute-mutation-children data path start run-stats-plain run-stats)
+                                (compute-nested-data-children data path start (::pcp/nested-process run-stats-plain))
+                                (compute-nodes-children data path start run-stats-plain run-stats)))
                         (sort-by :start)
                         vec)}))))
