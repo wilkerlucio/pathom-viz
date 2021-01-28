@@ -3,6 +3,25 @@
 ## Next
 - Support mutations in Pathom 3 trace
 - Support ident in Pathom 3 trace
+  
+## [2021.01.26]
+- Fix trace not reloading on query editor
+
+## [2021.01.25]
+- Trace support for Pathom 3 🎉
+- View plan from trace for Pathom 3 traces
+- Graph View support fitting node and neighbors
+- Show node details from Graph View
+- Add Codemirror6 and NextJournal clojure-mode for clojure data view
+- Sorted maps when rendering data in the new clojure reader
+
+## [2021.01.22]
+- Fix ident completions
+
+## [1.2.1]
+- Add new logs tab to log things from the connector
+- Add graph view support on log
+- Use new auto-complete algorithm based on Pathom 3 code (also works on Pathom 2)
 
 ## [1.2.0]
 - Add Logs Tab
