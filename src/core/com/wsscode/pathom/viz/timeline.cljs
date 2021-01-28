@@ -40,15 +40,16 @@
 
 (declare compute-timeline-tree)
 
-(defn compute-nested-data-children [data path start nested-process]
+(defn compute-nested-data-children
+  [data path start {::pcp/keys [nested-process idents]}]
   (into []
         (mapcat (fn [attr]
                   (let [val (get data attr)]
                     (cond
                       (map? val)
-                      (compute-timeline-tree (get data attr)
-                        [(conj path attr)]
-                        start)
+                      [(compute-timeline-tree (get data attr)
+                         (conj path attr)
+                         start)]
 
                       (sequential? val)
                       (into []
@@ -59,7 +60,7 @@
 
                       :else
                       []))))
-        nested-process))
+        (concat nested-process idents)))
 
 (defn compute-mutation-children
   [data path start {::pcp/keys [mutations] :as run-stats-plain} run-stats]
@@ -184,7 +185,7 @@
         :children  (->> (into []
                               (concat
                                 (compute-mutation-children data path start run-stats-plain run-stats)
-                                (compute-nested-data-children data path start (::pcp/nested-process run-stats-plain))
+                                (compute-nested-data-children data path start run-stats-plain)
                                 (compute-nodes-children data path start run-stats-plain run-stats)))
                         (sort-by :start)
                         vec)}))))
