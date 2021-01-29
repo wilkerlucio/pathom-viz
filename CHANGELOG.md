@@ -1,6 +1,6 @@
 # Change Log
 
-## [Next]
+## [2021.01.29]
 - Support mutations in Pathom 3 trace
 - Support ident in Pathom 3 trace
 - Render attributes for nested traces
