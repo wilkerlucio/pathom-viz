@@ -183,6 +183,10 @@
 
 (declare paths-for-context*)
 
+(defn placeholder? [x]
+  (and (keyword? x)
+       (= ">" (namespace x))))
+
 (defn fetch-context-data [env context]
   (if (seq context)
     (let [head (peek context)]
@@ -190,8 +194,7 @@
         (vector? head)
         {(first head) {}}
 
-        (and (keyword? head)
-             (= ">" (namespace head)))
+        (placeholder? head)
         (paths-for-context* env (pop context))
 
         :else
