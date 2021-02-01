@@ -18,7 +18,7 @@
   {:extra-deps {com.fulcrologic/fulcro            {:mvn/version "3.4.14"}
                 com.fulcrologic/fulcro-garden-css {:mvn/version "3.0.7"}
                 com.wsscode/pathom                {:mvn/version "2.3.1"}
-                com.wsscode/pathom3               {:git/url "https://github.com/wilkerlucio/pathom3" :sha "f4dc3bbbe75e672a76c6ae65104c733d5bd4ae1b"}
+                com.wsscode/pathom3               {:git/url "https://github.com/wilkerlucio/pathom3" :sha "3790e001159cf066159332c74e52290a23e5e9c7"}
                 org.clojure/clojure               {:mvn/version "1.10.1"}
                 org.clojure/clojurescript         {:mvn/version "1.10.764"}}}
 
