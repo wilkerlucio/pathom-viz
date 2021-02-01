@@ -1,14 +1,16 @@
 (ns com.wsscode.pathom.viz.electron.background.server
   (:require
+    ["node-fetch" :default fetch]
     [cljs.spec.alpha :as s]
+    [clojure.set :as set]
     [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
     [com.wsscode.async.async-cljs :refer [go-promise <? <!p]]
     [com.wsscode.async.processing :as wap]
     [com.wsscode.node-ws-server :as ws-server]
+    [com.wsscode.pathom.viz.electron.background.parser :as parser]
     [com.wsscode.pathom.viz.electron.ipc-main :as ipc-main]
     [com.wsscode.pathom.viz.transit :as wsst]
-    ["node-fetch" :default fetch]
-    [clojure.set :as set]))
+    [promesa.core :as p]))
 
 (goog-define SERVER_PORT 8240)
 
@@ -147,6 +149,15 @@
         (catch :default e
           (js/console.error "Error handling response")
           (cljs.pprint/pprint (ex-data e)))))
+
+    ::request-background-parser
+    (-> (p/let [response (parser/request (:edn-query-language.core/query message))]
+          (message-renderer! server
+            (wap/reply-message message response)))
+        (p/catch
+          (fn [err]
+            (message-renderer! server
+              (wap/reply-message message {:error err})))))
 
     ::connected-parsers
     (message-renderer! server (wap/reply-message message @connected-clients*))))

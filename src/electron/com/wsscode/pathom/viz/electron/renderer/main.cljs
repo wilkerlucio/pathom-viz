@@ -14,22 +14,21 @@
             [com.wsscode.async.async-cljs :refer [go-promise <?]]
             [com.wsscode.async.processing :as wap]
             [com.wsscode.pathom.connect :as pc]
-            [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.viz.electron.react.use-electron-ipc :refer [use-electron-ipc]]
             [com.wsscode.pathom.viz.helpers :as pvh]
             [com.wsscode.pathom.viz.local-parser :as local.parser]
             [com.wsscode.pathom.viz.parser-assistant :as assistant]
             [com.wsscode.pathom.viz.request-history :as request-history]
-            [com.wsscode.pathom.viz.timeline :as timeline]
-            [com.wsscode.pathom.viz.trace :as trace]
-            [com.wsscode.pathom.viz.worker :as pvw]
             [com.wsscode.pathom.viz.transit :as wsst]
             [com.wsscode.pathom.viz.fulcro]
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.wsscode.pathom3.viz.plan :as viz-plan]
             [goog.object :as gobj]
             [helix.core :as h]
-            [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]))
+            [helix.hooks :as hooks]
+            [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
+            [com.wsscode.promesa.bridges.core-async]
+            [promesa.core :as p]))
 
 (>def ::channel any?)
 (>def ::message-type qualified-keyword?)
@@ -42,6 +41,17 @@
 (defn message-background! [msg]
   (.send ipcRenderer "event" (wsst/envelope-json msg))
   (wap/await! msg))
+
+(defn request-background-parser [tx]
+  (message-background!
+    {:com.wsscode.pathom.viz.electron.background.server/type
+     :com.wsscode.pathom.viz.electron.background.server/request-background-parser
+
+     :edn-query-language.core/query
+     tx
+
+     ::wap/request-id
+     (random-uuid)}))
 
 (defn create-background-parser [client-id]
   (fn [_ tx]
@@ -227,6 +237,18 @@
 
 (def connections-and-logs (fc/factory ConnectionsAndLogs))
 
+(h/defnc UseServerConstant [{:keys [attr]}]
+  (let [!value (pvh/use-fstate ::unknown)]
+    (hooks/use-effect [attr]
+      (p/let [response (request-background-parser [attr])]
+        (!value (get response attr))))
+    (if (= ::unknown @!value)
+      nil
+      @!value)))
+
+(defn use-server-attribute [attr]
+  (h/$ UseServerConstant {:attr attr}))
+
 (fc/defsc Root
   [this {:ui/keys [stuff]}]
   {:pre-merge  (fn [{:keys [current-normalized data-tree]}]
@@ -253,6 +275,7 @@
         (dom/a {:href    "#"
                 :onClick (ui/prevent-default #(.openExternal shell "https://github.com/wilkerlucio/pathom-viz"))}
           "Pathom Viz")
+        (dom/div {:className "ml-2"} "" (use-server-attribute :pathom.viz.app/version))
         (dom/div (ui/gc :.flex))
         (dom/div "Freely distributed by "
           (dom/a {:href    "#"

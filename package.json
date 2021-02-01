@@ -24,6 +24,7 @@
     "@codemirror/search": "0.17.1",
     "@codemirror/state": "0.17.1",
     "@codemirror/view": "0.17.6",
+    "autoprefixer": "^10.2.4",
     "codemirror": "^5.59.2",
     "create-react-class": "^15.6.3",
     "cytoscape": "^3.16.3",
@@ -36,6 +37,8 @@
     "lezer-tree": "^0.13.0",
     "parinfer": "^3.12.0",
     "parinfer-codemirror": "^1.4.2",
+    "postcss": "^8.2.4",
+    "postcss-cli": "^8.3.1",
     "react": "^16.8.4",
     "react-dom": "^16.8.4",
     "react-draggable": "^3.0.5",
@@ -43,6 +46,7 @@
     "react-icons": "^2.2.7",
     "react-refresh": "0.8.1",
     "reakit": "^0.11.2",
-    "shadow-cljs": "^2.8.96"
+    "shadow-cljs": "^2.8.96",
+    "tailwindcss": "^2.0.2"
   }
 }
