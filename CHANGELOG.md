@@ -1,5 +1,8 @@
 # Change Log
 
+## [2021.02.01]
+- Bump Pathom 3 to fix auto-complete case that freezes the app
+
 ## [2021.01.29]
 - Support mutations in Pathom 3 trace
 - Support ident in Pathom 3 trace
