@@ -11,7 +11,8 @@
     [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
     [com.wsscode.pathom3.interface.eql :as p.eql]
     [com.wsscode.pathom3.connect.indexes :as pci]
-    [com.wsscode.pathom3.connect.built-in.resolvers :as pbir]))
+    [com.wsscode.pathom3.connect.built-in.resolvers :as pbir]
+    [com.wsscode.pathom.viz.trace :as pvt]))
 
 (h/defnc EmbedTrace [{:keys [data]}]
   (let [data (p.eql/process (pci/register (pbir/constantly-resolver :foo "bar"))
@@ -26,9 +27,12 @@
     (h/$ Comp {:data component-props})
     (dom/div "Can't find component " component-name)))
 
+(def full-css
+  (into tail-cat/everything pvt/trace-css))
+
 (h/defnc PathomVizEmbed []
   (let [component-contents! (p.hooks/use-fstate (p.viz.msg/query-param-state))]
-    (p.hooks/use-garden-css tail-cat/everything)
+    (p.hooks/use-garden-css full-css)
     (p.viz.msg/use-post-message-data component-contents!)
 
     (if @component-contents!

@@ -9,9 +9,11 @@
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [com.wsscode.pathom.misc :as p.misc]
             [com.wsscode.pathom.viz.helpers :as h]
+            [helix.core :as hx]
             [goog.object :as gobj]
             [goog.string :as gstr]
-            [garden.selectors :as gs]))
+            [garden.selectors :as gs]
+            [clojure.set :as set]))
 
 (declare gc css ccss)
 
@@ -50,7 +52,8 @@
 
 (def mergers
   {:classes (fn [a b]
-              (into a b))})
+              (into a b))
+   :class   (fn [a b] (str a " " b))})
 
 (s/def ::merger-map (s/map-of keyword? fn?))
 
@@ -275,7 +278,13 @@
           text-sans-13]]}
   (dom/div :.container (dom-props props) (fc/children this)))
 
-(def section-header (fc/factory SectionHeader))
+(defn section-header [props & children]
+  (apply dom/div
+    (dom-props {:className "py-1 px-2 border-b border-gray-300 bg-gray-100 font-sans text-sm"}
+      props)
+    children))
+
+#_ (def section-header (fc/factory SectionHeader))
 
 (fc/defsc RawCollapsible
   [this {::keys [collapsed? on-toggle title]
@@ -632,7 +641,32 @@
 
 (>def ::direction #{"up" "down" "left" "right"})
 
-(fc/defsc DragResize
+(hx/defnc DragResizeHelix [{:keys [state direction props react-key kids]}]
+  (let [start      (h/use-atom-state nil)
+        start-size (h/use-atom-state nil)
+        axis       (get {"left"  "x"
+                         "right" "x"
+                         "up"    "y"
+                         "down"  "y"} direction "x")
+        invert?    (get {"left"  true
+                         "right" false
+                         "up"    true
+                         "down"  false} direction true)
+        css        (if (= "x" axis) (css :.divisor-v) (css :.divisor-h))]
+    (js/React.createElement DraggableCore
+      #js {:key     (or react-key "dragHandler")
+           :onStart (fn [e dd]
+                      (reset! start (gobj/get dd axis))
+                      (reset! start-size @state))
+           :onDrag  (fn [e dd]
+                      (let [start    @start
+                            size     @start-size
+                            value    (gobj/get dd axis)
+                            new-size (+ size (if invert? (- value start) (- start value)))]
+                        (reset! state new-size)))}
+      (apply dom/div (merge {:className (str css " flex-shrink-0")} props) kids))))
+
+(defn drag-resize
   "Creates a visual component that can be dragged to control the size of another component.
 
   The :state prop should be an `atom-like` state and will reflect the current size.
@@ -660,33 +694,9 @@
   In this column example, use \"up\" if you want to control the DIV1, and \"down\" if
   you want to control the size of DIV2.
   "
-  [this {:keys [state direction props key]}]
-  {:use-hooks? true}
-  (let [start      (h/use-atom-state nil)
-        start-size (h/use-atom-state nil)
-        axis       (get {"left"  "x"
-                         "right" "x"
-                         "up"    "y"
-                         "down"  "y"} direction "x")
-        invert?    (get {"left"  true
-                         "right" false
-                         "up"    true
-                         "down"  false} direction true)
-        css        (if (= "x" axis) (css :.divisor-v) (css :.divisor-h))]
-    (js/React.createElement DraggableCore
-      #js {:key     (or key "dragHandler")
-           :onStart (fn [e dd]
-                      (reset! start (gobj/get dd axis))
-                      (reset! start-size @state))
-           :onDrag  (fn [e dd]
-                      (let [start    @start
-                            size     @start-size
-                            value    (gobj/get dd axis)
-                            new-size (+ size (if invert? (- value start) (- start value)))]
-                        (reset! state new-size)))}
-      (apply dom/div (merge {:className css} props) (fc/children this)))))
-
-(def drag-resize (fc/factory DragResize))
+  [props & children]
+  (let [props (set/rename-keys props {:key :react-key})]
+    (hx/$ DragResizeHelix {:kids children :& props})))
 
 ; endregion
 

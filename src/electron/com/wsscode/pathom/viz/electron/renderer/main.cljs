@@ -20,6 +20,7 @@
             [com.wsscode.pathom.viz.parser-assistant :as assistant]
             [com.wsscode.pathom.viz.request-history :as request-history]
             [com.wsscode.pathom.viz.transit :as wsst]
+            [com.wsscode.pathom.viz.trace :as pvt]
             [com.wsscode.pathom.viz.fulcro]
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.wsscode.pathom3.viz.plan :as viz-plan]
@@ -28,7 +29,9 @@
             [helix.hooks :as hooks]
             [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
             [com.wsscode.promesa.bridges.core-async]
-            [promesa.core :as p]))
+            [promesa.core :as p]
+            [com.wsscode.pathom.viz.lib.hooks :as p.hooks]
+            [com.wsscode.tailcatcss.core :as tail-cat]))
 
 (>def ::channel any?)
 (>def ::message-type qualified-keyword?)
@@ -203,7 +206,7 @@
             (fc/fragment
               (ui/section-header {} "Trace")
               (trace+plan/trace-with-plan
-                {:com.wsscode.pathom/trace (pvh/response-trace log-val)}))
+                (pvh/response-trace log-val)))
 
             (pr-str log-val)))))))
 
@@ -249,6 +252,9 @@
 (defn use-server-attribute [attr]
   (h/$ UseServerConstant {:attr attr}))
 
+(def full-css
+  (into tail-cat/everything pvt/trace-css))
+
 (fc/defsc Root
   [this {:ui/keys [stuff]}]
   {:pre-merge  (fn [{:keys [current-normalized data-tree]}]
@@ -268,6 +274,7 @@
                  ui/text-sans-13
                  [:a {:text-decoration "none"}]]]
    :use-hooks? true}
+  (p.hooks/use-garden-css full-css)
   (h/$ (.-Provider com.wsscode.pathom.viz.fulcro/FulcroAppContext) {:value fc/*app*}
     (ui/column (ui/gc :.flex)
       (connections-and-logs stuff)

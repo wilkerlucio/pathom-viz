@@ -317,33 +317,30 @@
                                            on-select-node]}]
   (let [selected-node (get run-stats ::node-in-focus)
         details-size  (pvh/use-persistent-state ::node-details-size 200)]
-    (fc/with-parent-context (hooks/use-context com.wsscode.pathom.viz.fulcro/FulcroAppContext)
-      (uip/row {:style {:flex     "1"
-                        :overflow "hidden"}}
-        (dom/div {:style (cond-> {:width   (str @details-size "px")
-                                  :display "flex"}
-                           (not selected-node)
-                           (assoc :flex "1"))}
-          (h/$ PlanGraphView {:run-stats      run-stats
-                              :display-type   display-type
-                              :on-select-node on-select-node}))
+    (dom/div {:class "flex-row flex-1 overflow-hidden"}
+      (dom/div {:style (cond-> {:width   (str @details-size "px")
+                                :display "flex"}
+                         (not selected-node)
+                         (assoc :flex "1"))}
+        (h/$ PlanGraphView {:run-stats      run-stats
+                            :display-type   display-type
+                            :on-select-node on-select-node}))
 
-        (if selected-node
-          (let [run-stats (smart-plan run-stats)]
-            (h/<>
-              (uip/drag-resize {:state details-size :direction "left"})
-              (uip/column {:style {:flex "1"}}
-                (uip/section-header {}
-                  (uip/row {:classes [:.center]}
-                    "Node Details"
-                    (dom/div {:style {:flex "1"}})
-                    (uip/button {:onClick #(on-select-node nil)} "Unselect node")))
-                (cm6/clojure-read
-                  (do
-                    (some-> (get-in run-stats [::pcp/nodes selected-node])
-                            (psm/sm-touch!
-                              [::pcr/node-run-duration-ms])
-                            (psm/sm-entity))))))))))))
+      (if selected-node
+        (let [run-stats (smart-plan run-stats)]
+          (h/<>
+            (uip/drag-resize {:state details-size :direction "left"})
+            (dom/div {:class "flex-col flex-1 overflow-hidden"}
+              (uip/section-header {}
+                (dom/div {:class "flex-row items-center"}
+                  "Node Details"
+                  (dom/div {:style {:flex "1"}})
+                  (dom/button {:onClick #(on-select-node nil)} "Unselect node")))
+              (cm6/clojure-read
+                (some-> (get-in run-stats [::pcp/nodes selected-node])
+                        (psm/sm-touch!
+                          [::pcr/node-run-duration-ms])
+                        (psm/sm-entity))))))))))
 
 (h/defnc ^:export PlanSnapshots [{:keys [frames display]}]
   (let [[current-frame :as frame-state] (hooks/use-state (dec (count frames)))

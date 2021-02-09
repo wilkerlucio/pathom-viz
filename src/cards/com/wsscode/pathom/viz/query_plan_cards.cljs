@@ -208,16 +208,16 @@
 
       (if trace-tree
         (dom/div :.trace
-          (trace/d3-trace {::trace/trace-data      trace-tree
-                           ::trace/on-show-details (fn [events]
-                                                     (let [events' (mapv #(some-> % (gobj/get "edn-original") deref) events)]
-                                                       (if-let [plan (->> (filter (comp #{"reader3-execute"} :event) events')
-                                                                          first :plan)]
-                                                         (fm/set-value! this :ui/plan (update plan ::pcp/nodes
-                                                                                        (fn [nodes]
-                                                                                          (p.misc/map-vals pcp/integrate-node-log nodes))))
-                                                         (fm/set-value! this :ui/node-details nil))
-                                                       (js/console.log "details" events')))})))
+          (trace/d3-trace {:trace-data      trace-tree
+                           :on-show-details (fn [events]
+                                              (let [events' (mapv #(some-> % (gobj/get "edn-original") deref) events)]
+                                                (if-let [plan (->> (filter (comp #{"reader3-execute"} :event) events')
+                                                                   first :plan)]
+                                                  (fm/set-value! this :ui/plan (update plan ::pcp/nodes
+                                                                                 (fn [nodes]
+                                                                                   (p.misc/map-vals pcp/integrate-node-log nodes))))
+                                                  (fm/set-value! this :ui/node-details nil))
+                                                (js/console.log "details" events')))})))
 
       (dom/div {:style {:marginBottom "10px"}}
         (dom-select {:value    label-kind

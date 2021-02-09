@@ -313,7 +313,7 @@
                  [:.history-container {:width      "250px"
                                        :max-height "100%"
                                        :overflow   "auto"}]]
-   :css-include [pvt/D3Trace Button HistoryView trace+plan/TraceWithPlan]
+   :css-include [pvt/D3Trace Button HistoryView]
    :use-hooks?  true}
   (pvh/use-layout-effect #(init-query-editor this) [])
   (let [run-query     (pvh/use-callback #(run-query! this))
@@ -383,6 +383,6 @@
 
           (dom/div :.trace {:style {:height (str @trace-size "px")}}
             (trace+plan/trace-with-plan
-              trace-viewer)))))))
+              (:com.wsscode.pathom/trace trace-viewer))))))))
 
 (def query-editor (fc/computed-factory QueryEditor))
