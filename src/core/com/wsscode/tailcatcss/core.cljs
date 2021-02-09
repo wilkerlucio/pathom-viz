@@ -235,10 +235,19 @@
    [:.flex-auto {:flex "auto"}]
    [:.flex-initial {:flex "initial"}]
    [:.flex-none {:flex "none"}]
-   [:.flex-row {:flex-direction "row"}]
-   [:.flex-row-reverse {:flex-direction "row-reverse"}]
-   [:.flex-col {:flex-direction "column"}]
-   [:.flex-col-reverse {:flex-direction "column-reverse"}]])
+   [:.flex-row {:display        "flex"
+                :flex-direction "row"}]
+   [:.flex-row-reverse {:display        "flex"
+                        :flex-direction "row-reverse"}]
+   [:.flex-col {:display        "flex"
+                :flex-direction "column"}]
+   [:.flex-col-reverse {:display        "flex"
+                        :flex-direction "column-reverse"}]
+
+   [:.flex-grow-0 {:flex-grow "0"}]
+   [:.flex-grow {:flex-grow "1"}]
+   [:.flex-shrink-0 {:flex-shrink "0"}]
+   [:.flex-shrink {:flex-shrink "1"}]])
 
 (def align-items
   [[:.items-start {:align-items "flex-start"}]
