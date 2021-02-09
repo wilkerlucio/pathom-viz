@@ -1,169 +1,41 @@
 (ns com.wsscode.pathom.viz.embed.main
   "Remote helpers to call remote parsers from the client."
-  (:require [cljs.reader :refer [read-string]]
-            [cljs.spec.alpha :as s]
-            [clojure.core.async :as async :refer [go <! chan go-loop]]
-            [clojure.set :as set]
-            [com.fulcrologic.fulcro-css.css-injection :as cssi]
-            [com.fulcrologic.fulcro-css.localized-dom :as dom]
-            [com.fulcrologic.fulcro.algorithms.merge :as merge]
-            [com.fulcrologic.fulcro.application :as fapp]
-            [com.fulcrologic.fulcro.components :as fc]
-            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
-            [com.wsscode.async.async-cljs :refer [go-promise <?]]
-            [com.wsscode.async.processing :as wap]
-            [com.wsscode.pathom.connect :as pc]
-            [com.wsscode.pathom.core :as p]
-            [com.wsscode.pathom.viz.electron.react.use-electron-ipc :refer [use-electron-ipc]]
-            [com.wsscode.pathom.viz.helpers :as pvh]
-            [com.wsscode.pathom.viz.local-parser :as local.parser]
-            [com.wsscode.pathom.viz.parser-assistant :as assistant]
-            [com.wsscode.pathom.viz.request-history :as request-history]
-            [com.wsscode.pathom.viz.ui.kit :as ui]
-            [com.wsscode.pathom.viz.transit :as wsst]
-            [goog.object :as gobj]))
-;
-;(>def ::channel any?)
-;(>def ::message-type qualified-keyword?)
-;
-;(defn message-background! [parent msg]
-;  (.postMessage parent (wsst/envelope-json msg))
-;  (wap/await! msg))
-;
-;(defn create-background-parser [client-id]
-;  (fn [_ tx]
-;    (go-promise
-;      (try
-;        (<? (message-background!
-;              {:com.wsscode.pathom.viz.electron.background.server/type
-;               :com.wsscode.pathom.viz.electron.background.server/request-parser
-;
-;               :edn-query-language.core/query
-;               tx
-;
-;               :com.wsscode.node-ws-server/client-id
-;               client-id
-;
-;               ::wap/request-id
-;               (random-uuid)}))
-;        (catch :default e
-;          (js/console.error "response failed" e))))))
-;
-;(defn add-background-parser! [this client-id]
-;  (swap! local.parser/client-parsers assoc client-id (create-background-parser client-id))
-;  (assistant/initialize-assistant this client-id))
-;
-;(defn multi-parser-ref [this]
-;  (:ui/multi-parser (fc/component->state-map this)))
-;
-;(defn reload-parsers-ui! [this]
-;  (assistant/reload-available-parsers this (multi-parser-ref this)))
-;
-;(defn electron-message-handler
-;  [this {::keys                           [message-type]
-;         :com.wsscode.node-ws-server/keys [client-id]
-;         :as                              msg}]
-;  (case message-type
-;    ::connect-client
-;    (do
-;      (add-background-parser! this client-id)
-;      (reload-parsers-ui! this))
-;
-;    ::disconnect-client
-;    (js/console.log "Disconnect client")
-;
-;    ::pathom-request
-;    (let [{:com.wsscode.pathom.viz.ws-connector.core/keys [request-id tx]} msg]
-;      (merge/merge-component! this request-history/RequestView
-;        {::request-history/request-id request-id
-;         ::request-history/request    tx}
-;        :append [::request-history/id client-id ::request-history/requests]))
-;
-;    ::pathom-request-done
-;    (let [{:com.wsscode.pathom.viz.ws-connector.core/keys [request-id response]} msg]
-;      (merge/merge-component! this request-history/RequestView
-;        {::request-history/request-id request-id
-;         ::request-history/response   response}))
-;
-;    (js/console.warn "Unknown message received" msg)))
-;
-;(defn sync-background-parsers [this]
-;  (go-promise
-;    (try
-;      (let [background-parsers (<? (message-background!
-;                                     {:com.wsscode.pathom.viz.electron.background.server/type
-;                                      :com.wsscode.pathom.viz.electron.background.server/connected-parsers
-;
-;                                      ::wap/request-id
-;                                      (wap/random-request-id)}))
-;            local-parsers      (set (keys @local.parser/client-parsers))
-;            missing            (set/difference background-parsers local-parsers)
-;            ;remove             (set/difference local-parsers background-parsers)
-;            ]
-;        (doseq [client-id missing]
-;          (add-background-parser! this client-id))
-;
-;        #_
-;            (fc/transact! this
-;              (into []
-;                    (map (fn [cid]
-;                           `(assistant/remove-parser {:com.wsscode.pathom.viz.client-parser/parser-id cid})))
-;                    remove)
-;              {:ref (multi-parser-ref this)})
-;
-;        (reload-parsers-ui! this))
-;      (catch :default e
-;        (js/console.error "Error syncing background parsers" e))))
-;  js/undefined)
-;
-;;; App Root Container
-;
-;(fc/defsc Root
-;  [this {:ui/keys [multi-parser]}]
-;  {:pre-merge  (fn [{:keys [current-normalized data-tree]}]
-;                 (merge {:ui/multi-parser {}} current-normalized data-tree))
-;   :query      [{:ui/multi-parser (fc/get-query assistant/MultiParserManager)}]
-;   :css        [[:body {:margin "0"}]
-;                [:#app-root {:width      "100vw"
-;                             :height     "100vh"
-;                             :box-sizing "border-box"
-;                             ;:padding    "10px"
-;                             :overflow   "hidden"
-;                             :display    "flex"}]
-;                [:.footer {:background "#eee"
-;                           :display    "flex"
-;                           :padding    "6px 10px"
-;                           :text-align "right"}
-;                 ui/text-sans-13
-;                 [:a {:text-decoration "none"}]]]
-;   :use-hooks? true}
-;  (ui/column (ui/gc :.flex)
-;    (assistant/multi-parser-manager multi-parser)
-;    (dom/div :.footer
-;      (dom/a {:href    "#"
-;              :onClick (ui/prevent-default #(.openExternal shell "https://github.com/wilkerlucio/pathom-viz"))}
-;        "Pathom Viz")
-;      (dom/div (ui/gc :.flex))
-;      (dom/div "Freely distributed by "
-;        (dom/a {:href    "#"
-;                :onClick (ui/prevent-default #(.openExternal shell "https://github.com/wilkerlucio"))}
-;          "Wilker Lucio")))))
-;
-;(def root (fc/factory Root {:keyfn ::id}))
-;
-;;; App Init
-;
-;(pc/defmutation open-external [_ {:keys [url]}]
-;  {::pc/sym    'com.wsscode.pathom.viz.ui.mutation-effects/open-external
-;   ::pc/params [:url]}
-;  (.openExternal shell url))
-;
-;(defonce app
-;  (fapp/fulcro-app
-;    {:remotes
-;     {:remote
-;      (pvh/pathom-remote (local.parser/parser [open-external]))}}))
-;
-;(defn init []
-;  (fapp/mount! app Root "app-root")
-;  (cssi/upsert-css "pathom-viz" {:component Root}))
+  (:require
+    ["react-dom" :as react-dom]
+    [cljs.reader :refer [read-string]]
+    [com.wsscode.pathom.viz.embed.messaging :as p.viz.msg]
+    [com.wsscode.pathom.viz.lib.hooks :as p.hooks]
+    [helix.core :as h]
+    [helix.dom :as dom]
+    [com.wsscode.tailcatcss.core :as tail-cat]
+    [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
+    [com.wsscode.pathom3.interface.eql :as p.eql]
+    [com.wsscode.pathom3.connect.indexes :as pci]
+    [com.wsscode.pathom3.connect.built-in.resolvers :as pbir]))
+
+(h/defnc EmbedTrace [{:keys [data]}]
+  (let [data (p.eql/process (pci/register (pbir/constantly-resolver :foo "bar"))
+               [:foo])]
+   (trace+plan/trace-with-plan data)))
+
+(def component-map
+  {"trace" EmbedTrace})
+
+(defn render-child-component [{:keys [component-name component-props]}]
+  (if-let [Comp (get component-map component-name)]
+    (h/$ Comp {:data component-props})
+    (dom/div "Can't find component " component-name)))
+
+(h/defnc PathomVizEmbed []
+  (let [component-contents! (p.hooks/use-fstate (p.viz.msg/query-param-state))]
+    (p.hooks/use-garden-css tail-cat/everything)
+    (p.viz.msg/use-post-message-data component-contents!)
+
+    (if @component-contents!
+      (render-child-component @component-contents!)
+      (dom/noscript))))
+
+(defn start []
+  (react-dom/render (h/$ PathomVizEmbed {}) (js/document.getElementById "app")))
+
+(start)
