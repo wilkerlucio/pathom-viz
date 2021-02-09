@@ -147,13 +147,29 @@
              properties)])
     iteration-table))
 
+(defn gen-spaces+negatives [properties prefix]
+  (into
+    (mapv
+      (fn [[k v]]
+        [(keyword (str "." prefix "-" k))
+         (into {}
+               (map (fn [p] [p v]))
+               properties)])
+      iteration-table)
+    (mapv
+      (fn [[k v]]
+        [(keyword (str ".-" prefix "-" k))
+         (into {}
+               (map (fn [p] [p (str "-" v)]))
+               properties)])
+      iteration-table)))
+
 (def padding (gen-spaces [:padding] "p"))
 (def padding-y (gen-spaces [:padding-top :padding-bottom] "py"))
 (def padding-x (gen-spaces [:padding-left :padding-right] "px"))
 (def padding-top (gen-spaces [:padding-top] "pt"))
 (def padding-right (gen-spaces [:padding-right] "pr"))
 (def padding-bottom (gen-spaces [:padding-bottom] "pb"))
-
 (def padding-left (gen-spaces [:padding-left] "pl"))
 
 (def all-paddings
@@ -167,13 +183,13 @@
      padding-bottom
      padding-left]))
 
-(def margin (gen-spaces [:margin] "m"))
-(def margin-y (gen-spaces [:margin-top :margin-bottom] "my"))
-(def margin-x (gen-spaces [:margin-left :margin-right] "mx"))
-(def margin-top (gen-spaces [:margin-top] "mt"))
-(def margin-right (gen-spaces [:margin-right] "mr"))
-(def margin-bottom (gen-spaces [:margin-bottom] "mb"))
-(def margin-left (gen-spaces [:margin-left] "ml"))
+(def margin (gen-spaces+negatives [:margin] "m"))
+(def margin-y (gen-spaces+negatives [:margin-top :margin-bottom] "my"))
+(def margin-x (gen-spaces+negatives [:margin-left :margin-right] "mx"))
+(def margin-top (gen-spaces+negatives [:margin-top] "mt"))
+(def margin-right (gen-spaces+negatives [:margin-right] "mr"))
+(def margin-bottom (gen-spaces+negatives [:margin-bottom] "mb"))
+(def margin-left (gen-spaces+negatives [:margin-left] "ml"))
 
 (def all-margins
   (reduce
