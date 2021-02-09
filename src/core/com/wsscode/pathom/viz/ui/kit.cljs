@@ -29,6 +29,9 @@
   {:font-family "sans-serif"
    :font-size   "13px"})
 
+(def text-sans-13'
+  ["font-sans" "text-sm"])
+
 (def css-header
   {:margin      "0"
    :font-size   "2rem"
@@ -652,7 +655,23 @@
                          "right" false
                          "up"    true
                          "down"  false} direction true)
-        css        (if (= "x" axis) (css :.divisor-v) (css :.divisor-h))]
+        css        (if (= "x" axis) {:cursor        "ew-resize"
+                                     :width         "20px"
+                                     :background    "#eee"
+                                     :border        "1px solid #e0e0e0"
+                                     :borderTop     "0"
+                                     :borderBottom  "0"
+                                     :pointerEvents "all"
+                                     :zIndex        "2"}
+                                    {:cursor        "ns-resize"
+                                     :height        "20px"
+                                     :background    "#eee"
+                                     :border        "1px solid #e0e0e0"
+                                     :borderLeft    "0"
+                                     :borderRight   "0"
+                                     :pointerEvents "all"
+                                     :padding       "4px 8px"
+                                     :zIndex        "2"})]
     (js/React.createElement DraggableCore
       #js {:key     (or react-key "dragHandler")
            :onStart (fn [e dd]
@@ -664,7 +683,8 @@
                             value    (gobj/get dd axis)
                             new-size (+ size (if invert? (- value start) (- start value)))]
                         (reset! state new-size)))}
-      (apply dom/div (merge {:className (str css " flex-shrink-0")} props) kids))))
+      (apply dom/div (merge {:className "flex-shrink-0"
+                             :style     css} props) kids))))
 
 (defn drag-resize
   "Creates a visual component that can be dragged to control the size of another component.
@@ -720,6 +740,7 @@
                  [:.border-collapse-right {:border-right "none !important"}]
                  [:.border-collapse-bottom {:border-bottom "none !important"}]
                  [:.border-collapse-left {:border-left "none !important"}]
+                 []
                  [:.divisor-v {:cursor         "ew-resize"
                                :width          "20px"
                                :background     "#eee"

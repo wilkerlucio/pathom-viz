@@ -168,7 +168,7 @@
   (let [container-ref (hooks/use-ref nil)
         svg-ref       (hooks/use-ref nil)
         data          (hooks/use-ref nil)
-        size-listener (hooks/use-callback []
+        size-handler  (hooks/use-callback []
                         (fn []
                           (updateTraceSize
                             (doto @data
@@ -186,12 +186,13 @@
                         :svgHeight   (gobj/get @container-ref "clientHeight")
                         :data        (-> trace-data add-edn-dna (h/stringify-keyword-values))
                         :showDetails (or on-show-details identity)})))
+          (js/setTimeout size-handler 100)
           (catch :default e (js/console.error "Error rendering trace" e)))))
 
     ; size
     (hooks/use-effect [@container-ref trace-data on-show-details]
       (let [container @container-ref]
-        (addResizeListener container size-listener)))
+        (addResizeListener container size-handler)))
 
     (dom/div {:className "flex-1 width-full height-full overflow-hidden" :ref container-ref}
       (dom/svg {:ref svg-ref}))))
