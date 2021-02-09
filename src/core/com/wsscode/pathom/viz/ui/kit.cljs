@@ -112,6 +112,9 @@
 
 (def button (fc/factory Button))
 
+(defn button [props & children]
+  (apply dom/button (dom-props {:classes [""]} props) children))
+
 (fc/defsc Column
   [this props]
   {:css [[:.container {:display        "flex"
@@ -664,7 +667,7 @@
                                      :pointerEvents "all"
                                      :zIndex        "2"}
                                     {:cursor        "ns-resize"
-                                     :height        "20px"
+                                     :min-height    "20px"
                                      :background    "#eee"
                                      :border        "1px solid #e0e0e0"
                                      :borderLeft    "0"
