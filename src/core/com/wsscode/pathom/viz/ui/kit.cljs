@@ -683,7 +683,7 @@
                             value    (gobj/get dd axis)
                             new-size (+ size (if invert? (- value start) (- start value)))]
                         (reset! state new-size)))}
-      (apply dom/div (merge {:className "flex-shrink-0"
+      (apply dom/div (merge {:classes   (into text-sans-13' ["flex-shrink-0"])
                              :style     css} props) kids))))
 
 (defn drag-resize

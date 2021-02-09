@@ -1,5 +1,6 @@
 (ns com.wsscode.tailcatcss.core
-  (:require [garden.core :as garden]))
+  (:require [garden.core :as garden]
+            [garden.stylesheet]))
 
 (def colors
   [["transparent" "transparent"]
@@ -397,7 +398,7 @@
    [:.text-9xl {:font-size   "8rem"
                 :line-height "1"}]])
 
-(def everything
+(def bases
   (reduce
     into
     [text-colors
@@ -412,6 +413,21 @@
      width
      font-family
      font-size]))
+
+(defn prefix-classname [x prefix]
+  (str "." prefix (subs (name x) 1)))
+
+(defn responsive-selectors [min-width prefix rules]
+  (garden.stylesheet/at-media {:min-width min-width}
+    (into [] (map #(update % 0 prefix-classname (str prefix ":"))) rules)))
+
+(def everything
+  (conj
+    bases
+    (responsive-selectors "640px" "sm" bases)
+    (responsive-selectors "768px" "md" bases)
+    (responsive-selectors "1024px" "lg" bases)
+    (responsive-selectors "1536px" "2xl" bases)))
 
 (defn compute-css []
   (garden/css everything))
