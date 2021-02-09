@@ -98,6 +98,7 @@
 
 (def text-colors (gen-colors [:color] "text"))
 (def background-colors (gen-colors [:background-color] "bg"))
+(def border-colors (gen-colors [:border-color] "border"))
 
 (def iteration-table
   ; vector to keep order
@@ -166,13 +167,13 @@
      padding-bottom
      padding-left]))
 
-(def margin (gen-spaces [:margin] "p"))
-(def margin-y (gen-spaces [:margin-top :margin-bottom] "py"))
-(def margin-x (gen-spaces [:margin-left :margin-right] "px"))
-(def margin-top (gen-spaces [:margin-top] "pt"))
-(def margin-right (gen-spaces [:margin-right] "pr"))
-(def margin-bottom (gen-spaces [:margin-bottom] "pb"))
-(def margin-left (gen-spaces [:margin-left] "pl"))
+(def margin (gen-spaces [:margin] "m"))
+(def margin-y (gen-spaces [:margin-top :margin-bottom] "my"))
+(def margin-x (gen-spaces [:margin-left :margin-right] "mx"))
+(def margin-top (gen-spaces [:margin-top] "mt"))
+(def margin-right (gen-spaces [:margin-right] "mr"))
+(def margin-bottom (gen-spaces [:margin-bottom] "mb"))
+(def margin-left (gen-spaces [:margin-left] "ml"))
 
 (def all-margins
   (reduce
@@ -186,6 +187,33 @@
      margin-left]))
 
 (def all-spaces (into all-paddings all-margins))
+
+(def borders
+  [[:.border-0 {:border-width "0px"}]
+   [:.border-2 {:border-width "2px"}]
+   [:.border-4 {:border-width "4px"}]
+   [:.border-8 {:border-width "8px"}]
+   [:.border {:border-width "1px"}]
+   [:.border-t-0 {:border-top-width "0px"}]
+   [:.border-r-0 {:border-right-width "0px"}]
+   [:.border-b-0 {:border-bottom-width "0px"}]
+   [:.border-l-0 {:border-left-width "0px"}]
+   [:.border-t-2 {:border-top-width "2px"}]
+   [:.border-r-2 {:border-right-width "2px"}]
+   [:.border-b-2 {:border-bottom-width "2px"}]
+   [:.border-l-2 {:border-left-width "2px"}]
+   [:.border-t-4 {:border-top-width "4px"}]
+   [:.border-r-4 {:border-right-width "4px"}]
+   [:.border-b-4 {:border-bottom-width "4px"}]
+   [:.border-l-4 {:border-left-width "4px"}]
+   [:.border-t-8 {:border-top-width "8px"}]
+   [:.border-r-8 {:border-right-width "8px"}]
+   [:.border-b-8 {:border-bottom-width "8px"}]
+   [:.border-l-8 {:border-left-width "8px"}]
+   [:.border-t {:border-top-width "1px"}]
+   [:.border-r {:border-right-width "1px"}]
+   [:.border-b {:border-bottom-width "1px"}]
+   [:.border-l {:border-left-width "1px"}]])
 
 (def overflow
   [[:.overflow-auto {:overflow "auto"}]
@@ -211,6 +239,13 @@
    [:.flex-row-reverse {:flex-direction "row-reverse"}]
    [:.flex-col {:flex-direction "column"}]
    [:.flex-col-reverse {:flex-direction "column-reverse"}]])
+
+(def align-items
+  [[:.items-start {:align-items "flex-start"}]
+   [:.items-end {:align-items "flex-end"}]
+   [:.items-center {:align-items "center"}]
+   [:.items-baseline {:align-items "baseline"}]
+   [:.items-stretch {:align-items "stretch"}]])
 
 (def max-width
   [[:.max-w-0 {:max-width "0rem"}]
@@ -241,9 +276,12 @@
     into
     [text-colors
      background-colors
+     border-colors
      all-spaces
+     borders
      overflow
      flex
+     align-items
      max-width]))
 
 (defn compute-css []
