@@ -85,14 +85,18 @@
     ::pcp/keys [available-data]
     ::eql/keys [query]}]
   (let [snapshots* (atom [])
-        graph      (pcp/compute-run-graph
-                     (cond-> {::pci/index-oir              index-oir
-                              ::pcp/snapshots*             snapshots*
-                              :edn-query-language.ast/node (eql/query->ast query)}
-                       available-data
-                       (assoc ::pcp/available-data available-data)))
-        frames     (-> (mapv smart-plan @snapshots*)
-                       (conj (smart-plan (assoc graph ::pcp/snapshot-message "Completed graph."))))]
+        graph      (try
+                     (pcp/compute-run-graph
+                       (cond-> {::pci/index-oir              index-oir
+                                ::pcp/snapshots*             snapshots*
+                                :edn-query-language.ast/node (eql/query->ast query)}
+                         available-data
+                         (assoc ::pcp/available-data available-data)))
+                     (catch :default e
+                       (js/console.error "Error computing plan" e)))
+        frames     (cond-> (mapv smart-plan @snapshots*)
+                     graph
+                     (conj (smart-plan (assoc graph ::pcp/snapshot-message "Completed graph."))))]
     frames))
 
 (defn ^:export compute-plan-elements [{::pcp/keys [nodes root highlight-nodes highlight-styles]
