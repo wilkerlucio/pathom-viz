@@ -1,5 +1,10 @@
 # Change Log
 
+## [2021.02.24]
+- Many UI Tweets
+- Fix to auto-complete: attributes that depends on multiple inputs were missing
+- Add bigger minimum size to avoid elements fully collapsing away
+
 ## [2021.02.01]
 - Bump Pathom 3 to fix auto-complete case that freezes the app
 
