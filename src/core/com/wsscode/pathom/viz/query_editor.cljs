@@ -1,30 +1,29 @@
 (ns com.wsscode.pathom.viz.query-editor
-  (:require [cljs.reader :refer [read-string]]
-            [cljs.spec.alpha :as s]
-            [com.fulcrologic.fulcro-css.css :as css]
-            [com.fulcrologic.fulcro-css.localized-dom :as dom]
-            [com.fulcrologic.fulcro.components :as fc]
-            [com.fulcrologic.fulcro.data-fetch :as df]
-            [com.fulcrologic.fulcro.mutations :as fm]
-            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
-            [com.wsscode.async.async-cljs :refer [<?maybe go-promise <!]]
-            [com.wsscode.pathom.connect :as pc]
-            [com.wsscode.pathom.connect.planner :as pcp]
-            [com.wsscode.pathom.core :as p]
-            [com.wsscode.pathom.misc :as p.misc]
-            [com.wsscode.pathom.viz.client-parser :as cp]
-            [com.wsscode.pathom.viz.codemirror :as cm]
-            [com.wsscode.pathom.viz.helpers :as pvh]
-            [com.wsscode.pathom.viz.lib.local-storage :as ls]
-            [com.wsscode.pathom.viz.query-plan :as plan-view]
-            [com.wsscode.pathom.viz.trace :as pvt]
-            [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
-            [com.wsscode.pathom.viz.ui.kit :as ui]
-            [helix.core :as h]
-            [com.wsscode.pathom3.viz.plan :as viz-plan]
-            [helix.hooks :as hooks]
-            [clojure.string :as str]
-            [com.wsscode.pathom.viz.codemirror6 :as cm6]))
+  (:require
+    [cljs.spec.alpha :as s]
+    [clojure.string :as str]
+    [com.fulcrologic.fulcro-css.css :as css]
+    [com.fulcrologic.fulcro-css.localized-dom :as dom]
+    [com.fulcrologic.fulcro.components :as fc]
+    [com.fulcrologic.fulcro.data-fetch :as df]
+    [com.fulcrologic.fulcro.mutations :as fm]
+    [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
+    [com.wsscode.async.async-cljs :refer [<?maybe go-promise <!]]
+    [com.wsscode.pathom.connect :as pc]
+    [com.wsscode.pathom.core :as p]
+    [com.wsscode.pathom.misc :as p.misc]
+    [com.wsscode.pathom.viz.client-parser :as cp]
+    [com.wsscode.pathom.viz.codemirror :as cm]
+    [com.wsscode.pathom.viz.codemirror6 :as cm6]
+    [com.wsscode.pathom.viz.helpers :as pvh]
+    [com.wsscode.pathom.viz.lib.local-storage :as ls]
+    [com.wsscode.pathom.viz.query-plan :as plan-view]
+    [com.wsscode.pathom.viz.trace :as pvt]
+    [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
+    [com.wsscode.pathom.viz.ui.kit :as ui]
+    [com.wsscode.pathom3.viz.plan :as viz-plan]
+    [helix.core :as h]
+    [helix.hooks :as hooks]))
 
 (declare QueryEditor TransactionResponse)
 
@@ -136,33 +135,6 @@
 (fc/defsc TransactionResponse [_ _]
   {:ident [::id ::id]
    :query [::id ::result :com.wsscode.pathom/trace]})
-
-(fc/defsc Button
-  [this props]
-  {:css [[:.container
-          {:font-size   "11px"
-           :font-family "'Open Sans', sans-serif"
-           :font-weight "600"}
-          {:background-color "#4b5b6d"
-           :border           "none"
-           :border-radius    "3px"
-           :color            "#fff"
-           :cursor           "pointer"
-           :display          "inline-block"
-           :padding          "2px 8px"
-           :line-height      "1.5"
-           :margin-bottom    "0"
-           :text-align       "center"
-           :white-space      "nowrap"
-           :vertical-align   "middle"
-           :user-select      "none"
-           :outline          "none"}
-          [:&:disabled {:background "#b0c1d6"
-                        :color      "#eaeaea"
-                        :cursor     "not-allowed"}]]]}
-  (dom/button :.container props (fc/children this)))
-
-(def button (fc/factory Button))
 
 (defn load-query-editor-index [])
 
@@ -313,7 +285,7 @@
                  [:.history-container {:width      "250px"
                                        :max-height "100%"
                                        :overflow   "auto"}]]
-   :css-include [pvt/D3Trace Button HistoryView]
+   :css-include [pvt/D3Trace HistoryView]
    :use-hooks?  true}
   (pvh/use-layout-effect #(init-query-editor this) [])
   (let [run-query     (pvh/use-callback #(run-query! this))
