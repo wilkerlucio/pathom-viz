@@ -42,7 +42,7 @@
 
     (dom/div :.flex.flex-1.flex-col.overflow-hidden.max-w-full.min-h-40
       (if trace
-        (dom/div :.flex.flex-1.overflow-hidden.pt-3
+        (dom/div :.trace-wrapper.flex.flex-1.overflow-hidden.pt-3.min-h-40
           (pvt/d3-trace {:trace-data      trace'
                          :on-show-details details-handle})))
 
