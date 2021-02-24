@@ -127,7 +127,7 @@
      "bg-gray-700 rounded px-2 py-1"
      ; hover
      "hover:bg-gray-500"
-     "focus:outline-none"
+     "focus:outline-none focus:ring"
      "disabled:opacity-50 disabled:cursor-not-allowed"]))
 
 #_
