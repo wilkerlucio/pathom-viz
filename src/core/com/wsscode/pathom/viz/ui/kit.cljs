@@ -133,7 +133,8 @@
     ["text-xs text-white font-semibold"
      "bg-gray-700 rounded px-2 py-1"
      ; hover
-     "hover:bg-gray-500"]))
+     "hover:bg-gray-500"
+     "disabled:opacity-50 disabled:cursor-not-allowed"]))
 
 #_
 (defn button [props & children]
@@ -164,6 +165,11 @@
   (dom/div :.container props (fc/children this)))
 
 (def row (fc/factory Row))
+
+(def link
+  (styled-component domc/a
+    ["text-blue-600"
+     "hover:underline"]))
 
 ; endregion
 
