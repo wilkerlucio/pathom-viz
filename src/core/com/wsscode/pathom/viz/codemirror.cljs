@@ -211,7 +211,8 @@
 (defn paths-for-context [env context]
   (paths-for-context*
     (assoc env ::ctx-path-cache* pathom-cache
-               ::pci/index-io (::pc/index-io env))
+               ::pci/index-io (::pc/index-io env)
+               ::pci/index-attributes (::pc/index-attributes env))
     context))
 
 (defn ^:export completions [index token reg]

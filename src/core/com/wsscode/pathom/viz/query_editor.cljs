@@ -72,7 +72,7 @@
 ;; Parser
 
 (def index-query
-  [{::pc/indexes [::pc/idents ::pc/index-io ::pc/autocomplete-ignore]}])
+  [{::pc/indexes [::pc/index-attributes ::pc/idents ::pc/index-io ::pc/autocomplete-ignore]}])
 
 (pc/defresolver indexes [{::keys [client-parser]} _]
   {::pc/output [::pc/indexes]}
