@@ -121,19 +121,13 @@
 
 ; region basics
 
-(fc/defsc Button
-  [this props]
-  {:css [[:.button {:cursor  "pointer"
-                    :padding "1px 7px 2px"}
-          [:&:disabled {:cursor "not-allowed"}]]]}
-  (dom/button :.button props (fc/children this)))
-
 (def button
   (styled-component domc/button
     ["text-xs text-white font-semibold"
      "bg-gray-700 rounded px-2 py-1"
      ; hover
      "hover:bg-gray-500"
+     "focus:outline-none"
      "disabled:opacity-50 disabled:cursor-not-allowed"]))
 
 #_
