@@ -3,7 +3,8 @@
             [goog.events :as gevents]
             [goog.dom :as gdom]
             [com.wsscode.pathom.viz.lib.local-storage :as ls]
-            [garden.core :as garden]))
+            [garden.core :as garden]
+            [com.fulcrologic.fulcro.dom :as dom]))
 
 (deftype ReactFnState [value set-value!]
   IDeref
@@ -41,8 +42,13 @@
     (gdom/appendChild (js/document.createTextNode css))))
 
 (defn use-garden-css [styles]
-  (let [css (hooks/use-memo [(hash styles)] (garden/css styles))]
+  (let [css (hooks/use-memo [(hash styles)] (garden/css styles))
+        ready? (use-fstate false)]
     (hooks/use-effect [(hash styles)]
       (let [style (create-style-element css)]
         (gdom/appendChild js/document.head style)
-        #(gdom/removeNode style)))))
+        (ready? true)
+        #(gdom/removeNode style)))
+
+    (if-not @ready?
+      (dom/noscript))))
