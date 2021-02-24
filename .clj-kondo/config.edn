@@ -11,8 +11,7 @@
                 potemkin.collections/def-map-type        clojure.core/deftype
                 promesa.core/let                         clojure.core/let
                 promesa.core/loop                        clojure.core/loop}
- :linters      {:unsorted-required-namespaces {:level :warning}
-                :invalid-arity                {:level :error}
+ :linters      {:invalid-arity                {:level :error}
                 :missing-else-branch          {:level :off}
                 :unresolved-symbol            {:exclude [match? thrown-match?]}
                 :consistent-alias             {:level   :warning
