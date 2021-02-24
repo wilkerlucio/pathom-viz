@@ -325,7 +325,8 @@
       (dom/div {:style (cond-> {:width   (str @details-size "px")
                                 :display "flex"}
                          (not selected-node)
-                         (assoc :flex "1"))}
+                         (assoc :flex "1"))
+                :class "min-w-40"}
         (h/$ PlanGraphView {:run-stats      run-stats
                             :display-type   display-type
                             :on-select-node on-select-node}))
@@ -334,7 +335,7 @@
         (let [run-stats (smart-plan run-stats)]
           (h/<>
             (uip/drag-resize {:state details-size :direction "left"})
-            (dom/div {:class "flex-col flex-1 overflow-hidden"}
+            (dom/div {:class "flex-col flex-1 overflow-hidden min-w-40"}
               (uip/section-header {}
                 (dom/div {:class "flex-row items-center"}
                   "Node Details"

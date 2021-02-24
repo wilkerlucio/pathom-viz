@@ -1,9 +1,6 @@
 (ns com.wsscode.pathom.viz.electron.renderer.main
   "Remote helpers to call remote parsers from the client."
-  (:require [cljs.reader :refer [read-string]]
-            [cljs.spec.alpha :as s]
-            [clojure.core.async :as async :refer [go <! chan go-loop]]
-            [clojure.set :as set]
+  (:require [clojure.set :as set]
             [com.fulcrologic.fulcro-css.css-injection :as cssi]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [com.fulcrologic.fulcro.algorithms.merge :as merge]
@@ -15,23 +12,22 @@
             [com.wsscode.async.processing :as wap]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.viz.electron.react.use-electron-ipc :refer [use-electron-ipc]]
+            [com.wsscode.pathom.viz.fulcro]
             [com.wsscode.pathom.viz.helpers :as pvh]
+            [com.wsscode.pathom.viz.lib.hooks :as p.hooks]
             [com.wsscode.pathom.viz.local-parser :as local.parser]
             [com.wsscode.pathom.viz.parser-assistant :as assistant]
             [com.wsscode.pathom.viz.request-history :as request-history]
+            [com.wsscode.pathom.viz.styles]
+            [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
             [com.wsscode.pathom.viz.transit :as wsst]
-            [com.wsscode.pathom.viz.trace :as pvt]
-            [com.wsscode.pathom.viz.fulcro]
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.wsscode.pathom3.viz.plan :as viz-plan]
+            [com.wsscode.promesa.bridges.core-async]
             [goog.object :as gobj]
             [helix.core :as h]
             [helix.hooks :as hooks]
-            [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
-            [com.wsscode.promesa.bridges.core-async]
-            [promesa.core :as p]
-            [com.wsscode.pathom.viz.lib.hooks :as p.hooks]
-            [com.wsscode.tailwind-garden.core :as tailwind]))
+            [promesa.core :as p]))
 
 (>def ::channel any?)
 (>def ::message-type qualified-keyword?)
@@ -252,9 +248,6 @@
 (defn use-server-attribute [attr]
   (h/$ UseServerConstant {:attr attr}))
 
-(def full-css
-  (into pvt/trace-css (tailwind/everything)))
-
 (fc/defsc Root
   [this {:ui/keys [stuff]}]
   {:pre-merge  (fn [{:keys [current-normalized data-tree]}]
@@ -274,7 +267,7 @@
                  ui/text-sans-13
                  [:a {:text-decoration "none"}]]]
    :use-hooks? true}
-  (or (p.hooks/use-garden-css full-css)
+  (or (p.hooks/use-garden-css com.wsscode.pathom.viz.styles/full-css)
       (h/$ (.-Provider com.wsscode.pathom.viz.fulcro/FulcroAppContext) {:value fc/*app*}
         (ui/column (ui/gc :.flex)
           (connections-and-logs stuff)

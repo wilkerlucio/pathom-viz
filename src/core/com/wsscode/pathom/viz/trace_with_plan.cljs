@@ -40,8 +40,7 @@
         (run-stats! nil))
       [(hash trace')])
 
-    (dom/div :.flex.flex-1.flex-col.overflow-hidden.max-w-full
-      {:style {:minHeight "200px"}}
+    (dom/div :.flex.flex-1.flex-col.overflow-hidden.max-w-full.min-h-40
       (if trace
         (dom/div :.flex.flex-1.overflow-hidden.pt-3
           (pvt/d3-trace {:trace-data      trace'
@@ -61,7 +60,7 @@
               (dom/button {:onClick #(run-stats! nil)
                            :style   {:marginLeft 6}} "Close")))
 
-          (dom/div :.flex {:style {:height (str @plan-size "px")}}
+          (dom/div :.flex.min-h-20 {:style {:height (str @plan-size "px")}}
             (h/$ viz-plan/PlanGraphWithNodeDetails
               {:run-stats      (assoc @run-stats! ::viz-plan/node-in-focus @selected-node-id!)
                :display-type   @display-type

@@ -342,10 +342,10 @@
                  :disabled query-running?}
           "Run query"))
 
-      (dom/div :.query-row
+      (dom/div :.query-row$min-h-20
         (if (and @show-history? (seq query-history))
           (fc/fragment
-            (dom/div :.history-container {:style {:width (str @history-size "px")}}
+            (dom/div :.history-container$min-w-40 {:style {:width (str @history-size "px")}}
               (history-view {::query-history   query-history
                              ::on-pick-query   #(fm/set-value! this ::query %)
                              ::on-delete-query #(fc/transact! this [(remove-query-from-history {::query        %
@@ -356,7 +356,7 @@
                :state     history-size})))
 
         (cm/pathom
-          (merge {:className   (:editor css)
+          (merge {:className   (str (:editor css) " min-w-40")
                   :style       {:width (str @query-size "px")}
                   :value       (or (str query) "")
                   ::pc/indexes (if (map? indexes) (p/elide-not-found indexes))
@@ -373,7 +373,7 @@
           {:direction "left"
            :state     query-size})
 
-        (cm6/clojure-read result))
+        (cm6/clojure-read result {:classes ["min-w-40"]}))
 
       (if trace-viewer
         (fc/fragment
@@ -381,7 +381,7 @@
             {:direction "down"
              :state     trace-size})
 
-          (dom/div :.trace {:style {:height (str @trace-size "px")}}
+          (dom/div :.trace$min-h-20 {:style {:height (str @trace-size "px")}}
             (trace+plan/trace-with-plan
               (:com.wsscode.pathom/trace trace-viewer))))))))
 
