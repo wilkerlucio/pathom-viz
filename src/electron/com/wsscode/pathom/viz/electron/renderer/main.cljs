@@ -31,7 +31,7 @@
             [com.wsscode.promesa.bridges.core-async]
             [promesa.core :as p]
             [com.wsscode.pathom.viz.lib.hooks :as p.hooks]
-            [com.wsscode.tailcatcss.core :as tail-cat]))
+            [com.wsscode.tailwind-garden.core :as tailwind]))
 
 (>def ::channel any?)
 (>def ::message-type qualified-keyword?)
@@ -253,7 +253,7 @@
   (h/$ UseServerConstant {:attr attr}))
 
 (def full-css
-  (into tail-cat/everything pvt/trace-css))
+  (into pvt/trace-css (tailwind/everything)))
 
 (fc/defsc Root
   [this {:ui/keys [stuff]}]
@@ -274,20 +274,20 @@
                  ui/text-sans-13
                  [:a {:text-decoration "none"}]]]
    :use-hooks? true}
-  (p.hooks/use-garden-css full-css)
-  (h/$ (.-Provider com.wsscode.pathom.viz.fulcro/FulcroAppContext) {:value fc/*app*}
-    (ui/column (ui/gc :.flex)
-      (connections-and-logs stuff)
-      (dom/div :.footer
-        (dom/a {:href    "#"
-                :onClick (ui/prevent-default #(.openExternal shell "https://github.com/wilkerlucio/pathom-viz"))}
-          "Pathom Viz")
-        (dom/div {:className "ml-2"} "" (use-server-attribute :pathom.viz.app/version))
-        (dom/div (ui/gc :.flex))
-        (dom/div "Freely distributed by "
-          (dom/a {:href    "#"
-                  :onClick (ui/prevent-default #(.openExternal shell "https://github.com/wilkerlucio"))}
-            "Wilker Lucio"))))))
+  (or (p.hooks/use-garden-css full-css)
+      (h/$ (.-Provider com.wsscode.pathom.viz.fulcro/FulcroAppContext) {:value fc/*app*}
+        (ui/column (ui/gc :.flex)
+          (connections-and-logs stuff)
+          (dom/div :.footer
+            (dom/a {:href    "#"
+                    :onClick (ui/prevent-default #(.openExternal shell "https://github.com/wilkerlucio/pathom-viz"))}
+              "Pathom Viz")
+            (dom/div {:className "ml-2"} "" (use-server-attribute :pathom.viz.app/version))
+            (dom/div (ui/gc :.flex))
+            (dom/div "Freely distributed by "
+              (dom/a {:href    "#"
+                      :onClick (ui/prevent-default #(.openExternal shell "https://github.com/wilkerlucio"))}
+                "Wilker Lucio")))))))
 
 (def root (fc/factory Root {:keyfn ::id}))
 
