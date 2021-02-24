@@ -1,5 +1,5 @@
-{:config-paths ["com.wsscode/pathom/config.edn"
-                "com.wsscode/pathom3/config.edn"]
+{:config-paths ["com.wsscode/pathom"
+                "com.wsscode/pathom3"]
  :lint-as      {clojure.test.check.clojure-test/defspec  clojure.core/def
                 clojure.test.check.properties/for-all    clojure.core/let
                 com.fulcrologic.fulcro.components/defsc  clojure.core/defn
