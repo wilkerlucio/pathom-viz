@@ -112,6 +112,7 @@
 
 (def button (fc/factory Button))
 
+#_
 (defn button [props & children]
   (apply dom/button (dom-props {:classes [""]} props) children))
 
@@ -667,7 +668,7 @@
                                      :pointerEvents "all"
                                      :zIndex        "2"}
                                     {:cursor        "ns-resize"
-                                     :min-height    "20px"
+                                     :minHeight     "20px"
                                      :background    "#eee"
                                      :border        "1px solid #e0e0e0"
                                      :borderLeft    "0"
