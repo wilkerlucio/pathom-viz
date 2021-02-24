@@ -85,14 +85,18 @@
     ::pcp/keys [available-data]
     ::eql/keys [query]}]
   (let [snapshots* (atom [])
-        graph      (pcp/compute-run-graph
-                     (cond-> {::pci/index-oir              index-oir
-                              ::pcp/snapshots*             snapshots*
-                              :edn-query-language.ast/node (eql/query->ast query)}
-                       available-data
-                       (assoc ::pcp/available-data available-data)))
-        frames     (-> (mapv smart-plan @snapshots*)
-                       (conj (smart-plan (assoc graph ::pcp/snapshot-message "Completed graph."))))]
+        graph      (try
+                     (pcp/compute-run-graph
+                       (cond-> {::pci/index-oir              index-oir
+                                ::pcp/snapshots*             snapshots*
+                                :edn-query-language.ast/node (eql/query->ast query)}
+                         available-data
+                         (assoc ::pcp/available-data available-data)))
+                     (catch :default e
+                       (js/console.error "Error computing plan" e)))
+        frames     (cond-> (mapv smart-plan @snapshots*)
+                     graph
+                     (conj (smart-plan (assoc graph ::pcp/snapshot-message "Completed graph."))))]
     frames))
 
 (defn ^:export compute-plan-elements [{::pcp/keys [nodes root highlight-nodes highlight-styles]
@@ -317,33 +321,31 @@
                                            on-select-node]}]
   (let [selected-node (get run-stats ::node-in-focus)
         details-size  (pvh/use-persistent-state ::node-details-size 200)]
-    (fc/with-parent-context (hooks/use-context com.wsscode.pathom.viz.fulcro/FulcroAppContext)
-      (uip/row {:style {:flex     "1"
-                        :overflow "hidden"}}
-        (dom/div {:style (cond-> {:width   (str @details-size "px")
-                                  :display "flex"}
-                           (not selected-node)
-                           (assoc :flex "1"))}
-          (h/$ PlanGraphView {:run-stats      run-stats
-                              :display-type   display-type
-                              :on-select-node on-select-node}))
+    (dom/div {:class "flex-row flex-1 overflow-hidden"}
+      (dom/div {:style (cond-> {:width   (str @details-size "px")
+                                :display "flex"}
+                         (not selected-node)
+                         (assoc :flex "1"))
+                :class "min-w-40"}
+        (h/$ PlanGraphView {:run-stats      run-stats
+                            :display-type   display-type
+                            :on-select-node on-select-node}))
 
-        (if selected-node
-          (let [run-stats (smart-plan run-stats)]
-            (h/<>
-              (uip/drag-resize {:state details-size :direction "left"})
-              (uip/column {:style {:flex "1"}}
-                (uip/section-header {}
-                  (uip/row {:classes [:.center]}
-                    "Node Details"
-                    (dom/div {:style {:flex "1"}})
-                    (uip/button {:onClick #(on-select-node nil)} "Unselect node")))
-                (cm6/clojure-read
-                  (do
-                    (some-> (get-in run-stats [::pcp/nodes selected-node])
-                            (psm/sm-touch!
-                              [::pcr/node-run-duration-ms])
-                            (psm/sm-entity))))))))))))
+      (if selected-node
+        (let [run-stats (smart-plan run-stats)]
+          (h/<>
+            (uip/drag-resize {:state details-size :direction "left"})
+            (dom/div {:class "flex-col flex-1 overflow-hidden min-w-40"}
+              (uip/section-header {}
+                (dom/div {:class "flex-row items-center"}
+                  "Node Details"
+                  (dom/div {:style {:flex "1"}})
+                  (dom/button {:onClick #(on-select-node nil)} "Unselect node")))
+              (cm6/clojure-read
+                (some-> (get-in run-stats [::pcp/nodes selected-node])
+                        (psm/sm-touch!
+                          [::pcr/node-run-duration-ms])
+                        (psm/sm-entity))))))))))
 
 (h/defnc ^:export PlanSnapshots [{:keys [frames display]}]
   (let [[current-frame :as frame-state] (hooks/use-state (dec (count frames)))

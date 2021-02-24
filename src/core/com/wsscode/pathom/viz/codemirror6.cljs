@@ -22,7 +22,7 @@
             [nextjournal.clojure-mode.test-utils :as test-utils]
             [helix.hooks :as hooks]
             [helix.core :as h]
-            [helix.dom :as dom]
+            [com.fulcrologic.fulcro.dom :as dom]
             [com.wsscode.pathom.viz.helpers :as pvh]
             [clojure.walk :as walk]))
 
@@ -56,7 +56,7 @@
                         (.of view/keymap historyKeymap)
                         #_(.of (.-lineWrapping EditorView) "false")])
 
-(h/defnc Editor [{:keys [source readonly]
+(h/defnc Editor [{:keys [source readonly props]
                   :or   {readonly false}}]
   (let [!view  (pvh/use-fstate nil)
         mount! (hooks/use-callback []
@@ -84,11 +84,8 @@
                                                   extensions)}))))
     (hooks/use-effect [@!view] #(some-> @!view (j/call :destroy)))
 
-    (dom/div {:style {:flex       "1"
-                      :display    "flex"
-                      :overflow   "auto"
-                      :whiteSpace "nowrap"}
-              :ref   mount!})))
+    (dom/div {:classes (into ["flex-row" "flex-1" "overflow-auto" "whitespace-nowrap"] (:classes props))
+              :ref     mount!})))
 
 (defn sorted-maps [x]
   (walk/postwalk
@@ -98,7 +95,7 @@
         x))
     x))
 
-(h/defnc EditorReadWrap [{:keys [source]}]
+(h/defnc EditorReadWrap [{:keys [source props]}]
   (let [source' (hooks/use-memo [(hash source)]
                   (cond
                     (string? source)
@@ -107,7 +104,10 @@
                     :else
                     (pvh/pprint-str (sorted-maps source))))]
     (h/$ Editor {:source   source'
+                 :props    props
                  :readonly true})))
 
-(defn clojure-read [source]
-  (h/$ EditorReadWrap {:source source}))
+(defn clojure-read
+  ([source] (clojure-read source {}))
+  ([source props]
+   (h/$ EditorReadWrap {:source source :props props})))

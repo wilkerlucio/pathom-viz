@@ -72,7 +72,7 @@
 ;; Parser
 
 (def index-query
-  [{::pc/indexes [::pc/idents ::pc/index-io ::pc/autocomplete-ignore]}])
+  [{::pc/indexes [::pc/index-attributes ::pc/idents ::pc/index-io ::pc/autocomplete-ignore]}])
 
 (pc/defresolver indexes [{::keys [client-parser]} _]
   {::pc/output [::pc/indexes]}
@@ -313,7 +313,7 @@
                  [:.history-container {:width      "250px"
                                        :max-height "100%"
                                        :overflow   "auto"}]]
-   :css-include [pvt/D3Trace Button HistoryView trace+plan/TraceWithPlan]
+   :css-include [pvt/D3Trace Button HistoryView]
    :use-hooks?  true}
   (pvh/use-layout-effect #(init-query-editor this) [])
   (let [run-query     (pvh/use-callback #(run-query! this))
@@ -331,21 +331,21 @@
                         :onChange #(fm/toggle! this ::request-trace?)})
             "Request trace"))
         (dom/div :.flex)
-        (button {:onClick  #(swap! show-history? not)
-                 :disabled (not (seq query-history))
-                 :style    {:marginRight "6px"}}
+        (ui/button {:onClick  #(swap! show-history? not)
+                    :disabled (not (seq query-history))
+                    :style    {:marginRight "6px"}}
           "History")
-        (button {:onClick #(load-indexes (fc/any->app this) (fc/props this))
-                 :style   {:marginRight "6px"}}
+        (ui/button {:onClick #(load-indexes (fc/any->app this) (fc/props this))
+                    :style   {:marginRight "6px"}}
           "Refresh index")
-        (button {:onClick  run-query
-                 :disabled query-running?}
+        (ui/button {:onClick  run-query
+                    :disabled query-running?}
           "Run query"))
 
-      (dom/div :.query-row
+      (dom/div :.query-row$min-h-20
         (if (and @show-history? (seq query-history))
           (fc/fragment
-            (dom/div :.history-container {:style {:width (str @history-size "px")}}
+            (dom/div :.history-container$min-w-40 {:style {:width (str @history-size "px")}}
               (history-view {::query-history   query-history
                              ::on-pick-query   #(fm/set-value! this ::query %)
                              ::on-delete-query #(fc/transact! this [(remove-query-from-history {::query        %
@@ -356,7 +356,7 @@
                :state     history-size})))
 
         (cm/pathom
-          (merge {:className   (:editor css)
+          (merge {:className   (str (:editor css) " min-w-40")
                   :style       {:width (str @query-size "px")}
                   :value       (or (str query) "")
                   ::pc/indexes (if (map? indexes) (p/elide-not-found indexes))
@@ -373,7 +373,7 @@
           {:direction "left"
            :state     query-size})
 
-        (cm6/clojure-read result))
+        (cm6/clojure-read result {:classes ["min-w-40"]}))
 
       (if trace-viewer
         (fc/fragment
@@ -381,8 +381,8 @@
             {:direction "down"
              :state     trace-size})
 
-          (dom/div :.trace {:style {:height (str @trace-size "px")}}
+          (dom/div :.trace$min-h-20 {:style {:height (str @trace-size "px")}}
             (trace+plan/trace-with-plan
-              trace-viewer)))))))
+              (:com.wsscode.pathom/trace trace-viewer))))))))
 
 (def query-editor (fc/computed-factory QueryEditor))

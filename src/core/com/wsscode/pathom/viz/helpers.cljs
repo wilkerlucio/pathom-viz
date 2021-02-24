@@ -119,6 +119,10 @@
       (js/console.warn "Safe read failed to read." s e)
       nil)))
 
+(defn safe-read-string
+  [s]
+  (try (read-string s) (catch :default _ nil)))
+
 (defn toggle-set-item [set item]
   (if (contains? set item)
     (disj set item)

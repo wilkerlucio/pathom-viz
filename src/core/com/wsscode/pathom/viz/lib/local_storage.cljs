@@ -1,7 +1,7 @@
 (ns com.wsscode.pathom.viz.lib.local-storage
   (:refer-clojure :exclude [get set!])
   (:require [cljs.reader :refer [read-string]]
-            [fulcro.inspect.remote.transit :as transit]))
+            [com.wsscode.transit :as transit]))
 
 (defn read-transit [s]
   (transit/read s))

@@ -12,8 +12,9 @@
           :embed               {:target     :browser
                                 :output-dir "shells/embed/js"
                                 :asset-path "/js"
+                                :compiler-options {:output-feature-set :es8}
                                 :modules    {:main {:entries [com.wsscode.pathom.viz.embed.main]}}
-                                :devtools   {:preloads  [devtools.preload fulcro.inspect.preload]
+                                :devtools   {:preloads  [devtools.preload]
                                              :http-root "shells/embed"
                                              :http-port 8087}}
 

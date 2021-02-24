@@ -9,9 +9,11 @@
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [com.wsscode.pathom.misc :as p.misc]
             [com.wsscode.pathom.viz.helpers :as h]
+            [helix.core :as hx]
             [goog.object :as gobj]
             [goog.string :as gstr]
-            [garden.selectors :as gs]))
+            [garden.selectors :as gs]
+            [clojure.set :as set]))
 
 (declare gc css ccss)
 
@@ -26,6 +28,9 @@
 (def text-sans-13
   {:font-family "sans-serif"
    :font-size   "13px"})
+
+(def text-sans-13'
+  ["font-sans" "text-sm"])
 
 (def css-header
   {:margin      "0"
@@ -45,12 +50,31 @@
 
 ; region helpers
 
+(defn normalize-props [props classes]
+  (update props :classes #(into classes %)))
+
+(defn styled-component [component classes]
+  (fn styled-component-internal
+    ([props]
+     (component (normalize-props props classes)))
+    ([props child]
+     (component (normalize-props props classes) child))
+    ([props c1 c2]
+     (component (normalize-props props classes) c1 c2))
+    ([props c1 c2 c3]
+     (component (normalize-props props classes) c1 c2 c3))
+    ([props c1 c2 c3 c4]
+     (component (normalize-props props classes) c1 c2 c3 c4))
+    ([props c1 c2 c3 c4 & children]
+     (apply component (normalize-props props classes) c1 c2 c3 c4 children))))
+
 (defn add-class [props class]
   (update props :classes p.misc/vconj class))
 
 (def mergers
   {:classes (fn [a b]
-              (into a b))})
+              (into a b))
+   :class   (fn [a b] (str a " " b))})
 
 (s/def ::merger-map (s/map-of keyword? fn?))
 
@@ -104,7 +128,16 @@
           [:&:disabled {:cursor "not-allowed"}]]]}
   (dom/button :.button props (fc/children this)))
 
-(def button (fc/factory Button))
+(def button
+  (styled-component domc/button
+    ["text-xs text-white font-semibold"
+     "bg-gray-700 rounded px-2 py-1"
+     ; hover
+     "hover:bg-gray-500"]))
+
+#_
+(defn button [props & children]
+  (apply dom/button (dom-props {:classes [""]} props) children))
 
 (fc/defsc Column
   [this props]
@@ -275,7 +308,13 @@
           text-sans-13]]}
   (dom/div :.container (dom-props props) (fc/children this)))
 
-(def section-header (fc/factory SectionHeader))
+(defn section-header [props & children]
+  (apply dom/div
+    (dom-props {:className "py-1 px-2 border-b border-gray-300 bg-gray-100 font-sans text-sm"}
+      props)
+    children))
+
+#_ (def section-header (fc/factory SectionHeader))
 
 (fc/defsc RawCollapsible
   [this {::keys [collapsed? on-toggle title]
@@ -318,18 +357,19 @@
 
 (defn input [{:keys [state] :as props}]
   (let [props (dissoc props :state)]
-    (dom/input (assoc props :value @state :onChange #(reset! state (event-value %))))))
+    (dom/input :$border$rounded$w-full (assoc props :value @state :onChange #(reset! state (event-value %))))))
 
 (fc/defsc PromptModal
   [this {:keys [prompt value on-finish]}]
   {:use-hooks? true}
   (let [text (h/use-atom-state (or value ""))]
     (modal {}
-      (dom/div (str prompt))
-      (dom/div (input {:state text}))
-      (dom/div
-        (dom/button {:onClick #(on-finish @text)} "Ok")
-        (dom/button {:onClick #(on-finish nil)} "Cancel")))))
+      (dom/div :$space-y-2
+        (dom/div (str prompt))
+        (dom/div (input {:state text}))
+        (dom/div :$space-x-1
+          (button {:onClick #(on-finish @text)} "Ok")
+          (button {:onClick #(on-finish nil)} "Cancel"))))))
 
 (def prompt-modal (fc/factory PromptModal))
 
@@ -578,11 +618,16 @@
 
 (def number-input (fc/factory NumberInput))
 
+(def native-select
+  (styled-component domc/select
+    ["mt-1 block pl-2 pr-10 py-1 text-sm border-gray-300 rounded-md"
+     "focus:outline-none focus:border-gray-500"]))
+
 (defn dom-select
   "Similar to fulcro dom/select, but does value encode/decode in EDN so you can use
   EDN values directly."
   [props & children]
-  (apply dom/select
+  (apply native-select
     (-> props
         (update :value pr-str)
         (update :onChange (fn [f]
@@ -632,7 +677,49 @@
 
 (>def ::direction #{"up" "down" "left" "right"})
 
-(fc/defsc DragResize
+(hx/defnc DragResizeHelix [{:keys [state direction props react-key kids]}]
+  (let [start      (h/use-atom-state nil)
+        start-size (h/use-atom-state nil)
+        axis       (get {"left"  "x"
+                         "right" "x"
+                         "up"    "y"
+                         "down"  "y"} direction "x")
+        invert?    (get {"left"  true
+                         "right" false
+                         "up"    true
+                         "down"  false} direction true)
+        css        (if (= "x" axis) {:cursor        "ew-resize"
+                                     :width         "20px"
+                                     :background    "#eee"
+                                     :border        "1px solid #e0e0e0"
+                                     :borderTop     "0"
+                                     :borderBottom  "0"
+                                     :pointerEvents "all"
+                                     :zIndex        "2"}
+                                    {:cursor        "ns-resize"
+                                     :minHeight     "20px"
+                                     :background    "#eee"
+                                     :border        "1px solid #e0e0e0"
+                                     :borderLeft    "0"
+                                     :borderRight   "0"
+                                     :pointerEvents "all"
+                                     :padding       "4px 8px"
+                                     :zIndex        "2"})]
+    (js/React.createElement DraggableCore
+      #js {:key     (or react-key "dragHandler")
+           :onStart (fn [e dd]
+                      (reset! start (gobj/get dd axis))
+                      (reset! start-size @state))
+           :onDrag  (fn [e dd]
+                      (let [start    @start
+                            size     @start-size
+                            value    (gobj/get dd axis)
+                            new-size (+ size (if invert? (- value start) (- start value)))]
+                        (reset! state new-size)))}
+      (apply dom/div (merge {:classes   (into text-sans-13' ["flex-shrink-0"])
+                             :style     css} props) kids))))
+
+(defn drag-resize
   "Creates a visual component that can be dragged to control the size of another component.
 
   The :state prop should be an `atom-like` state and will reflect the current size.
@@ -660,33 +747,9 @@
   In this column example, use \"up\" if you want to control the DIV1, and \"down\" if
   you want to control the size of DIV2.
   "
-  [this {:keys [state direction props key]}]
-  {:use-hooks? true}
-  (let [start      (h/use-atom-state nil)
-        start-size (h/use-atom-state nil)
-        axis       (get {"left"  "x"
-                         "right" "x"
-                         "up"    "y"
-                         "down"  "y"} direction "x")
-        invert?    (get {"left"  true
-                         "right" false
-                         "up"    true
-                         "down"  false} direction true)
-        css        (if (= "x" axis) (css :.divisor-v) (css :.divisor-h))]
-    (js/React.createElement DraggableCore
-      #js {:key     (or key "dragHandler")
-           :onStart (fn [e dd]
-                      (reset! start (gobj/get dd axis))
-                      (reset! start-size @state))
-           :onDrag  (fn [e dd]
-                      (let [start    @start
-                            size     @start-size
-                            value    (gobj/get dd axis)
-                            new-size (+ size (if invert? (- value start) (- start value)))]
-                        (reset! state new-size)))}
-      (apply dom/div (merge {:className css} props) (fc/children this)))))
-
-(def drag-resize (fc/factory DragResize))
+  [props & children]
+  (let [props (set/rename-keys props {:key :react-key})]
+    (hx/$ DragResizeHelix {:kids children :& props})))
 
 ; endregion
 
@@ -710,6 +773,7 @@
                  [:.border-collapse-right {:border-right "none !important"}]
                  [:.border-collapse-bottom {:border-bottom "none !important"}]
                  [:.border-collapse-left {:border-left "none !important"}]
+                 []
                  [:.divisor-v {:cursor         "ew-resize"
                                :width          "20px"
                                :background     "#eee"
@@ -728,8 +792,7 @@
                                :padding        "4px 8px"
                                :z-index        "2"}
                   text-sans-13]]
-   :css-include [Button
-                 CollapsibleBox
+   :css-include [CollapsibleBox
                  Column
                  Modal
                  NumberInput
