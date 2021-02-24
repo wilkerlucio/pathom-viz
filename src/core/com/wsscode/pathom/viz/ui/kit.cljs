@@ -626,7 +626,7 @@
 
 (def native-select
   (styled-component domc/select
-    ["mt-1 block pl-2 pr-10 py-1 text-sm border-gray-300 rounded-md"
+    ["block pl-2 pr-10 py-0.5 text-sm border-gray-300 rounded-md"
      "focus:outline-none focus:border-gray-500"]))
 
 (defn dom-select
