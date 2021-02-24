@@ -618,11 +618,16 @@
 
 (def number-input (fc/factory NumberInput))
 
+(def native-select
+  (styled-component domc/select
+    ["mt-1 block pl-2 pr-10 py-1 text-sm border-gray-300 rounded-md"
+     "focus:outline-none focus:border-gray-500"]))
+
 (defn dom-select
   "Similar to fulcro dom/select, but does value encode/decode in EDN so you can use
   EDN values directly."
   [props & children]
-  (apply dom/select
+  (apply native-select
     (-> props
         (update :value pr-str)
         (update :onChange (fn [f]

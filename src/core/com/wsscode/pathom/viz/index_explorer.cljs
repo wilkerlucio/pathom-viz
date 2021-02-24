@@ -1338,19 +1338,20 @@
                                    ::on-select-mutation  select-mutation}))
         (ui/drag-resize {:state menu-size :direction "left"})
         (ui/column (ui/gc :.flex :.no-scrollbars)
-          (ui/row {}
-            (ui/button {:onClick  go-back
-                        :disabled (not (can-go-back? props))}
-              "◀")
-            (ui/button {:onClick  go-forward
-                        :disabled (not (can-go-forward? props))}
-              "▶")
+          (dom/div {:classes ["flex-row align-center space-x-2"]}
+            (dom/div {:classes ["flex-row align-center"]}
+              (ui/button {:onClick  go-back
+                          :disabled (not (can-go-back? props))}
+                "◀")
+              (ui/button {:onClick  go-forward
+                          :disabled (not (can-go-forward? props))}
+                "▶"))
             (ui/button {:onClick  go-stats
-                        :disabled (= (main-view-ident page) (fc/get-ident this))
-                        :style    {:marginLeft "12px"}} "Stats")
+                        :disabled (= (main-view-ident page) (fc/get-ident this))}
+              "Stats")
             (ui/button {:onClick  go-graph-view
-                        :disabled (= (first (main-view-ident page)) ::graph-view-id)
-                        :style    {:marginLeft "12px"}} "Full Graph"))
+                        :disabled (= (first (main-view-ident page)) ::graph-view-id)}
+              "Full Graph"))
           (if page
             (main-view-union page (assoc index
                                     ::attributes attributes
