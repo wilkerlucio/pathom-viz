@@ -331,15 +331,15 @@
                         :onChange #(fm/toggle! this ::request-trace?)})
             "Request trace"))
         (dom/div :.flex)
-        (button {:onClick  #(swap! show-history? not)
-                 :disabled (not (seq query-history))
-                 :style    {:marginRight "6px"}}
+        (ui/button {:onClick  #(swap! show-history? not)
+                    :disabled (not (seq query-history))
+                    :style    {:marginRight "6px"}}
           "History")
-        (button {:onClick #(load-indexes (fc/any->app this) (fc/props this))
-                 :style   {:marginRight "6px"}}
+        (ui/button {:onClick #(load-indexes (fc/any->app this) (fc/props this))
+                    :style   {:marginRight "6px"}}
           "Refresh index")
-        (button {:onClick  run-query
-                 :disabled query-running?}
+        (ui/button {:onClick  run-query
+                    :disabled query-running?}
           "Run query"))
 
       (dom/div :.query-row$min-h-20

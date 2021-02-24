@@ -36,11 +36,23 @@
      ::listeners (atom {})}
     config))
 
+(defn normalize-props [props classes]
+  (update props :classes #(into classes %)))
+
 (defn styled-component [component classes]
-  (fn [props & children]
-    (apply component
-      (update props :classes #(into classes %))
-      children)))
+  (fn styled-component-internal
+    ([props]
+     (component (normalize-props props classes)))
+    ([props child]
+     (component (normalize-props props classes) child))
+    ([props c1 c2]
+     (component (normalize-props props classes) c1 c2))
+    ([props c1 c2 c3]
+     (component (normalize-props props classes) c1 c2 c3))
+    ([props c1 c2 c3 c4]
+     (component (normalize-props props classes) c1 c2 c3 c4))
+    ([props c1 c2 c3 c4 & children]
+     (apply component (normalize-props props classes) c1 c2 c3 c4 children))))
 
 (def app-context (react/createContext nil))
 

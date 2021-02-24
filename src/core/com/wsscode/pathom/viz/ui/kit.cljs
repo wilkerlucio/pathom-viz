@@ -50,6 +50,24 @@
 
 ; region helpers
 
+(defn normalize-props [props classes]
+  (update props :classes #(into classes %)))
+
+(defn styled-component [component classes]
+  (fn styled-component-internal
+    ([props]
+     (component (normalize-props props classes)))
+    ([props child]
+     (component (normalize-props props classes) child))
+    ([props c1 c2]
+     (component (normalize-props props classes) c1 c2))
+    ([props c1 c2 c3]
+     (component (normalize-props props classes) c1 c2 c3))
+    ([props c1 c2 c3 c4]
+     (component (normalize-props props classes) c1 c2 c3 c4))
+    ([props c1 c2 c3 c4 & children]
+     (apply component (normalize-props props classes) c1 c2 c3 c4 children))))
+
 (defn add-class [props class]
   (update props :classes p.misc/vconj class))
 
@@ -110,7 +128,12 @@
           [:&:disabled {:cursor "not-allowed"}]]]}
   (dom/button :.button props (fc/children this)))
 
-(def button (fc/factory Button))
+(def button
+  (styled-component domc/button
+    ["text-xs text-white font-semibold"
+     "bg-gray-700 rounded px-2 py-1"
+     ; hover
+     "hover:bg-gray-500"]))
 
 #_
 (defn button [props & children]
@@ -334,18 +357,19 @@
 
 (defn input [{:keys [state] :as props}]
   (let [props (dissoc props :state)]
-    (dom/input (assoc props :value @state :onChange #(reset! state (event-value %))))))
+    (dom/input :$border$rounded$w-full (assoc props :value @state :onChange #(reset! state (event-value %))))))
 
 (fc/defsc PromptModal
   [this {:keys [prompt value on-finish]}]
   {:use-hooks? true}
   (let [text (h/use-atom-state (or value ""))]
     (modal {}
-      (dom/div (str prompt))
-      (dom/div (input {:state text}))
-      (dom/div
-        (dom/button {:onClick #(on-finish @text)} "Ok")
-        (dom/button {:onClick #(on-finish nil)} "Cancel")))))
+      (dom/div :$space-y-2
+        (dom/div (str prompt))
+        (dom/div (input {:state text}))
+        (dom/div :$space-x-1
+          (button {:onClick #(on-finish @text)} "Ok")
+          (button {:onClick #(on-finish nil)} "Cancel"))))))
 
 (def prompt-modal (fc/factory PromptModal))
 
@@ -763,8 +787,7 @@
                                :padding        "4px 8px"
                                :z-index        "2"}
                   text-sans-13]]
-   :css-include [Button
-                 CollapsibleBox
+   :css-include [CollapsibleBox
                  Column
                  Modal
                  NumberInput
