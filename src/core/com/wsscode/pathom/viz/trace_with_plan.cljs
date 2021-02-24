@@ -8,7 +8,6 @@
     [com.wsscode.pathom.viz.ui.kit :as ui]
     [com.wsscode.pathom3.connect.planner :as pcp]
     [com.wsscode.pathom3.viz.plan :as viz-plan]
-    [com.wsscode.tailcatcss.core]
     [goog.object :as gobj]
     [helix.core :as h]
     [helix.hooks :as hooks]))
