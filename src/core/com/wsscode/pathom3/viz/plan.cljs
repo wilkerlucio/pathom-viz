@@ -357,7 +357,7 @@
                       :flex-direction   "column"
                       :background-color "#eee"
                       :color            "#000"}}
-      (dom/div {:class "flex-row align-center mb-1 space-x-2"}
+      (dom/div {:class "flex-row items-center mb-1 space-x-2"}
         (ui/dom-select {::ui/options [[::display-type-node-id "Node ID"]
                                       [::display-type-label "Label"]]
                         ::ui/state   display-type-state})
