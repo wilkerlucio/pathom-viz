@@ -1,4 +1,4 @@
-name: Test
+name: Embed Build
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - master
 
 jobs:
-  test-cljs:
+  build-embed:
     runs-on: ubuntu-latest
     steps:
       - name: Check out Git repository
