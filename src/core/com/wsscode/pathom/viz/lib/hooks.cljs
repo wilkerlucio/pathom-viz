@@ -34,8 +34,8 @@
        (let [listener (fn [e]
                         (if-let [f @handler*]
                           (f e)))]
-         (gevents/listen element event-name listener)
-         #(gevents/unlisten element event-name listener))))))
+         (.addEventListener element event-name listener)
+         #(.removeEventListener element event-name listener))))))
 
 (defn create-style-element [css]
   (doto (js/document.createElement "style")

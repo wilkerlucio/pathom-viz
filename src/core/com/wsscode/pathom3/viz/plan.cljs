@@ -357,18 +357,18 @@
                       :flex-direction   "column"
                       :background-color "#eee"
                       :color            "#000"}}
-      (dom/div {:style {:display     "flex"
-                        :align-items "center"}}
+      (dom/div {:class "flex-row align-center mb-1 space-x-2"}
         (ui/dom-select {::ui/options [[::display-type-node-id "Node ID"]
                                       [::display-type-label "Label"]]
                         ::ui/state   display-type-state})
-        (dom/div {:style {:margin-left "10px"}} (str snapshot-message))
-        (dom/button {:on-click #(js/console.log (-> graph psm/sm-env p.ent/entity))} "Log Graph"))
-      (dom/div {:style {:flex     "1"
-                        :overflow "hidden"
-                        :display  "flex"}}
-        (dom/select {:style {:width "160px"} :size 2
-                     :&     (ui/dom-props {::ui/state (ui/state-hook-serialize frame-state)})}
+        (dom/div {:class ["flex-1"]} (str snapshot-message))
+        (uip/button {:onClick #(js/console.log (-> graph psm/sm-env p.ent/entity))} "Log Graph"))
+      (dom/div {:class "flex-row flex-1 overflow-hidden"}
+        (uip/native-select
+          (ui/dom-props {::ui/state (ui/state-hook-serialize frame-state)
+                         :classes   ["bg-none w-52"]
+                         :style     {:paddingRight "0.5rem"}
+                         :size      2})
           (for [[i {::pcp/keys [snapshot-message]}] (->> frames (map first) (map vector (range)))]
             (dom/option {:key i :value i} snapshot-message)))
         (h/$ PlanGraphView {:elements elements :display-type display-type})))))

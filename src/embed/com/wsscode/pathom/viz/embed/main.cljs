@@ -8,7 +8,8 @@
     [com.wsscode.pathom.viz.styles]
     [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
     [com.wsscode.pathom3.viz.plan :as viz-plan]
-    [helix.core :as h]))
+    [helix.core :as h]
+    [helix.hooks :as hooks]))
 
 (h/defnc EmbedTrace [{:keys [data]}]
   (trace+plan/trace-with-plan data))
@@ -37,13 +38,21 @@
     (h/$ Comp {:data component-props})
     (dom/div "Can't find component " component-name)))
 
+(defonce *last-data (atom nil))
+
 (h/defnc PathomVizEmbed []
-  (let [component-contents! (p.hooks/use-fstate (p.viz.msg/query-param-state))]
-    (p.viz.msg/use-post-message-data component-contents!)
+  (let [!component-contents (p.hooks/use-fstate
+                              (or (p.viz.msg/query-param-state)
+                                  @*last-data))
+        set-comp!           (hooks/use-callback []
+                              (fn [x]
+                                (reset! *last-data x)
+                                (!component-contents x)))]
+    (p.viz.msg/use-post-message-data set-comp!)
 
     (or (p.hooks/use-garden-css com.wsscode.pathom.viz.styles/full-css)
-        (if @component-contents!
-          (render-child-component @component-contents!)
+        (if @!component-contents
+          (render-child-component @!component-contents)
           (dom/noscript)))))
 
 (defn start []
