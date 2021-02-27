@@ -7,6 +7,7 @@
     [com.wsscode.pathom.viz.lib.hooks :as p.hooks]
     [com.wsscode.pathom.viz.styles]
     [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
+    [com.wsscode.pathom3.viz.planner-explorer :as planner-explorer]
     [com.wsscode.pathom3.viz.plan :as viz-plan]
     [helix.core :as h]
     [helix.hooks :as hooks]))
@@ -29,9 +30,15 @@
      :display
      ::viz-plan/display-type-node-id}))
 
+(h/defnc PlannerExplorer
+  "Data can contain the initial index and query to use"
+  [{:keys [data]}]
+  (planner-explorer/planner-explorer data))
+
 (def component-map
-  {"trace"        EmbedTrace
-   "plan-stepper" LocalPlanStepper})
+  {"trace"            EmbedTrace
+   "plan-stepper"     LocalPlanStepper
+   "planner-explorer" PlannerExplorer})
 
 (defn render-child-component [{:keys [component-name component-props]}]
   (if-let [Comp (get component-map component-name)]

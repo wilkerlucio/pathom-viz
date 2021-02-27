@@ -1,4 +1,5 @@
 (ns com.wsscode.pathom.viz.codemirror6
+  (:require-macros [com.wsscode.pathom.viz.embed.macros :refer [defc]])
   (:require ["@codemirror/closebrackets" :refer [closeBrackets]]
             ["@codemirror/fold" :as fold]
             ["@codemirror/gutter" :refer [lineNumbers]]
@@ -10,6 +11,7 @@
             ["lezer-generator" :as lg]
             ["lezer-tree" :as lz-tree]
             [applied-science.js-interop :as j]
+            [com.fulcrologic.guardrails.core :refer [<- => >def >defn >fdef ? |]]
             [clojure.string :as str]
             [nextjournal.clojure-mode :as cm-clj]
             [nextjournal.clojure-mode.extensions.close-brackets :as close-brackets]
@@ -74,7 +76,7 @@
                                    :editable false))]
                      (!view v))))]
 
-    (hooks/use-effect [source]
+    (hooks/use-effect [source @!view]
       (when @!view
         (.setState @!view
           (.create EditorState #js {:doc        source
@@ -111,3 +113,10 @@
   ([source] (clojure-read source {}))
   ([source props]
    (h/$ EditorReadWrap {:source source :props props})))
+
+(>def ::source string?)
+(>def ::props map?)
+
+(defc clojure-editor [{::keys [source props]}]
+  (h/$ Editor {:source source
+               :props props}))
