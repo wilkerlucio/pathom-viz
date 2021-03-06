@@ -20,7 +20,11 @@
 
     '{::pci/index-oir {}
       ::pcp/available-data {}
-      ::eql/query []}"
+      ::eql/query []}
+
+   This component should only be used for demoing the planner. The plan in this case will
+   run with the Pathom version that's running in the embed, which may be different from your
+   application version, potentially causing misleading results."
   [{:keys [data]}]
   (h/$ viz-plan/PlanSnapshots
     {:frames
@@ -36,9 +40,13 @@
   (planner-explorer/planner-explorer data))
 
 (def component-map
-  {"trace"            EmbedTrace
-   "plan-stepper"     LocalPlanStepper
-   "planner-explorer" PlannerExplorer})
+  {"trace"                             EmbedTrace
+   "plan-stepper"                      LocalPlanStepper
+   "planner-explorer"                  PlannerExplorer
+
+   :pathom.viz.embed/trace             EmbedTrace
+   :pathom.viz.embed/plan-stepper-demo LocalPlanStepper
+   :pathom.viz.embed/planner-explorer  PlannerExplorer})
 
 (defn render-child-component [{:keys [component-name component-props]}]
   (if-let [Comp (get component-map component-name)]

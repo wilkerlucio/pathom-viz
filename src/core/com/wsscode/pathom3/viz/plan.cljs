@@ -348,6 +348,7 @@
                         (psm/sm-entity))))))))))
 
 (h/defnc ^:export PlanSnapshots [{:keys [frames display]}]
+  {:wrap [(h/memo =)]}
   (let [[current-frame :as frame-state] (hooks/use-state (dec (count frames)))
         [{::pcp/keys [snapshot-message] :as graph} elements] (get frames current-frame)
         [display-type :as display-type-state] (hooks/use-state (or display ::display-type-node-id))]

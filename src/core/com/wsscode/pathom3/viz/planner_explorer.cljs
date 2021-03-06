@@ -7,34 +7,62 @@
             [helix.hooks :as hooks]
             [com.wsscode.pathom.viz.helpers :as h]
             [helix.core :refer [$]]
+            [goog.functions :as gfun]
             [com.wsscode.pathom3.connect.indexes :as pci]))
 
-(defn fstate-dom-hookup [!state]
+(defn use-custom-compare-memoize
+  [deps deps-are-equal?]
+  (let [ref (hooks/use-ref js/undefined)]
+    (if (or (not @ref)
+            (not (deps-are-equal? @ref deps)))
+      (reset! ref deps))
+
+    @ref))
+
+(defn hash-compare [deps]
+  (use-custom-compare-memoize deps #(= (hash %) (hash %2))))
+
+(defn fstate-input [!state]
   {:value    @!state
    :onChange #(!state (.. % -target -value))})
 
-(defn use-parsed [!x f]
-  (hooks/use-memo [(hash @!x)] (f @!x)))
+(defn use-debounced [value delay]
+  (let [[debounced set-debounced] (hooks/use-state value)]
+    (hooks/use-effect [(hash value)]
+      (let [timer (js/setTimeout #(set-debounced value) delay)]
+        #(js/clearTimeout timer)))
+
+    debounced))
+
+(defn use-debounced-memo [deps interval f]
+  (let [!v  (p.hooks/use-fstate (f))
+        dbv (hooks/use-callback []
+              (gfun/debounce #(!v (f)) interval))]
+    (hooks/use-effect* dbv deps)
+    @!v))
 
 (defc planner-explorer [{:keys [index-oir query]}]
   (let [!indexes (p.hooks/use-fstate (or index-oir "{}"))
         !query   (p.hooks/use-fstate (or query "[]"))
-        idx      (use-parsed !indexes h/safe-read-string)
-        query    (use-parsed !query h/safe-read-string)]
-    (dom/div {:classes ["flex-col flex-1"]}
+        db       (use-debounced [@!indexes @!query] 500)
+        frames   (hooks/use-memo [(hash db)]
+                   (let [idx   (h/safe-read-string (first db))
+                         query (h/safe-read-string (second db))]
+                     (->> {::pci/index-oir                idx
+                           :edn-query-language.core/query query}
+                          (viz-plan/compute-frames)
+                          (mapv (juxt identity viz-plan/compute-plan-elements)))))]
+    (dom/div {:classes ["flex-col flex-1 overflow-hidden"]}
       (dom/div {:classes ["flex-row"]}
         (dom/textarea (merge {:classes ["flex-1 h-60"]}
-                        (fstate-dom-hookup !indexes)))
+                        (fstate-input !indexes)))
         (dom/textarea (merge {:classes ["flex-1 h-60"]}
-                        (fstate-dom-hookup !query))))
+                        (fstate-input !query))))
       (dom/div {:classes ["flex-1"]}
-        (if (and idx query)
+        (if frames
           ($ viz-plan/PlanSnapshots
             {:frames
-             (->> (viz-plan/compute-frames
-                    {::pci/index-oir                idx
-                     :edn-query-language.core/query query})
-                  (mapv (juxt identity viz-plan/compute-plan-elements)))
+             frames
 
              :display
              ::viz-plan/display-type-node-id})
