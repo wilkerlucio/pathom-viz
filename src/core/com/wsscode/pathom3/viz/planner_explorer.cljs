@@ -1,13 +1,11 @@
 (ns com.wsscode.pathom3.viz.planner-explorer
   (:require-macros [com.wsscode.pathom.viz.embed.macros :refer [defc]])
   (:require [com.fulcrologic.fulcro.dom :as dom]
-            [com.wsscode.pathom.viz.codemirror6 :as cm]
             [com.wsscode.pathom.viz.lib.hooks :as p.hooks]
             [com.wsscode.pathom3.viz.plan :as viz-plan]
             [helix.hooks :as hooks]
             [com.wsscode.pathom.viz.helpers :as h]
             [helix.core :refer [$]]
-            [goog.functions :as gfun]
             [com.wsscode.pathom3.connect.indexes :as pci]))
 
 (defn use-custom-compare-memoize
@@ -37,9 +35,11 @@
   {:value    @!state
    :onChange #(!state (.. % -target -value))})
 
-(defc planner-explorer [{:keys [index-oir query]}]
-  (let [!indexes (p.hooks/use-fstate (or index-oir "{}"))
-        !query   (p.hooks/use-fstate (or query "[]"))
+(defc planner-explorer
+  [{::pci/keys                    [index-oir]
+    :edn-query-language.core/keys [query]}]
+  (let [!indexes (p.hooks/use-fstate (or (some-> index-oir pr-str) "{}"))
+        !query   (p.hooks/use-fstate (or (some-> query pr-str) "[]"))
         frames   (use-debounced-memo [@!indexes @!query] 500
                    (fn []
                      (let [idx   (h/safe-read-string @!indexes)

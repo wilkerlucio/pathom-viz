@@ -40,15 +40,16 @@
   (planner-explorer/planner-explorer data))
 
 (def component-map
-  {"trace"                             EmbedTrace
-   "plan-stepper"                      LocalPlanStepper
-   "planner-explorer"                  PlannerExplorer
+  {:pathom.viz.embed.component/trace
+   EmbedTrace
 
-   :pathom.viz.embed/trace             EmbedTrace
-   :pathom.viz.embed/plan-stepper-demo LocalPlanStepper
-   :pathom.viz.embed/planner-explorer  PlannerExplorer})
+   :pathom.viz.embed.component/plan-stepper-demo
+   LocalPlanStepper
 
-(defn render-child-component [{:keys [component-name component-props]}]
+   :pathom.viz.embed.component/planner-explorer
+   PlannerExplorer})
+
+(defn render-child-component [{:pathom.viz.embed/keys [component-name component-props]}]
   (if-let [Comp (get component-map component-name)]
     (h/$ Comp {:data component-props})
     (dom/div "Can't find component " component-name)))
