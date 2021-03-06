@@ -9,7 +9,7 @@
 
 = Pathom Viz
 
-Pathom viz is a set of vizualization tools to support the development and inspection of
+Pathom viz is a set of visualization tools to support the development and inspection of
 Graph API's built with the https://github.com/wilkerlucio/pathom[Pathom] library.
 
 == Standalone App
@@ -18,7 +18,7 @@ The standalone app is the easiest way to use Pathom Viz.
 
 === Download the app
 
-Download of binaries are available at the [releases page](https://github.com/wilkerlucio/pathom-viz/releases).
+A download of binaries is available at the [releases page](https://github.com/wilkerlucio/pathom-viz/releases).
 
 === Building the app
 
@@ -32,12 +32,12 @@ npm install
 npx electron .
 ----
 
-If you just want to run locally with prod performance, do the same replacing
+If you want to run locally with prod performance, do the same replacing
 `./scripts/dev-electron` with `./scripts/build-electron`.
 
 === Creating Electron app
 
-To package the app do the following:
+To package the app, do the following:
 
 [source]
 ----
@@ -50,9 +50,9 @@ The builds will be available at the `dist` directory.
 
 == Embed
 
-Pathom Viz embed is a very easy way to include Pathom components in any web based interface.
+Pathom Viz Embed is an effortless way to include Pathom components in any web-based interface.
 
-This is similar to what a Youtube or Vimeo embed works, you put an iframe and send some data to it.
+This is similar to what a Youtube or Vimeo embed works. You put an iframe and send some data to it.
 
 The base URL for the embed is `https://pathom-viz.wsscode.com/embed.html`.
 The interface to communicate is a configuration map, here is a configuration example to open the planner explorer:
@@ -91,7 +91,7 @@ You can link:https://pathom-viz.wsscode.com/embed.html?msg=%7B%3Apathom.viz.embe
 
 === Data via `postMessage`
 
-The URL data is convenient, but it is also limited in the size of message, each browser
+The URL data is convenient, but it is also limited in the size of the message. Each browser
 may have different higher limits. Pathom data can get quite large, and those limits
 are not enough in many cases.
 
