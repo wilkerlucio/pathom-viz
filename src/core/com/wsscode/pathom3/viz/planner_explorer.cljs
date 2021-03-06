@@ -22,36 +22,32 @@
 (defn hash-compare [deps]
   (use-custom-compare-memoize deps #(= (hash %) (hash %2))))
 
-(defn fstate-input [!state]
-  {:value    @!state
-   :onChange #(!state (.. % -target -value))})
-
 (defn use-debounced [value delay]
   (let [[debounced set-debounced] (hooks/use-state value)]
-    (hooks/use-effect [(hash value)]
+    (hooks/use-effect (hash-compare [value])
       (let [timer (js/setTimeout #(set-debounced value) delay)]
         #(js/clearTimeout timer)))
 
     debounced))
 
-(defn use-debounced-memo [deps interval f]
-  (let [!v  (p.hooks/use-fstate (f))
-        dbv (hooks/use-callback []
-              (gfun/debounce #(!v (f)) interval))]
-    (hooks/use-effect* dbv deps)
-    @!v))
+(defn use-debounced-memo [deps delay f]
+  (hooks/use-memo* f [(use-debounced deps delay)]))
+
+(defn fstate-input [!state]
+  {:value    @!state
+   :onChange #(!state (.. % -target -value))})
 
 (defc planner-explorer [{:keys [index-oir query]}]
   (let [!indexes (p.hooks/use-fstate (or index-oir "{}"))
         !query   (p.hooks/use-fstate (or query "[]"))
-        db       (use-debounced [@!indexes @!query] 500)
-        frames   (hooks/use-memo [(hash db)]
-                   (let [idx   (h/safe-read-string (first db))
-                         query (h/safe-read-string (second db))]
-                     (->> {::pci/index-oir                idx
-                           :edn-query-language.core/query query}
-                          (viz-plan/compute-frames)
-                          (mapv (juxt identity viz-plan/compute-plan-elements)))))]
+        frames   (use-debounced-memo [@!indexes @!query] 500
+                   (fn []
+                     (let [idx   (h/safe-read-string @!indexes)
+                           query (h/safe-read-string @!query)]
+                       (->> {::pci/index-oir                idx
+                             :edn-query-language.core/query query}
+                            (viz-plan/compute-frames)
+                            (mapv (juxt identity viz-plan/compute-plan-elements))))))]
     (dom/div {:classes ["flex-col flex-1 overflow-hidden"]}
       (dom/div {:classes ["flex-row"]}
         (dom/textarea (merge {:classes ["flex-1 h-60"]}
