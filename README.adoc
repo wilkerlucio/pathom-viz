@@ -48,6 +48,105 @@ npm run pack
 
 The builds will be available at the `dist` directory.
 
+== Embed
+
+Pathom Viz embed is a very easy way to include Pathom components in any web based interface.
+
+This is similar to what a Youtube or Vimeo embed works, you put an iframe and send some data to it.
+
+The base URL for the embed is `https://pathom-viz.wsscode.com/embed.html`.
+The interface to communicate is a configuration map, here is a configuration example to open the planner explorer:
+
+[source,clojure]
+----
+{:pathom.viz.embed/component-name
+ :pathom.viz.embed.component/planner-explorer
+
+ :pathom.viz.embed/component-props
+ {:com.wsscode.pathom3.connect.indexes/index-oir
+  {:a {{} #{a}}
+   :b {{:g {}} #{b}}
+   :c {{} #{c}}
+   :e {{} #{e e1}}
+   :f {{:e {}} #{f}}
+   :g {{:c {} :f {}} #{g}}
+   :h {{:a {} :b {}} #{h}}}
+
+  :edn-query-language.core/query
+  [:h]}}
+----
+
+To send this data to the embed, there are two ways.
+
+=== Data via Query Params
+
+You can encode using URL Encoding and send via `msg` query param, for example:
+
+[source,html]
+----
+<iframe src="https://pathom-viz.wsscode.com/embed.html?msg=%7B%3Apathom.viz.embed%2Fcomponent-name%0A%20%3Apathom.viz.embed.component%2Fplanner-explorer%0A%0A%20%3Apathom.viz.embed%2Fcomponent-props%0A%20%7B%3Acom.wsscode.pathom3.connect.indexes%2Findex-oir%0A%20%20%7B%3Aa%20%7B%7B%7D%20%23%7Ba%7D%7D%0A%20%20%20%3Ab%20%7B%7B%3Ag%20%7B%7D%7D%20%23%7Bb%7D%7D%0A%20%20%20%3Ac%20%7B%7B%7D%20%23%7Bc%7D%7D%0A%20%20%20%3Ae%20%7B%7B%7D%20%23%7Be%20e1%7D%7D%0A%20%20%20%3Af%20%7B%7B%3Ae%20%7B%7D%7D%20%23%7Bf%7D%7D%0A%20%20%20%3Ag%20%7B%7B%3Ac%20%7B%7D%20%3Af%20%7B%7D%7D%20%23%7Bg%7D%7D%0A%20%20%20%3Ah%20%7B%7B%3Aa%20%7B%7D%20%3Ab%20%7B%7D%7D%20%23%7Bh%7D%7D%7D%0A%0A%20%20%3Aedn-query-language.core%2Fquery%0A%20%20%5B%3Ah%5D%7D%7D" />
+----
+
+You can link:https://pathom-viz.wsscode.com/embed.html?msg=%7B%3Apathom.viz.embed%2Fcomponent-name%0A%20%3Apathom.viz.embed.component%2Fplanner-explorer%0A%0A%20%3Apathom.viz.embed%2Fcomponent-props%0A%20%7B%3Acom.wsscode.pathom3.connect.indexes%2Findex-oir%0A%20%20%7B%3Aa%20%7B%7B%7D%20%23%7Ba%7D%7D%0A%20%20%20%3Ab%20%7B%7B%3Ag%20%7B%7D%7D%20%23%7Bb%7D%7D%0A%20%20%20%3Ac%20%7B%7B%7D%20%23%7Bc%7D%7D%0A%20%20%20%3Ae%20%7B%7B%7D%20%23%7Be%20e1%7D%7D%0A%20%20%20%3Af%20%7B%7B%3Ae%20%7B%7D%7D%20%23%7Bf%7D%7D%0A%20%20%20%3Ag%20%7B%7B%3Ac%20%7B%7D%20%3Af%20%7B%7D%7D%20%23%7Bg%7D%7D%0A%20%20%20%3Ah%20%7B%7B%3Aa%20%7B%7D%20%3Ab%20%7B%7D%7D%20%23%7Bh%7D%7D%7D%0A%0A%20%20%3Aedn-query-language.core%2Fquery%0A%20%20%5B%3Ah%5D%7D%7D[navigate and try it].
+
+=== Data via `postMessage`
+
+The URL data is convenient, but it is also limited in the size of message, each browser
+may have different higher limits. Pathom data can get quite large, and those limits
+are not enough in many cases.
+
+To provide an alternative without such limitations, Pathom Viz also accepts data using
+the [window messaging](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage).
+
+To use this, you must wait for the frame to load and use `window.postMessage` using
+the following format:
+
+[source,clojure]
+----
+(.postMessage window #js {:event "pathom-viz-embed" :payload (pr-str message)} "*")
+----
+
+Here is a complete example putting all together:
+
+[source,html]
+----
+<html>
+  <head>
+    <style>
+      #pathomFrame {
+        margin: 0 auto;
+        width: 800px;
+        height: 600px;
+      }
+    </style>
+  </head>
+  <body>
+    <!--  Create the iframe  -->
+    <iframe src="" id="pathomFrame" frameborder="0"></iframe>
+    <script>
+      // get a hold on the node reference
+      const frame = document.getElementById("pathomFrame");
+
+      // on load, send message
+      frame.onload = function () {
+        frame.contentWindow.postMessage({
+          event: "pathom-viz-embed",
+          payload: "#:pathom.viz.embed{:component-name :pathom.viz.embed.component/planner-explorer, :component-props {:com.wsscode.pathom3.connect.indexes/index-oir {:a {{} #{a}}, :b {{:g {}} #{b}}, :c {{} #{c}}, :e {{} #{e1 e}}, :f {{:e {}} #{f}}, :g {{:c {}, :f {}} #{g}}, :h {{:a {}, :b {}} #{h}}}, :edn-query-language.core/query [:h]}}"
+        }, "*");
+      }
+
+      // trigger the load start
+      frame.src = "https://pathom-viz.wsscode.com/embed.html";
+    </script>
+  </body>
+</html>
+----
+
+=== Available Components
+
+At this moment, for public usage, only the Planner Explorer is available. More components
+will come soon. Keep an eye on the issues to track their development.
+
 == Usage docs
 
 Find usage docs at https://roamresearch.com/#/app/wsscode/page/RG9C93Sip.
