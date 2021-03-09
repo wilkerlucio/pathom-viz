@@ -13,7 +13,7 @@
   com.wsscode/fuzzy                                 {:mvn/version "1.0.0"}
   com.wsscode/pathom                                {:mvn/version "2.3.1"}
   com.wsscode/pathom-viz-connector                  {:mvn/version "2021.01.22"}
-  com.wsscode/pathom3                               {:git/url "https://github.com/wilkerlucio/pathom3" :sha "d0ef2f59dd9a83ddb4130cb7898926670ce89be9"}
+  com.wsscode/pathom3                               {:git/url "https://github.com/wilkerlucio/pathom3" :sha "173052a9c5d9bce8ede9e6b22d6e529283a44ae7"}
   lilactown/helix                                   {:git/url "https://github.com/lilactown/helix" :sha "5785e9332534cb16da749699634556d573e44bb2"}
   nextjournal.clojure-mode/nextjournal.clojure-mode {:git/url "https://github.com/nextjournal/clojure-mode" :sha "f46688eba79953648e7a8920ca79e48fc1414867"}
   org.clojure/clojure                               {:mvn/version "1.10.1"}
