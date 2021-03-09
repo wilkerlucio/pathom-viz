@@ -34,6 +34,15 @@
      :display
      ::viz-plan/display-type-node-id}))
 
+(h/defnc PlanSnapshots
+  [{:keys [data]}]
+  (h/$ viz-plan/PlanSnapshots
+    {:frames
+     (viz-plan/prepare-frames data)
+
+     :display
+     ::viz-plan/display-type-node-id}))
+
 (h/defnc PlannerExplorer
   "Data can contain the initial index and query to use"
   [{:keys [data]}]
@@ -45,6 +54,9 @@
 
    :pathom.viz.embed.component/plan-stepper-demo
    LocalPlanStepper
+
+   :pathom.viz.embed.component/plan-snapshots
+   PlanSnapshots
 
    :pathom.viz.embed.component/planner-explorer
    PlannerExplorer})
