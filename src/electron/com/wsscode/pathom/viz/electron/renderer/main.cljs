@@ -184,6 +184,15 @@
       (ui/column {:style {:flex "1" :overflow "hidden"}}
         (if log-val
           (case (:pathom.viz.log/type log-val)
+            :pathom.viz.log.type/plan-snapshots
+            (fc/fragment
+              (ui/section-header {}
+                (ui/row {:classes [:.center]}
+                  (dom/div (ui/gc :.flex) "Graph Viz Snapshots")))
+              (ui/column {:classes [:.flex-1]}
+                (h/$ viz-plan/PlanSnapshots
+                  {:frames (viz-plan/prepare-frames (:pathom.viz.log/data log-val))})))
+
             :pathom.viz.log.type/plan-and-stats
             (fc/fragment
               (ui/section-header {}

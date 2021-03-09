@@ -20,7 +20,7 @@
 
           :electron-background {:target           :node-script
                                 :main             com.wsscode.pathom.viz.electron.background.main/init
-                                :dev              {:compiler-options {:external-config {:guardrails {:throw? false}}}
+                                :dev              { ;:compiler-options {:external-config {:guardrails {:throw? false}}}
                                                    :closure-defines  {com.wsscode.pathom.viz.electron.background.main/DEV true}}
                                 :compiler-options {:optimizations :simple}
                                 :output-to        "shells/electron/js/background/main.js"}
