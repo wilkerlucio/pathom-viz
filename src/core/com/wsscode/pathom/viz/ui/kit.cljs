@@ -620,8 +620,8 @@
 
 (def native-select
   (styled-component domc/select
-    ["block pl-2 pr-10 py-0.5 text-sm border-gray-300 rounded-md"
-     "focus:outline-none focus:border-gray-500"]))
+    ["block pl-2 pr-6 py-0.5 text-sm border-gray-300 rounded-md"
+     "focus:outline-none focus:border-gray-500 bg-none"]))
 
 (defn dom-select
   "Similar to fulcro dom/select, but does value encode/decode in EDN so you can use

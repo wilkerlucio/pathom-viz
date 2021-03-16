@@ -170,7 +170,7 @@
    :use-hooks? true}
   (let [ds      (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)
         log-val (with-meta (get logs log-current-value) (get logs-meta log-current-value))]
-    (ui/row {:style {:flex "1" :overflow "hidden"}}
+    (ui/row {:classes [:$flex-1 :$overflow-hidden]}
       (ui/column {:style {:alignSelf "stretch"}}
         (ui/button {:onClick #(fc/transact! this [(clear-logs {})])} "Clear logs")
         (ui/dom-select {:value    log-current-value
