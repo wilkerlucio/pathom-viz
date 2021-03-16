@@ -41,14 +41,18 @@
   (doto (js/document.createElement "style")
     (gdom/appendChild (js/document.createTextNode css))))
 
+(defn inject-css [css]
+  (let [style (create-style-element css)]
+    (gdom/appendChild js/document.head style)
+    #(gdom/removeNode style)))
+
 (defn use-garden-css [styles]
-  (let [css (hooks/use-memo [(hash styles)] (garden/css styles))
+  (let [css    (hooks/use-memo [(hash styles)] (garden/css styles))
         ready? (use-fstate false)]
     (hooks/use-effect [(hash styles)]
-      (let [style (create-style-element css)]
-        (gdom/appendChild js/document.head style)
+      (let [remove (inject-css css)]
         (ready? true)
-        #(gdom/removeNode style)))
+        remove))
 
     (if-not @ready?
       (dom/noscript))))
