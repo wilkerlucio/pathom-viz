@@ -91,7 +91,7 @@
 
 (defn ^:export compute-frames
   [env]
-  (->> (p.eql/with qt-env env [:edn-query-language.ast/node])
+  (->> (p.eql/satisfy qt-env env [:edn-query-language.ast/node])
        (pcp/compute-plan-snapshots)
        (mapv smart-plan)))
 
