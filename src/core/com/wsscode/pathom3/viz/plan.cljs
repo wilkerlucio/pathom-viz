@@ -21,7 +21,9 @@
     [com.wsscode.pathom.viz.ui.kit :as uip]
     [com.wsscode.pathom.viz.codemirror6 :as cm6]
     [com.fulcrologic.fulcro.components :as fc]
-    [com.wsscode.pathom.viz.helpers :as pvh]))
+    [com.wsscode.pathom.viz.helpers :as pvh]
+    [com.wsscode.pathom3.connect.built-in.resolvers :as pbir]
+    [com.wsscode.pathom3.interface.eql :as p.eql]))
 
 (.use cytoscape cytoscape-dagre)
 
@@ -80,9 +82,17 @@
   (-> (psm/smart-run-stats plan)
       (psm/sm-update-env pci/register node-extensions-registry)))
 
+(def query-ast-resolvers
+  [(pbir/single-attr-resolver ::eql/query :edn-query-language.ast/node eql/query->ast)
+   (pbir/single-attr-resolver :edn-query-language.ast/node ::eql/query eql/ast->query)])
+
+(def qt-env
+  (pci/register query-ast-resolvers))
+
 (defn ^:export compute-frames
   [env]
-  (->> (pcp/compute-plan-snapshots env)
+  (->> (p.eql/with qt-env env [:edn-query-language.ast/node])
+       (pcp/compute-plan-snapshots)
        (mapv smart-plan)))
 
 (defn ^:export compute-plan-elements [{::pcp/keys [nodes root highlight-nodes highlight-styles]
