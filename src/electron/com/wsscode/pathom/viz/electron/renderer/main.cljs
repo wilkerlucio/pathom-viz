@@ -27,7 +27,8 @@
             [goog.object :as gobj]
             [helix.core :as h]
             [helix.hooks :as hooks]
-            [promesa.core :as p]))
+            [promesa.core :as p]
+            [com.wsscode.pathom.viz.client-parser :as cp]))
 
 (>def ::channel any?)
 (>def ::message-type qualified-keyword?)
@@ -75,7 +76,7 @@
           (js/console.error "response failed" e))))))
 
 (defn add-background-parser! [this client-id]
-  (swap! local.parser/client-parsers assoc client-id (create-background-parser client-id))
+  (swap! cp/client-parsers assoc client-id (create-background-parser client-id))
   (assistant/initialize-assistant this client-id))
 
 (defn multi-parser-ref [this]
@@ -137,7 +138,7 @@
 
                                       ::wap/request-id
                                       (wap/random-request-id)}))
-            local-parsers      (set (keys @local.parser/client-parsers))
+            local-parsers      (set (keys @cp/client-parsers))
             missing            (set/difference background-parsers local-parsers)
             ;remove             (set/difference local-parsers background-parsers)
             ]

@@ -250,8 +250,8 @@
 
 (defn use-context
   "A simple wrapper around React/useContext."
-  [ctx]
-  (react/useContext ctx))
+  [Context]
+  (react/useContext Context))
 
 (defn use-reducer
   "A simple wrapper around React/useReducer. Returns a cljs vector for easy destructuring

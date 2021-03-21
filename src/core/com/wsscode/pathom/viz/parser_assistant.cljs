@@ -3,6 +3,7 @@
             [com.fulcrologic.fulcro.algorithms.merge :as merge]
             [com.fulcrologic.fulcro.components :as fc]
             [com.fulcrologic.fulcro.data-fetch :as df]
+            [com.wsscode.pathom.viz.app :as app]
             [com.fulcrologic.fulcro.mutations :as fm]
             [com.wsscode.pathom.viz.client-parser :as cp]
             [com.wsscode.pathom.viz.ui.mutation-effects :as mf]
@@ -13,7 +14,8 @@
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.wsscode.pathom.viz.helpers :as h]
             [clojure.core.async :as async]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [helix.core :as helix]))
 
 (defn initialize-parser-assistant [this]
   (let [{::cp/keys [parser-id] :as props} (fc/props this)]
@@ -191,7 +193,10 @@
              (str p)]))
 
         (if parser-assistant
-          (parser-assistant-ui parser-assistant)
+          (helix/provider
+            {:context app/ProviderContext
+             :value   {::cp/parser-id (::cp/parser-id parser-assistant)}}
+            (parser-assistant-ui parser-assistant))
           (dom/div :.blank
             (if (seq available-parsers)
               (dom/div :.large "Select a parser")

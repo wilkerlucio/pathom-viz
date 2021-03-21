@@ -7,6 +7,9 @@
             [com.wsscode.pathom.viz.lib.fetch :as fetch]
             [edn-query-language.core :as eql]))
 
+(defonce client-parsers
+  (atom {}))
+
 (>def ::parser-id any?)
 (>def ::parsers (s/map-of ::parser-id ::p/parser))
 (>def ::client-parser-request ::eql/query)

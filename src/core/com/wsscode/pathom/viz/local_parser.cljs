@@ -5,9 +5,6 @@
             [com.wsscode.pathom.core :as p]
             [com.wsscode.pathom.connect :as pc]))
 
-(defonce client-parsers
-  (atom {}))
-
 (def registry
   [cp/registry query.editor/registry])
 
@@ -19,11 +16,11 @@
                                              pc/reader3
                                              pc/open-ident-reader
                                              p/env-placeholder-reader]
-                   ::cp/parsers*            client-parsers
+                   ::cp/parsers*            cp/client-parsers
                    ::p/placeholder-prefixes #{">"}}
       ::p/mutate  pc/mutate-async
       ::p/plugins [(pc/connect-plugin {::pc/register [registry reg]})
-                   (p/env-wrap-plugin #(merge {::cp/parsers @client-parsers} %))
+                   (p/env-wrap-plugin #(merge {::cp/parsers @cp/client-parsers} %))
                    p/error-handler-plugin
                    p/elide-special-outputs-plugin
                    p/trace-plugin]})))
