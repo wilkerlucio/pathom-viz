@@ -18,7 +18,7 @@ The standalone app is the easiest way to use Pathom Viz.
 
 === Download the app
 
-A download of binaries is available at the [releases page](https://github.com/wilkerlucio/pathom-viz/releases).
+A download of binaries is available at the link:https://github.com/wilkerlucio/pathom-viz/releases[releases page].
 
 === Building the app
 
@@ -96,7 +96,7 @@ may have different higher limits. Pathom data can get quite large, and those lim
 are not enough in many cases.
 
 To provide an alternative without such limitations, Pathom Viz also accepts data using
-the [window messaging](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage).
+the link:https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage[window messaging].
 
 To use this, you must wait for the frame to load and use `window.postMessage` using
 the following format:
