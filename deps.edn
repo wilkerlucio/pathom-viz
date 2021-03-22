@@ -7,13 +7,14 @@
   com.fulcrologic/fulcro                            {:mvn/version "3.4.16"}
   com.fulcrologic/fulcro-garden-css                 {:mvn/version "3.0.7"}
   com.fulcrologic/guardrails                        {:mvn/version "1.1.4"}
-  com.wsscode/tailwind-garden                       {:git/url "https://github.com/wilkerlucio/tailwind-garden" :sha "4f8af13165dd997de15b20ac5e7dd06351821acd"}
   com.taoensso/sente                                {:mvn/version "1.16.0"}
   com.wsscode/async                                 {:mvn/version "1.0.13"}
   com.wsscode/fuzzy                                 {:mvn/version "1.0.0"}
   com.wsscode/pathom                                {:mvn/version "2.3.1"}
   com.wsscode/pathom-viz-connector                  {:mvn/version "2021.01.22"}
+  com.wsscode/promesa-bridges                       {:mvn/version "2021.01.20"}
   com.wsscode/pathom3                               {:git/url "https://github.com/wilkerlucio/pathom3" :sha "6b2282e6dc4cfabd449cf7837fcefdd1c9b09891"}
+  com.wsscode/tailwind-garden                       {:git/url "https://github.com/wilkerlucio/tailwind-garden" :sha "4f8af13165dd997de15b20ac5e7dd06351821acd"}
   lilactown/helix                                   {:git/url "https://github.com/lilactown/helix" :sha "5785e9332534cb16da749699634556d573e44bb2"}
   nextjournal.clojure-mode/nextjournal.clojure-mode {:git/url "https://github.com/nextjournal/clojure-mode" :sha "f46688eba79953648e7a8920ca79e48fc1414867"}
   org.clojure/clojure                               {:mvn/version "1.10.1"}

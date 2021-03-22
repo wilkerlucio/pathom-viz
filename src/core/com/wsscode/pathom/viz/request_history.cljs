@@ -58,7 +58,12 @@
           (ui/drag-resize {:state trace-size :direction "down"})
           (dom/div :.header "Trace")
           (dom/div :.trace {:style {:height (str @trace-size "px")}}
-            (trace+plan/trace-with-plan (:com.wsscode.pathom/trace trace-viewer)))))
+            (trace+plan/trace-with-plan (:com.wsscode.pathom/trace trace-viewer)
+              {:on-log-snaps
+               (fn [snaps]
+                 (fc/transact! this [(list 'com.wsscode.pathom.viz.electron.renderer.main/log-new-entry
+                                       {:entry {:pathom.viz.log/type :pathom.viz.log.type/plan-snapshots
+                                                :pathom.viz.log/data snaps}})]))}))))
 
       #_(if graph-view
           (fc/fragment

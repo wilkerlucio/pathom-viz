@@ -11,13 +11,23 @@
     [com.wsscode.pathom3.viz.plan :as viz-plan]
     [goog.object :as gobj]
     [helix.core :as h]
-    [com.wsscode.pathom.viz.app :as app]))
+    [com.wsscode.promesa.bridges.core-async]
+    [com.wsscode.pathom.viz.app :as app]
+    [promesa.core :as p]))
 
-(defn log-plan-snapshots []
-  (js/console.log "!! PARSERS" @cp/client-parsers))
+(defn log-plan-snapshots
+  [{::cp/keys [parser-id]} {::pcp/keys [available-data source-ast]}
+   on-log]
+  (when-let [parser (get @cp/client-parsers parser-id)]
+    (p/let [res   (parser {} [(list 'com.wsscode.pathom.viz.ws-connector.pathom3/request-snapshots
+                                {::pcp/available-data available-data
+                                 ::pcp/source-ast     source-ast})])
+            snaps (get-in res ['com.wsscode.pathom.viz.ws-connector.pathom3/request-snapshots :snapshots])]
+      (on-log snaps))))
 
-(h/defnc TraceWithPlan [{:keys [trace]}]
-  (let [stats             (some-> trace meta :com.wsscode.pathom3.connect.runner/run-stats)
+(h/defnc TraceWithPlan [{:keys [trace props]}]
+  (let [{:keys [on-log-snaps]} props
+        stats             (some-> trace meta :com.wsscode.pathom3.connect.runner/run-stats)
         trace'            (pvh/use-memo #(if stats
                                            (timeline/compute-timeline-tree trace [])
                                            trace)
@@ -40,7 +50,6 @@
                             (fn [node-id]
                               (selected-node-id! node-id))
                             [])]
-    (js/console.log "!! CTX" parser-id)
     (pvh/use-effect
       (fn []
         (run-stats! nil))
@@ -59,7 +68,9 @@
              :direction "down"}
             (dom/div {:className "flex items-center space-x-2"}
               (dom/div :.flex-1 "Graph Viz")
-              (ui/button {:onClick log-plan-snapshots} "Log Plan Snapshots")
+              (if on-log-snaps
+                (ui/button {:onClick #(log-plan-snapshots {::cp/parser-id parser-id} @run-stats! on-log-snaps)}
+                  "Log Plan Snapshots"))
               (ui/dom-select {:value    @display-type
                               :onChange #(reset! display-type %2)}
                 (ui/dom-option {:value ::viz-plan/display-type-label} "Display: resolver name")
@@ -72,4 +83,6 @@
                :display-type   @display-type
                :on-select-node select-node})))))))
 
-(defn trace-with-plan [trace] (h/$ TraceWithPlan {:trace trace}))
+(defn trace-with-plan
+  ([trace] (trace-with-plan trace {}))
+  ([trace props] (h/$ TraceWithPlan {:trace trace :props props})))

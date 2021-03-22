@@ -355,6 +355,11 @@
 
           (dom/div :.trace$min-h-20 {:style {:height (str @trace-size "px")}}
             (trace+plan/trace-with-plan
-              (:com.wsscode.pathom/trace trace-viewer))))))))
+              (:com.wsscode.pathom/trace trace-viewer)
+              {:on-log-snaps
+               (fn [snaps]
+                 (fc/transact! this [(list 'com.wsscode.pathom.viz.electron.renderer.main/log-new-entry
+                                       {:entry {:pathom.viz.log/type :pathom.viz.log.type/plan-snapshots
+                                                :pathom.viz.log/data snaps}})]))})))))))
 
 (def query-editor (fc/computed-factory QueryEditor))
