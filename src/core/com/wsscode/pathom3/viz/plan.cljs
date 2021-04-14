@@ -355,7 +355,7 @@
   {:wrap [(h/memo =)]}
   (let [[current-frame :as frame-state] (hooks/use-state (dec (count frames)))
         [{::pcp/keys [snapshot-message] :as graph} elements] (get frames current-frame)
-        [display-type :as display-type-state] (pvh/use-persistent-state ::graph-display-type (or display ::display-type-node-id))]
+        [display-type :as display-type-state] (hooks/use-state (or display ::display-type-node-id))]
     (dom/div {:style {:width            "100%"
                       :height           "100%"
                       :display          "flex"
