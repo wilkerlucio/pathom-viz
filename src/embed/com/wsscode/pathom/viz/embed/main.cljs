@@ -32,7 +32,7 @@
           (mapv (juxt identity viz-plan/compute-plan-elements)))
 
      :display
-     ::viz-plan/display-type-node-id}))
+     ::viz-plan/display-type-label}))
 
 (h/defnc PlanSnapshots
   [{:keys [data]}]
@@ -41,7 +41,7 @@
      (viz-plan/prepare-frames data)
 
      :display
-     ::viz-plan/display-type-node-id}))
+     ::viz-plan/display-type-label}))
 
 (h/defnc PlannerExplorer
   "Data can contain the initial index and query to use"
