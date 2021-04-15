@@ -1,0 +1,3 @@
+{:tasks
+ {watch-embed
+  (shell "shadow-cljs -A:embed watch embed")}}
