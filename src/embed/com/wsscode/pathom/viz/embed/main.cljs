@@ -4,16 +4,30 @@
     ["react-dom" :as react-dom]
     [com.fulcrologic.fulcro.dom :as dom]
     [com.wsscode.pathom.viz.embed.messaging :as p.viz.msg]
+    [com.wsscode.pathom.viz.helpers :as pvh]
     [com.wsscode.pathom.viz.lib.hooks :as p.hooks]
     [com.wsscode.pathom.viz.styles]
     [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
-    [com.wsscode.pathom3.viz.planner-explorer :as planner-explorer]
     [com.wsscode.pathom3.viz.plan :as viz-plan]
+    [com.wsscode.pathom3.viz.planner-explorer :as planner-explorer]
     [helix.core :as h]
     [helix.hooks :as hooks]))
 
 (h/defnc EmbedTrace [{:keys [data]}]
   (trace+plan/trace-with-plan data))
+
+(h/defnc PlanView [{:keys [data]}]
+  (h/$ viz-plan/PlanGraphView
+    {:run-stats      data
+     :display-type   ::viz-plan/display-type-label
+     :on-select-node identity}))
+
+(h/defnc PlanViewWithDetails [{:keys [data]}]
+  (let [selected-node-id! (pvh/use-fstate nil)]
+    (h/$ viz-plan/PlanGraphWithNodeDetails
+      {:run-stats      (assoc data ::viz-plan/node-in-focus @selected-node-id!)
+       :display-type   ::viz-plan/display-type-label
+       :on-select-node (pvh/use-callback selected-node-id! [])})))
 
 (h/defnc LocalPlanStepper
   "Data should be:
@@ -51,6 +65,12 @@
 (def component-map
   {:pathom.viz.embed.component/trace
    EmbedTrace
+
+   :pathom.viz.embed.component/plan-view
+   PlanView
+
+   :pathom.viz.embed.component/plan-view-with-details
+   PlanViewWithDetails
 
    :pathom.viz.embed.component/plan-stepper-demo
    LocalPlanStepper
