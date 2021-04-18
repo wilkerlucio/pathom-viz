@@ -6,7 +6,6 @@
     [com.wsscode.pathom.viz.embed.messaging :as p.viz.msg]
     [com.wsscode.pathom.viz.helpers :as pvh]
     [com.wsscode.pathom.viz.lib.hooks :as p.hooks]
-    [com.wsscode.pathom.viz.styles]
     [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
     [com.wsscode.pathom3.viz.plan :as viz-plan]
     [com.wsscode.pathom3.viz.planner-explorer :as planner-explorer]
