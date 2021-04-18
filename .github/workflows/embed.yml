@@ -6,11 +6,27 @@ on:
       - master
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+
+      - uses: DeLaGuardo/setup-clj-kondo@master
+        with:
+          version: '2021.03.31'
+
+      - name: Setup Babashka
+        uses: turtlequeue/setup-babashka@master
+        with:
+          babashka-version: 0.3.5
+
+      - name: Lint
+        run: bb lint
+
   maven-deps:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v1
+      - uses: actions/checkout@v1
 
       - name: Cache maven
         uses: actions/cache@v1
@@ -30,8 +46,7 @@ jobs:
   npm-deps:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v1
+      - uses: actions/checkout@v1
 
       - name: Cache node_modules
         uses: actions/cache@v1
@@ -52,11 +67,11 @@ jobs:
   build-embed:
     runs-on: ubuntu-latest
     needs:
+      - lint
       - maven-deps
       - npm-deps
     steps:
-      - name: Check out Git repository
-        uses: actions/checkout@v1
+      - uses: actions/checkout@v1
 
       - name: Cache maven
         uses: actions/cache@v1
