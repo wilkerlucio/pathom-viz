@@ -4,12 +4,12 @@
 
   embed-css-watch
   (shell {:extra-env {"TAILWIND_MODE" "watch"}}
-        "postcss src/css/tailwind.css -o ./shells/embed/compiled-css/main.css --verbose -w")
+        "npx postcss src/css/tailwind.css -o ./shells/embed/compiled-css/main.css --verbose -w")
 
   embed-css-release
   (shell {:extra-env {"TAILWIND_MODE" "build"
                       "NODE_ENV"      "production"}}
-        "postcss src/css/tailwind.css -o ./shells/embed/compiled-css/main.css --verbose")
+        "npx postcss src/css/tailwind.css -o ./shells/embed/compiled-css/main.css --verbose")
 
   e-open
   {:doc  "Open browser with embed dev."
