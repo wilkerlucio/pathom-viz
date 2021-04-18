@@ -15,7 +15,7 @@
   com.wsscode/promesa-bridges                       {:mvn/version "2021.01.20"}
   com.wsscode/pathom3                               {:git/url "https://github.com/wilkerlucio/pathom3" :sha "81a749a6d3409a6b9e75bf85534b1dda8060de06"}
   com.wsscode/tailwind-garden                       {:git/url "https://github.com/wilkerlucio/tailwind-garden" :sha "4f8af13165dd997de15b20ac5e7dd06351821acd"}
-  lilactown/helix                                   {:git/url "https://github.com/lilactown/helix" :sha "5785e9332534cb16da749699634556d573e44bb2"}
+  lilactown/helix                                   {:mvn/version "0.0.15"}
   nextjournal.clojure-mode/nextjournal.clojure-mode {:git/url "https://github.com/nextjournal/clojure-mode" :sha "f46688eba79953648e7a8920ca79e48fc1414867"}
   org.clojure/clojure                               {:mvn/version "1.10.1"}
   org.clojure/clojurescript                         {:mvn/version "1.10.764"}}
