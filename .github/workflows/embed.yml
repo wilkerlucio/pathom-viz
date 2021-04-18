@@ -88,11 +88,11 @@ jobs:
         with:
           node-version: '12.x'
 
+      - name: Compile Embed
+        run: bb embed-js-release
+
       - name: Compile Embed CSS
         run: bb embed-css-release
-
-      - name: Compile Embed
-        run: npx shadow-cljs release embed
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
