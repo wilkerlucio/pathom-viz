@@ -1,18 +1,23 @@
 {:tasks
  {embed-css-watch
   (shell {:extra-env {"TAILWIND_MODE" "watch"}}
-        "npx postcss src/css/tailwind.css -o ./shells/embed/compiled-css/main.css --verbose -w")
+    "npx postcss src/css/tailwind.css -o ./shells/embed/compiled-css/main.css --verbose -w")
 
   embed-css-release
   (shell {:extra-env {"TAILWIND_MODE" "build"
                       "NODE_ENV"      "production"}}
-        "npx postcss src/css/tailwind.css -o ./shells/embed/compiled-css/main.css --verbose")
+    "npx postcss src/css/tailwind.css -o ./shells/embed/compiled-css/main.css --verbose")
 
   embed-js-watch
   (shell "npx shadow-cljs watch embed")
 
   embed-js-release
   (shell "npx shadow-cljs release embed")
+
+  embed-report
+  (do
+    (shell "npx shadow-cljs run shadow.cljs.build-report embed embed-report.html")
+    (shell "open embed-report.html"))
 
   e-open
   {:doc  "Open browser with embed dev."
