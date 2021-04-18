@@ -1,3 +1,19 @@
 {:tasks
- {watch-embed
-  (shell "shadow-cljs -A:embed watch embed")}}
+ {embed-js-watch
+  (shell "shadow-cljs -A:embed watch embed")
+
+  embed-css-watch
+  (shell {:extra-env {"TAILWIND_MODE" "watch"}}
+      "postcss src/css/tailwind.css -o ./shells/embed/compiled-css/main.css --verbose -w")
+
+  e-open
+  {:doc  "Open browser with embed dev."
+   :task (shell "open http://localhost:8087/embed.html")}
+
+  -embed-dev
+  {:depends [embed-css-watch embed-js-watch e-open]
+   :task    (shell "open http://localhost:8087/embed.html")}
+
+  e-dev
+  {:doc  "Start watching builds to develop the embed component."
+   :task (shell "bb run --parallel -embed-dev")}}}

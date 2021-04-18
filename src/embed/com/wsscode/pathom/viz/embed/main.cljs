@@ -98,10 +98,9 @@
                                 (!component-contents x)))]
     (p.viz.msg/use-post-message-data set-comp!)
 
-    (or (p.hooks/use-garden-css com.wsscode.pathom.viz.styles/full-css)
-        (if @!component-contents
-          (render-child-component @!component-contents)
-          (dom/noscript)))))
+    (if @!component-contents
+      (render-child-component @!component-contents)
+      (dom/div {:classes ["loading-container"]}))))
 
 (defn start []
   (react-dom/render

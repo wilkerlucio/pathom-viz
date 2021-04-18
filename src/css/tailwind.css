@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.flex-row {
+  display: flex;
+}
+
+.flex-column {
+  display: flex;
+}
