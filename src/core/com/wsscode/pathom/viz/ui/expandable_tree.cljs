@@ -18,8 +18,9 @@
 (declare tree-item)
 
 (fc/defsc TreeItem
-  [this {:keys  [key children]
-         ::keys [expanded expanded? path toggle-expanded render sort-by] :as node}]
+  [_this
+   {:keys  [key children]
+    ::keys [expanded expanded? path toggle-expanded render sort-by] :as node}]
   {:css [[:.item {:display     "flex"
                   :align-items "center"
                   :padding     "0 2px"}]

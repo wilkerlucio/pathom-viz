@@ -5,15 +5,9 @@
     ["react" :as react]
     ["react-dom" :as react-dom]
     [autonormal.core :as an]
-    [cljs.reader :refer [read-string]]
-    [com.fulcrologic.fulcro.algorithms.denormalize :as denorm]
-    [com.fulcrologic.fulcro.algorithms.normalize :as normalize]
     [com.fulcrologic.fulcro.dom :as dom]
     [com.wsscode.misc.coll :as coll]
-    [com.wsscode.pathom.viz.embed.messaging :as p.viz.msg]
     [com.wsscode.pathom.viz.lib.hooks :as p.hooks]
-    [com.wsscode.pathom.viz.trace :as pvt]
-    [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
     [com.wsscode.pathom.viz.ws-connector.pathom3 :as p.connector]
     [com.wsscode.pathom3.connect.built-in.resolvers :as pbir]
     [com.wsscode.pathom3.connect.indexes :as pci]
@@ -196,10 +190,11 @@
 (defonce app (create-app {::remote #(p.eql/process env % %2)}))
 
 (defc users-comp [props]
-  (let [{:keys [user/all] :as props'}
+  (let [{:keys [user/all]}
         (use-entity-state [::singleton ::app] props [])]
     (js/console.log "!! ALL" all)
     (dom/div {:className "mx-auto mt-6"}
+      #_
       (connect props' :user/all user))))
 
 (defc state-app [props]

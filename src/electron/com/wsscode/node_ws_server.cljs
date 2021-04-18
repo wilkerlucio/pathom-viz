@@ -52,13 +52,13 @@
     (.use (cors))
     (.post "/request" #(respond-http-request config % %2))
     (.ws "/chsk"
-      (fn [ws req next]
+      (fn [ws req _next]
         (ajax-get-or-ws-handshake-fn req nil nil
           {:websocket? true
            :websocket  ws})))
     (.get "/chsk" ajax-get-or-ws-handshake-fn)
     (.post "/chsk" ajax-post-fn)
-    (.use (fn [^js req res next]
+    (.use (fn [^js req _res next]
             (log/warn "Unhandled request: %s" (.-originalUrl req))
             (next)))))
 

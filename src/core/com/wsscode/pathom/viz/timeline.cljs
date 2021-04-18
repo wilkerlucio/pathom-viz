@@ -1,17 +1,16 @@
 (ns com.wsscode.pathom.viz.timeline
-  (:require [clojure.set :as set]
-            [com.wsscode.pathom3.connect.built-in.plugins :as pbip]
-            [com.wsscode.pathom3.connect.built-in.resolvers :as pbir]
-            [com.wsscode.pathom3.connect.indexes :as pci]
-            [com.wsscode.pathom3.connect.operation :as pco]
-            [com.wsscode.pathom3.connect.planner :as pcp]
-            [com.wsscode.pathom3.connect.runner :as pcr]
-            [com.wsscode.pathom3.connect.runner.stats :as pcrs]
-            [com.wsscode.pathom3.interface.eql :as p.eql]
-            [com.wsscode.pathom3.interface.smart-map :as psm]
-            [com.wsscode.pathom3.plugin :as p.plugin]
-            [com.wsscode.pathom3.viz.plan :as viz-plan]
-            [com.wsscode.misc.coll :as coll]))
+  (:require
+    [com.wsscode.pathom3.connect.built-in.plugins :as pbip]
+    [com.wsscode.pathom3.connect.built-in.resolvers :as pbir]
+    [com.wsscode.pathom3.connect.indexes :as pci]
+    [com.wsscode.pathom3.connect.operation :as pco]
+    [com.wsscode.pathom3.connect.planner :as pcp]
+    [com.wsscode.pathom3.connect.runner :as pcr]
+    [com.wsscode.pathom3.connect.runner.stats :as pcrs]
+    [com.wsscode.pathom3.interface.eql :as p.eql]
+    [com.wsscode.pathom3.plugin :as p.plugin]
+    [com.wsscode.pathom3.viz.plan :as viz-plan]
+    [com.wsscode.misc.coll :as coll]))
 
 (def timeline-env
   (pci/register

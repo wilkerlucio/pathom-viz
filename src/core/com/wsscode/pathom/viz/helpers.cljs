@@ -1,23 +1,22 @@
 (ns com.wsscode.pathom.viz.helpers
-  (:require ["react-draggable" :refer [DraggableCore]]
-            ["react" :as react]
-            ["d3" :as d3]
-            [cljs.core.async :refer [go <!]]
-            [cljs.reader :refer [read-string]]
-            [cljs.spec.alpha :as s]
-            [clojure.pprint]
-            [clojure.string :as str]
-            [clojure.walk :as walk]
-            [com.fulcrologic.fulcro-css.localized-dom :as dom]
-            [com.fulcrologic.fulcro.algorithms.tx-processing :as txn]
-            [com.fulcrologic.fulcro.components :as fc]
-            [com.fulcrologic.fulcro.mutations :as fm]
-            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
-            [com.wsscode.common.async-cljs :refer [<?maybe]]
-            [com.wsscode.pathom.core :as p]
-            [com.wsscode.pathom.viz.lib.local-storage :as ls]
-            [edn-query-language.core :as eql]
-            [goog.object :as gobj]))
+  (:require
+    ["react" :as react]
+    ["d3" :as d3]
+    [cljs.core.async :refer [go]]
+    [cljs.reader :refer [read-string]]
+    [cljs.spec.alpha :as s]
+    [clojure.pprint :as pprint]
+    [clojure.string :as str]
+    [clojure.walk :as walk]
+    [com.fulcrologic.fulcro.algorithms.tx-processing :as txn]
+    [com.fulcrologic.fulcro.components :as fc]
+    [com.fulcrologic.fulcro.mutations :as fm]
+    [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
+    [com.wsscode.common.async-cljs :refer [<?maybe]]
+    [com.wsscode.pathom.core :as p]
+    [com.wsscode.pathom.viz.lib.local-storage :as ls]
+    [edn-query-language.core :as eql]
+    [goog.object :as gobj]))
 
 (>def ::path (s/coll-of keyword? :kind vector?))
 (>def ::path-map "The tree of maps" (s/map-of ::path map?))
@@ -53,7 +52,7 @@
 
 (defn pprint-str [x]
   (with-out-str
-    (clojure.pprint/pprint x)))
+    (pprint/pprint x)))
 
 (defn resolve-path
   "Walks a db path, when find an ident it resets the path to that ident. Use to realize paths of relations."
@@ -97,6 +96,7 @@
           (assoc! ret k x)))
       (transient {}) coll)))
 
+#_ :clj-kondo/ignore
 (fm/defmutation update-value [{:keys [key fn args]}]
   (action [{:keys [state ref]}]
     (swap! state update-in ref update key #(apply fn % args))))
@@ -320,10 +320,10 @@
 
 (deftype ReactFnState [value set-value!]
   IDeref
-  (-deref [o] value)
+  (-deref [_o] value)
 
   IFn
-  (-invoke [o x] (set-value! x)))
+  (-invoke [_o x] (set-value! x)))
 
 (defn use-fstate [initial-value]
   (let [[value set-value!] (use-state initial-value)]
@@ -331,16 +331,16 @@
 
 (deftype ReactAtomState [value set-value!]
   IDeref
-  (-deref [o] value)
+  (-deref [_o] value)
 
   IReset
-  (-reset! [o new-value] (doto new-value set-value!))
+  (-reset! [_o new-value] (doto new-value set-value!))
 
   ISwap
-  (-swap! [a f] (set-value! (f value)))
-  (-swap! [a f x] (set-value! (f value x)))
-  (-swap! [a f x y] (set-value! (f value x y)))
-  (-swap! [a f x y more] (set-value! (apply f value x y more))))
+  (-swap! [_a f] (set-value! (f value)))
+  (-swap! [_a f x] (set-value! (f value x)))
+  (-swap! [_a f x y] (set-value! (f value x y)))
+  (-swap! [_a f x y more] (set-value! (apply f value x y more))))
 
 (defn use-atom-state [initial-value]
   (let [[value set-value!] (use-state initial-value)]
@@ -365,10 +365,10 @@
 
 (deftype FulcroComponentProp [comp prop]
   IDeref
-  (-deref [o] (-> comp fc/props (get prop)))
+  (-deref [_o] (-> comp fc/props (get prop)))
 
   IReset
-  (-reset! [o new-value] (fm/set-value! comp prop new-value) new-value)
+  (-reset! [_o new-value] (fm/set-value! comp prop new-value) new-value)
 
   ISwap
   (-swap! [a f] (fm/set-value! comp prop (f @a)))

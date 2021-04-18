@@ -1,6 +1,5 @@
 (ns com.wsscode.pathom.viz.lib.hooks
   (:require [helix.hooks :as hooks]
-            [goog.events :as gevents]
             [goog.dom :as gdom]
             [com.wsscode.pathom.viz.lib.local-storage :as ls]
             [garden.core :as garden]
@@ -8,10 +7,10 @@
 
 (deftype ReactFnState [value set-value!]
   IDeref
-  (-deref [o] value)
+  (-deref [_o] value)
 
   IFn
-  (-invoke [o x] (set-value! x)))
+  (-invoke [_o x] (set-value! x)))
 
 (defn use-fstate [initial-value]
   (let [[value set-value!] (hooks/use-state initial-value)]

@@ -2,7 +2,6 @@
   (:require [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [com.wsscode.async.async-cljs :refer [let-chan go-promise <!]]
             [com.wsscode.pathom.viz.request-history :as request-history]
-            [com.wsscode.pathom.viz.query-editor :as query.editor]
             [nubank.workspaces.card-types.fulcro3 :as ct.fulcro]
             [nubank.workspaces.core :as ws]
             [nubank.workspaces.model :as wsm]

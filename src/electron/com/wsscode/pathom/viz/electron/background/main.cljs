@@ -1,10 +1,9 @@
 (ns com.wsscode.pathom.viz.electron.background.main
   (:require
-    ["electron" :as electron :refer [ipcMain]]
+    ["electron" :as electron]
     ["path" :as path]
     ["url" :as url]
-    [com.wsscode.pathom.viz.electron.background.server :as server]
-    [com.wsscode.pathom.viz.transit :as wsst]))
+    [com.wsscode.pathom.viz.electron.background.server :as server]))
 
 (defonce web-contents* (atom nil))
 

@@ -6,7 +6,6 @@
             [com.fulcrologic.fulcro.mutations :as fm]
             [com.wsscode.pathom.viz.codemirror :as cm]
             [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
-            [com.wsscode.pathom3.viz.plan :as viz-plan]
             [com.wsscode.pathom.viz.codemirror6 :as cm6]))
 
 (defn pre-merge-request [{:keys [current-normalized data-tree]}]
@@ -38,8 +37,7 @@
                           :overflow "hidden"}]]
    :use-hooks? true}
   (let [response-size (pvh/use-persistent-state ::response-size 400)
-        trace-size    (pvh/use-persistent-state ::trace-size 300)
-        ds            (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)]
+        trace-size    (pvh/use-persistent-state ::trace-size 300)]
     (ui/column (ui/gc :.flex)
       (ui/row (ui/gc :.flex)
         (ui/column (ui/gc :.flex)
@@ -84,7 +82,7 @@
 (def request-view (fc/factory RequestView {:keyfn ::request-id}))
 
 (fc/defsc RequestItem
-  [this {::keys [request-id request]} {::keys [on-select selected?]}]
+  [_this {::keys [request-id request]} {::keys [on-select selected?]}]
   {:pre-merge pre-merge-request
    :ident     ::request-id
    :query     [::request-id
@@ -107,6 +105,7 @@
 
 (def request-item (fc/computed-factory RequestItem {:keyfn ::request-id}))
 
+#_:clj-kondo/ignore
 (fm/defmutation clear-history [_]
   (action [{:keys [state ref]}]
     (swap! state update-in ref assoc

@@ -1,8 +1,6 @@
 (ns com.wsscode.pathom.viz.react-hooks-cards
   (:require [nubank.workspaces.card-types.fulcro3 :as ct.fulcro]
-            [nubank.workspaces.card-types.react :as ct.react]
             [nubank.workspaces.core :as ws]
-            [nubank.workspaces.model :as wsm]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [com.fulcrologic.fulcro.components :as fc]
             [com.wsscode.pathom.viz.helpers :as h]))
@@ -73,7 +71,7 @@
 (def SampleContext (h/create-context (:light themes)))
 
 (fc/defsc ContextDemoThemedButton
-  [this props]
+  [this _props]
   {:use-hooks? true}
   (let [theme (h/use-context SampleContext)]
     (dom/button {:style theme} (fc/children this))))
@@ -81,7 +79,7 @@
 (def context-demo-themed-button (fc/factory ContextDemoThemedButton))
 
 (fc/defsc ContextDemoToolbar
-  [this {::keys []}]
+  [_this {::keys []}]
   {:use-hooks? true}
   (dom/div
     (context-demo-themed-button {} "Button Content")))
@@ -89,7 +87,7 @@
 (def context-demo-toolbar (fc/factory ContextDemoToolbar))
 
 (fc/defsc ContextDemoApp
-  [this {::keys []}]
+  [_this {::keys []}]
   {:use-hooks? true}
   (h/create-context-provider SampleContext {:value (:dark themes)}
     (context-demo-toolbar {})))
@@ -101,7 +99,7 @@
     (fn []
       (context-demo-app {}))))
 
-(defn sample-reducer [state {:keys [type] :as action}]
+(defn sample-reducer [state {:keys [type]}]
   (case type
     ::increment
     (update state :count inc)
@@ -150,11 +148,11 @@
 (ws/defcard use-layout-effect-card
   (hook-demo-card
     (fn []
-      (let [ref (h/use-layout-effect (fn []
-                                       (js/console.log ">>>> Layout Effect")
-                                       (fn []
-                                         (js/console.log "<<<< Layout Effect")))
-                  [])]
+      (let [_ref (h/use-layout-effect (fn []
+                                        (js/console.log ">>>> Layout Effect")
+                                        (fn []
+                                          (js/console.log "<<<< Layout Effect")))
+                   [])]
         (dom/div "Check console")))))
 
 (ws/defcard use-debug-value-card

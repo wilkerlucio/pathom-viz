@@ -1,6 +1,5 @@
 (ns com.wsscode.pathom.viz.workspaces
-  (:require [cljs.core.async :refer [go <!]]
-            [cljs.reader :refer [read-string]]
+  (:require [cljs.core.async :refer [go]]
             [com.fulcrologic.fulcro.algorithms.tx-processing :as txn]
             [com.fulcrologic.fulcro.data-fetch :as df]
             [com.wsscode.common.async-cljs :refer [<?maybe]]
@@ -32,29 +31,13 @@
                         (error-handler {:body e}))))))})
 
 (defn pathom-card-init
-  [card {::keys [parser app load-index-at-start?]
-         :or    {load-index-at-start? true}}]
-  (let [{:keys [started-callback]} app
+  [card {::keys [app]}]
+  (let [_ app
         {::wsm/keys       [refresh]
-         ::ct.fulcro/keys [app]
          :as              fulcro-card}
         (ct.fulcro/fulcro-card-init
           card
-          {::ct.fulcro/root pv.query-editor/QueryEditor
-           ::ct.fulcro/app  {#_ #_
-                             :client-did-mount
-                             (fn [app]
-                               (if started-callback
-                                 (started-callback app))
-
-                               (if load-index-at-start?
-                                 (pv.query-editor/load-indexes app)))
-
-                             #_ #_
-                             :remotes
-                             {pv.query-editor/remote-key
-                              (pathom-remote
-                                (pv.query-editor/client-card-parser parser))}}})]
+          {::ct.fulcro/root pv.query-editor/QueryEditor})]
 
     (assoc fulcro-card
       ::wsm/refresh

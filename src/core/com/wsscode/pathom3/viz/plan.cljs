@@ -20,7 +20,6 @@
     [com.wsscode.pathom.viz.fulcro]
     [com.wsscode.pathom.viz.ui.kit :as uip]
     [com.wsscode.pathom.viz.codemirror6 :as cm6]
-    [com.fulcrologic.fulcro.components :as fc]
     [com.wsscode.pathom.viz.helpers :as pvh]
     [com.wsscode.pathom3.connect.built-in.resolvers :as pbir]
     [com.wsscode.pathom3.interface.eql :as p.eql]))

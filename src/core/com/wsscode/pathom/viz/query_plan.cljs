@@ -1,18 +1,16 @@
 (ns com.wsscode.pathom.viz.query-plan
-  (:require ["./d3-query-plan" :as d3qp]
-            ["./detect-element-size" :refer [addResizeListener]]
-            [com.fulcrologic.fulcro-css.localized-dom :as dom]
-            [com.fulcrologic.fulcro.components :as fc]
-            [com.fulcrologic.fulcro.mutations :as fm]
-            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
-            [com.wsscode.pathom.connect :as pc]
-            [com.wsscode.pathom.connect.planner :as pcp]
-            [com.wsscode.pathom.misc :as p.misc]
-            [com.wsscode.pathom.viz.helpers :as pvh]
-            [com.wsscode.pathom.viz.lib.local-storage :as ls]
-            [com.wsscode.pathom.viz.ui.kit :as ui]
-            [edn-query-language.core :as eql]
-            [goog.object :as gobj]))
+  (:require
+    [com.fulcrologic.fulcro-css.localized-dom :as dom]
+    [com.fulcrologic.fulcro.components :as fc]
+    [com.fulcrologic.fulcro.mutations :as fm]
+    [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
+    [com.wsscode.pathom.connect :as pc]
+    [com.wsscode.pathom.connect.planner :as pcp]
+    [com.wsscode.pathom.misc :as p.misc]
+    [com.wsscode.pathom.viz.helpers :as pvh]
+    [com.wsscode.pathom.viz.ui.kit :as ui]
+    [edn-query-language.core :as eql]
+    [goog.object :as gobj]))
 
 (>def ::on-click-node fn?)
 (>def ::on-mouse-over-node fn?)
@@ -30,10 +28,11 @@
     (dom/div :.detail content)))
 
 (fc/defsc NodeDetails
-  [this {::pcp/keys [node-id source-for-attrs requires input foreign-ast
-                     after-nodes run-next]
-         ::pc/keys  [sym node-resolver-error node-resolver-success]
-         :as        node}]
+  [_this
+   {::pcp/keys [node-id source-for-attrs requires input foreign-ast
+                after-nodes run-next]
+    ::pc/keys  [sym node-resolver-error node-resolver-success]
+    :as        node}]
   {:pre-merge (fn [{:keys [current-normalized data-tree]}]
                 (merge {::pcp/node-id (random-uuid)} current-normalized data-tree))
    :ident     ::pcp/node-id
@@ -338,6 +337,7 @@
 
 (def query-plan-viz (fc/computed-factory QueryPlanViz))
 
+#_:clj-kondo/ignore
 (fm/defmutation set-plan-view-graph [{::pcp/keys [graph]}]
   (action [{:keys [state ref]}]
     (swap! state update-in ref assoc
@@ -350,8 +350,7 @@
 
 (fc/defsc PlanViewWithDetails
   [this {::pcp/keys [graph]
-         :ui/keys   [label-kind node-details]
-         :as        props}]
+         :ui/keys   [label-kind node-details]}]
   {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
                   (merge {::id           (random-uuid)
                           :ui/label-kind ::pc/sym}
@@ -382,7 +381,7 @@
            label-kind
 
            ::on-click-node
-           (fn [e node]
+           (fn [_e node]
              (js/console.log "NODE" node)
              (fm/set-value! this :ui/node-details
                (if (= node-details node)

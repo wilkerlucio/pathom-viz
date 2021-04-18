@@ -5,8 +5,7 @@
             [nubank.workspaces.model :as wsm]
             [com.wsscode.pathom.viz.ui.kit :as ui]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
-            [cljs.test :refer-macros [is are run-tests async testing]]
-            [cljs.spec.alpha :as s]))
+            [cljs.test :refer-macros [is are run-tests testing]]))
 
 (ws/deftest test-merge-with-mergers []
   (is (= (ui/merge-with-mergers {}

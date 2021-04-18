@@ -1,11 +1,9 @@
 (ns com.wsscode.pathom.viz.electron.renderer.worker
-  (:require [com.wsscode.pathom3.interface.eql :as p.eql]
-            [com.wsscode.async.processing :as wap]
+  (:require [com.wsscode.async.processing :as wap]
             [com.wsscode.transit :as wt]
             [com.wsscode.async.async-cljs :refer [go-promise <! go <? <!p <?maybe]]
             [com.wsscode.pathom3.connect.operation :as pco]
             [com.wsscode.pathom3.connect.indexes :as pci]
-            [com.wsscode.pathom3.connect.built-in.resolvers :as pbir]
             [promesa.core :as p]
             [com.wsscode.pathom.viz.timeline :as timeline]
             [com.wsscode.pathom3.interface.async.eql :as p.a.eql]))

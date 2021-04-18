@@ -58,7 +58,8 @@
         new-history     (history-remove current-history query)]
     (ls/set! store-key new-history)))
 
-(pc/defresolver query-history-resolver [env {::cp/keys [parser-id]}]
+(pc/defresolver query-history-resolver
+  [_env {::cp/keys [parser-id]}]
   {::pc/input  #{::cp/parser-id}
    ::pc/output [::query-history]}
   {::query-history (ls/get [::query-history parser-id] [])})
@@ -77,6 +78,7 @@
   {::pc/output [::pc/indexes]}
   (client-parser {} index-query))
 
+#_:clj-kondo/ignore
 (fm/defmutation run-query [{::keys [request-trace?]}]
   (action [{:keys [state ref] :as env}]
     (swap! state update-in ref assoc :ui/query-running? true))
@@ -94,6 +96,7 @@
       request-trace?
       (update-in [:params ::cp/client-parser-request] conj :com.wsscode.pathom/trace))))
 
+#_:clj-kondo/ignore
 (fm/defmutation load-index [_]
   (action [{:keys [state ref]}]
     (swap! state update-in ref assoc :ui/query-running? true))
@@ -109,12 +112,14 @@
   (remote [{:keys [ast]}]
     (assoc ast :key `cp/client-parser-mutation)))
 
+#_:clj-kondo/ignore
 (fm/defmutation add-query-to-history [{::keys [query]}]
   (action [{:keys [state ref]}]
     (swap! state update-in (conj ref ::query-history) history-append query))
   (remote [{:keys [ast]}]
     (assoc ast :key `add-query-to-history-remote)))
 
+#_:clj-kondo/ignore
 (fm/defmutation remove-query-from-history [{::keys [query]}]
   (action [{:keys [state ref]}]
     (swap! state update-in (conj ref ::query-history) history-remove query))
@@ -158,11 +163,12 @@
                                                      ::query        (str/trim query)})]))))))
 
 (fc/defsc HistoryView
-  [this {::keys [query-history
-                 on-pick-query
-                 on-delete-query]
-         :or    {on-pick-query   identity
-                 on-delete-query identity}}]
+  [_this
+   {::keys [query-history
+            on-pick-query
+            on-delete-query]
+    :or    {on-pick-query   identity
+            on-delete-query identity}}]
   {:css [[:.container {}]
          [:.title {:background    "#eee"
                    :border-bottom "1px solid #ccc"
@@ -222,7 +228,7 @@
    {::keys    [query result request-trace? query-history]
     ::pc/keys [indexes]
     ::cp/keys [parser-id]
-    :ui/keys  [query-running? trace-viewer graph-view]}
+    :ui/keys  [query-running? trace-viewer]}
    {::keys [editor-props enable-trace?
             default-trace-size
             default-query-size

@@ -2,7 +2,7 @@
   (:require
     ["node-fetch" :default fetch]
     [cljs.spec.alpha :as s]
-    [clojure.set :as set]
+    [cljs.pprint]
     [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
     [com.wsscode.async.async-cljs :refer [go-promise <? <!p]]
     [com.wsscode.async.processing :as wap]
@@ -164,7 +164,7 @@
 
 (defonce started* (atom false))
 
-(>defn start! [{::keys [web-contents] :as server}]
+(>defn start! [server]
   [(s/keys :req [::web-contents]) => any?]
   (when-not @started*
     (reset! started* true)

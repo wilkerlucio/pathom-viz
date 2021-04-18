@@ -1,6 +1,5 @@
 (ns com.wsscode.pathom.viz.codemirror
-  (:require [cljs.reader :refer [read-string]]
-            [cljs.spec.alpha :as s]
+  (:require [cljs.spec.alpha :as s]
             [cljsjs.codemirror]
             [clojure.string :as str]
             [com.wsscode.fuzzy :as fuzzy]
@@ -26,9 +25,7 @@
             ["parinfer-codemirror" :as parinfer-cm]
             ["./pathom-mode"]
             [com.wsscode.pathom3.connect.indexes :as pci]
-            [com.wsscode.pathom3.cache :as p.cache]
-            [clojure.set :as set]
-            [edn-query-language.core :as eql]))
+            [com.wsscode.pathom3.cache :as p.cache]))
 
 (s/def ::mode (s/or :string string? :obj map?))
 (s/def ::theme string?)
@@ -149,7 +146,7 @@
 
                           ; join: [{:child [|]}]
                           (and (= "join" mode)
-                               (= (string? key)))
+                               (string? key))
                           (let [key (str->keyword key)]
                             (if (contains? (get index-io #{}) key)
                               {:type :attribute :context (conj ctx key)}
@@ -244,7 +241,7 @@
          (fuzzy/fuzzy-match)
          (map ::fuzzy/string))))
 
-(defn autocomplete [index cm options]
+(defn autocomplete [index cm _options]
   (let [cur    (.getCursor cm)
         line   (.-line cur)
         ch     (.-ch cur)

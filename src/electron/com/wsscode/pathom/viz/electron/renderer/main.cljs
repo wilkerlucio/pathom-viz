@@ -85,6 +85,7 @@
 (defn reload-parsers-ui! [this]
   (assistant/reload-available-parsers this (multi-parser-ref this)))
 
+#_ :clj-kondo/ignore
 (fm/defmutation log-new-entry [{:keys [entry]}]
   (action [{:keys [state]}]
     (let [now (js/Date.)]
@@ -112,7 +113,7 @@
     (js/console.log "Disconnect client")
 
     ::pathom-request
-    (let [{:com.wsscode.pathom.viz.ws-connector.core/keys [request-id tx] :as req} msg]
+    (let [{:com.wsscode.pathom.viz.ws-connector.core/keys [request-id tx]} msg]
       (merge/merge-component! this request-history/RequestView
         {::request-history/request-id request-id
          ::request-history/request    tx}
@@ -159,6 +160,7 @@
 
 ;; App Root Container
 
+#_ :clj-kondo/ignore
 (fm/defmutation clear-logs [_]
   (action [{:keys [state]}]
     (swap! state assoc-in [:comp/ident :comp/logs-view ::logs] nil)
@@ -259,7 +261,7 @@
   (h/$ UseServerConstant {:attr attr}))
 
 (fc/defsc Root
-  [this {:ui/keys [stuff]}]
+  [_this {:ui/keys [stuff]}]
   {:pre-merge  (fn [{:keys [current-normalized data-tree]}]
                  (merge {:ui/stuff {}} current-normalized data-tree))
    :query      [{:ui/stuff (fc/get-query ConnectionsAndLogs)}]

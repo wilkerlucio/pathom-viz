@@ -1,9 +1,7 @@
 (ns com.wsscode.pathom.viz.workspaces-cards
   (:require [cljs.core.async :as async :refer [go <!]]
-            [com.wsscode.common.async-cljs :refer [<? go-catch]]
             [com.wsscode.pathom.connect :as pc]
             [com.wsscode.pathom.core :as p]
-            [nubank.workspaces.model :as wsm]
             [nubank.workspaces.core :as ws]
             [com.wsscode.pathom.viz.workspaces :as pvw]))
 

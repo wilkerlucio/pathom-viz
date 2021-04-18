@@ -1,17 +1,14 @@
 (ns com.wsscode.pathom.viz.index-explorer
   (:require ["./d3-attribute-graph" :as d3attr]
-            ["./detect-element-size" :refer [addResizeListener]]
             [cljs.reader :refer [read-string]]
             [cljs.spec.alpha :as s]
             [clojure.string :as str]
             [clojure.test.check.generators :as gen]
-            [com.fulcrologic.fulcro-css.css :as css]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [com.fulcrologic.fulcro.algorithms.merge :as merge]
             [com.fulcrologic.fulcro.application :as fa]
             [com.fulcrologic.fulcro.components :as fc]
             [com.fulcrologic.fulcro.mutations :as fm]
-            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [com.wsscode.fuzzy :as fuzzy]
             [com.wsscode.pathom.connect :as pc]
@@ -184,22 +181,21 @@
      :links (mapcat
               (fn [{::pc/keys [attribute attr-provides]}]
                 (let [attr-str (pr-str attribute)]
-                  (let [res (-> []
-                                (into
-                                  (keep (fn [[provided resolvers]]
-                                          (let [nested?   (nested? provided)
-                                                provided' (if nested?
-                                                            (peek provided)
-                                                            provided)]
-                                            (when (and (contains? index provided')
-                                                       (not= attribute provided'))
-                                              {:source    attr-str
-                                               :weight    (count resolvers)
-                                               :resolvers (str/join "\n" resolvers)
-                                               :target    (pr-str provided')
-                                               :deep      nested?}))))
-                                  attr-provides))]
-                    res)))
+                  (-> []
+                      (into
+                        (keep (fn [[provided resolvers]]
+                                (let [nested?   (nested? provided)
+                                      provided' (if nested?
+                                                  (peek provided)
+                                                  provided)]
+                                  (when (and (contains? index provided')
+                                             (not= attribute provided'))
+                                    {:source    attr-str
+                                     :weight    (count resolvers)
+                                     :resolvers (str/join "\n" resolvers)
+                                     :target    (pr-str provided')
+                                     :deep      nested?}))))
+                        attr-provides))))
               attributes)}))
 
 (defn render-attribute-graph [this]
@@ -294,7 +290,7 @@
        ((gobj/get settings "dispose"))))
 
    :componentDidCatch
-   (fn [this error info]
+   (fn [this _error _info]
      (fc/set-state! this {::error-catch? true}))}
   (dom/div :.container {:ref #(gobj/set this "svgContainer" %)}
     (if (fc/get-state this ::error-catch?)
@@ -399,7 +395,7 @@
         ((get plugin view) data)))))
 
 (fc/defsc AttributeInfoReachVia
-  [this {::pc/keys [attr-reach-via]} computed]
+  [_this {::pc/keys [attr-reach-via]} computed]
   {:ident [::pc/attribute ::pc/attribute]
    :query [::pc/attribute ::pc/attr-reach-via]}
   (ui/panel {::ui/panel-title "Reach via"
@@ -416,7 +412,7 @@
                            :style         (cond-> {} direct? (assoc :fontWeight "bold"))}
             computed)
           (if nested-reaches?
-            (for [[path resolvers] (->> v
+            (for [[path _resolvers] (->> v
                                         (map #(update % 0 (fn [x] (if (set? x) [x] x))))
                                         (sort-by (comp #(update % 0 (comp vec sort)) first)))
                   :let [path' (next path)]
@@ -431,7 +427,7 @@
 (def attribute-info-reach-via (fc/computed-factory AttributeInfoReachVia))
 
 (fc/defsc AttributeInfoMutationParamIn
-  [this {::pc/keys [attr-mutation-param-in]} computed]
+  [_this {::pc/keys [attr-mutation-param-in]} computed]
   {:ident [::pc/attribute ::pc/attribute]
    :query [::pc/attribute ::pc/attr-mutation-param-in]}
   (ui/panel {::ui/panel-title "Mutation Param In"
@@ -442,7 +438,7 @@
 (def attribute-info-mutation-param-in (fc/computed-factory AttributeInfoMutationParamIn))
 
 (fc/defsc AttributeInfoMutationOutputIn
-  [this {::pc/keys [attr-mutation-output-in]} computed]
+  [_this {::pc/keys [attr-mutation-output-in]} computed]
   {:ident [::pc/attribute ::pc/attribute]
    :query [::pc/attribute ::pc/attr-mutation-output-in]}
   (ui/panel {::ui/panel-title "Mutation Output In"
@@ -741,8 +737,7 @@
 (fc/defsc ResolverView
   [this {::pc/keys [sym input output batch?]
          :ui/keys  [output-tree]}
-   {::keys [on-select-attribute attributes] :as computed}
-   css]
+   {::keys [on-select-attribute attributes] :as computed}]
   {:pre-merge      (fn [{:keys [current-normalized data-tree]}]
                      (merge
                        {:ui/output-tree {}}
@@ -891,7 +886,7 @@
     x))
 
 (fc/defsc AllAttributesList
-  [this {::keys [attributes] :as props} computed]
+  [_this {::keys [attributes] :as props} computed]
   {}
   (ui/collapsible-box (assoc props ::ui/title "Attributes")
     (dom/div
@@ -909,7 +904,7 @@
 (def last-value (atom nil))
 
 (fc/defsc AllResolversList
-  [this {::keys [resolvers] :as props} computed]
+  [_this {::keys [resolvers] :as props} computed]
   {}
   (ui/collapsible-box (assoc props ::ui/title "Resolvers")
     (dom/div
@@ -918,7 +913,7 @@
 (def all-resolvers-list (fc/computed-factory AllResolversList))
 
 (fc/defsc AllMutationsList
-  [this {::keys [mutations] :as props} computed]
+  [_this {::keys [mutations] :as props} computed]
   {}
   (ui/collapsible-box (assoc props ::ui/title "Mutations")
     (dom/div
@@ -1031,9 +1026,10 @@
 (def attribute-mismatch-panel (fc/computed-factory AttributeMismatchPanel))
 
 (fc/defsc StatsView
-  [this {::keys  [attribute-count resolver-count mutation-count globals-count idents-count
-                  attr-edges-count top-connection-hubs attr-type-mismatch]
-         :>/keys [attr-type-mismatch-join]}
+  [_this
+   {::keys  [attribute-count resolver-count mutation-count globals-count idents-count
+             attr-edges-count top-connection-hubs attr-type-mismatch]
+    :>/keys [attr-type-mismatch-join]}
    computed]
   {:pre-merge (fn [{:keys [current-normalized data-tree]}]
                 (let [id (or (::id data-tree)
@@ -1122,7 +1118,7 @@
 (defn augment [data f]
   (merge data (f data)))
 
-(defn compute-stats [{::keys [attributes resolvers mutations globals idents] :as data}]
+(defn compute-stats [{::keys [attributes resolvers mutations globals idents]}]
   {::attribute-count     (count attributes)
    ::resolver-count      (count resolvers)
    ::mutation-count      (count mutations)

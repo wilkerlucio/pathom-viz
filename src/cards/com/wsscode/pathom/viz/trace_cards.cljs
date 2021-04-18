@@ -26,12 +26,12 @@
    ::pc/output [::color]
    ::pc/batch? true}
   (pc/batch-resolver
-    (fn [env {::keys [id]}]
+    (fn [_env {::keys [id]}]
       (go-catch
         (<? (async/timeout 300))
         {::color
          (get color-map id "black")}))
-    (fn [env ids]
+    (fn [_env ids]
       (go-catch
         (<? (async/timeout 300))
         (mapv
@@ -41,7 +41,7 @@
 (defresolver `weight
   {::pc/input  #{::id}
    ::pc/output [::weight ::size]}
-  (fn [env {::keys [id]}]
+  (fn [_env {::keys [id]}]
     (go-catch
       (<? (async/timeout 100))
       {::weight
@@ -61,7 +61,7 @@
 (defresolver `rel
   {::pc/input  #{::id}
    ::pc/output [::relation]}
-  (fn [env {::keys [id]}]
+  (fn [_env {::keys [id]}]
     (go-catch
       (<? (async/timeout 50))
       {::relation
@@ -74,19 +74,19 @@
 
 (defresolver `all
   {::pc/output [{::all [::id]}]}
-  (fn [env _]
+  (fn [_env _]
     {::all [{::id 1} {::id 2} {::id 3} {::id 2}]}))
 
 (defresolver `error
   {::pc/input  #{}
    ::pc/output [::error]}
-  (fn [env {::keys [id]}]
+  (fn [_env _]
     (throw (ex-info "Error" {:ex "data"}))))
 
 (defresolver `darken-color
   {::pc/input  #{::color}
    ::pc/output [::color-darken]}
-  (fn [env {::keys [color]}]
+  (fn [_env {::keys [color]}]
     (go-catch
       (<? (async/timeout 20))
       {::color-darken (str color "-darken")})))
@@ -94,7 +94,7 @@
 (defresolver `lighter-color
   {::pc/input  #{::color}
    ::pc/output [::color-lighter]}
-  (fn [env {::keys [color]}]
+  (fn [_env {::keys [color]}]
     (go-catch
       (<? (async/timeout 50))
       {::color-lighter (str color "-lighter")})))

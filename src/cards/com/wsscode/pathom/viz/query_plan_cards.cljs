@@ -146,8 +146,7 @@
     children))
 
 (fc/defsc QueryPlanWrapper
-  [this {::keys   [examples]
-         :ui/keys [plan query node-details label-kind trace-tree]}]
+  [this {:ui/keys [plan query node-details label-kind trace-tree]}]
   {:pre-merge   (fn [{:keys [current-normalized data-tree]}]
                   (merge {::id           (random-uuid)
                           :ui/plan       nil
@@ -179,23 +178,12 @@
                       (let [query      (-> this fc/props :ui/query safe-read)
                             t*         (atom [])
                             res        (<?maybe (parser {:com.wsscode.pathom.trace/trace* t*} query))
-                            trace      (pt/compute-durations @t*)
-                            plans      (->> trace
-                                            (filter (comp #{::pc/compute-plan} ::pt/event))
-                                            (filter (comp seq ::pcp/nodes ::pc/plan)))
                             trace-tree (pt/trace->viz @t*)]
                         (js/console.log "RES" res)
                         (fm/set-value! this :ui/plan nil)
                         (fm/set-value! this :ui/node-details nil)
                         (fm/set-value! this :ui/trace-tree trace-tree))))]
     (dom/div :.container
-      #_(dom/div
-          (dom/select {:value    plan
-                       :onChange #(fm/set-string! this :ui/plan :event %)}
-            (dom/option "Select example")
-            (for [[title _] examples]
-              (dom/option {:key title} title))))
-
       (dom/div :.editor
         (cm/pathom
           {:value       (or (str query) "")
@@ -239,7 +227,7 @@
                label-kind
 
                ::plan-view/on-click-node
-               (fn [e node]
+               (fn [_ node]
                  (js/console.log "NODE" node)
                  (fm/set-value! this :ui/node-details
                    (if (= node-details node)

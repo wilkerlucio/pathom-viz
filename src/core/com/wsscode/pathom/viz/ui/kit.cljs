@@ -360,7 +360,7 @@
     (dom/input :$border$rounded$w-full (assoc props :value @state :onChange #(reset! state (event-value %))))))
 
 (fc/defsc PromptModal
-  [this {:keys [prompt value on-finish]}]
+  [_this {:keys [prompt value on-finish]}]
   {:use-hooks? true}
   (let [text (h/use-atom-state (or value ""))]
     (modal {}
@@ -707,10 +707,10 @@
                                      :zIndex        "2"})]
     (js/React.createElement DraggableCore
       #js {:key     (or react-key "dragHandler")
-           :onStart (fn [e dd]
+           :onStart (fn [_e dd]
                       (reset! start (gobj/get dd axis))
                       (reset! start-size @state))
-           :onDrag  (fn [e dd]
+           :onDrag  (fn [_e dd]
                       (let [start    @start
                             size     @start-size
                             value    (gobj/get dd axis)

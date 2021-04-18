@@ -106,7 +106,7 @@
                                                   {::iex/plugins [abrams-plugin]}}}))
 
 (fc/defsc AttributeGraphDemo
-  [this {::keys []}]
+  [_this {::keys []}]
   {:pre-merge     (fn [{:keys [current-normalized data-tree]}]
                     (merge {:ui/id (random-uuid)} current-normalized data-tree))
    :initial-state {}

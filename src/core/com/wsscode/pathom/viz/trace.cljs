@@ -1,11 +1,10 @@
 (ns com.wsscode.pathom.viz.trace
   (:require ["./d3-trace" :refer [renderPathomTrace updateTraceSize]]
-            ["./detect-element-size" :refer [addResizeListener removeResizeListener]]
+            ["./detect-element-size" :refer [addResizeListener]]
             [clojure.walk :as walk]
             [com.wsscode.pathom.viz.helpers :as h]
             [helix.core :as hx]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
-            [com.fulcrologic.fulcro.mutations :as fm]
             [com.fulcrologic.fulcro.components :as fc]
             [goog.object :as gobj]
             [helix.hooks :as hooks]))
@@ -156,7 +155,7 @@
        (render-trace this)))
 
    :componentDidCatch
-   (fn [this error info]
+   (fn [this _error _info]
      (fc/set-state! this {::error-catch? true}))}
 
   (dom/div {:className "flex-1 width-full height-full overflow-hidden" :ref #(gobj/set this "svgContainer" %)}

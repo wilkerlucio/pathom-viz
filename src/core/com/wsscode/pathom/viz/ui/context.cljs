@@ -50,6 +50,7 @@
      (provider {:context my-context :value  \"initial state\"}
        (dom/div \"children\")))"
   [{::keys [context value]} & children]
+  #_ :clj-kondo/ignore
   (fc/create-element
     (gobj/get context "Provider")
     #js {:value value}

@@ -1,7 +1,6 @@
 (ns com.wsscode.pathom.viz.client
   (:require [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
-            [com.wsscode.socket-io.client :as sio-client]
-            [clojure.spec.alpha :as s]))
+            [com.wsscode.socket-io.client :as sio-client]))
 
 (>def ::parser fn?)
 
