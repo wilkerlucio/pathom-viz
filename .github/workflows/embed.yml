@@ -6,15 +6,53 @@ on:
       - master
 
 jobs:
-  build-embed:
+  maven-deps:
     runs-on: ubuntu-latest
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v1
 
-      - uses: DeLaGuardo/setup-clojure@master
+      - name: Cache maven
+        uses: actions/cache@v1
         with:
-          tools-deps: '1.10.1.469'
+          path: ~/.m2
+          key: m2-${{ hashFiles('deps.edn') }}
+          restore-keys: |
+            m2-
+
+      - name: Load deps
+        run: clojure -Stree
+
+  npm-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v1
+
+      - name: Cache node_modules
+        uses: actions/cache@v1
+        with:
+          path: node_modules
+          key: node_modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            node_modules-
+
+      - name: Use Node.js 12.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+
+      - name: NPM Install
+        run: npm install
+
+  build-embed:
+    runs-on: ubuntu-latest
+    needs:
+      - maven-deps
+      - npm-deps
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v1
 
       - name: Cache maven
         uses: actions/cache@v1
@@ -32,13 +70,22 @@ jobs:
           restore-keys: |
             node_modules-
 
+      - uses: DeLaGuardo/setup-clojure@master
+        with:
+          tools-deps: '1.10.1.469'
+
+      - name: Setup Babashka
+        uses: turtlequeue/setup-babashka@master
+        with:
+          babashka-version: 0.3.5
+
       - name: Use Node.js 12.x
         uses: actions/setup-node@v1
         with:
           node-version: '12.x'
 
-      - name: NPM Install
-        run: npm install
+      - name: Compile Embed CSS
+        run: bb embed-css-release
 
       - name: Compile Embed
         run: npx shadow-cljs release embed
