@@ -1,5 +1,8 @@
 {:tasks
- {embed-css-watch
+ {:requires
+  ([babashka.fs :as fs])
+
+  embed-css-watch
   (shell {:extra-env {"TAILWIND_MODE" "watch"}}
     "npx postcss src/css/tailwind.css -o ./shells/embed/compiled-css/main.css --verbose -w")
 
@@ -18,6 +21,14 @@
   (do
     (shell "npx shadow-cljs run shadow.cljs.build-report embed embed-report.html")
     (shell "open embed-report.html"))
+
+  lint-deps
+  (when (fs/modified-since ".clj-kondo/.cache" "deps.edn")
+    (shell "bash -c" "clj-kondo --no-warnings --lint \"$(clojure -Spath -A:provided:dev)\" --parallel"))
+
+  lint
+  {:depends [lint-deps]
+   :task    (shell "clj-kondo --lint src")}
 
   e-open
   {:doc  "Open browser with embed dev."
