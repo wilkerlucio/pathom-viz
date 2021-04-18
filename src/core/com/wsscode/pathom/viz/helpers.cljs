@@ -86,9 +86,6 @@
       (apply swap! state update-in path args)
       @state)))
 
-(defn pprint [x]
-  (with-out-str (cljs.pprint/pprint x)))
-
 (defn map-vals [f m]
   (into {} (fn [[k v]] [k (f v)]) m))
 

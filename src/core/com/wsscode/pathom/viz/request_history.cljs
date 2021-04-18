@@ -48,7 +48,7 @@
                        :style       {:flex     "1"
                                      :overflow "auto"
                                      :position "relative"}
-                       :value       (pvh/pprint request)}))
+                       :value       (pvh/pprint-str request)}))
         (ui/drag-resize {:state response-size :direction "right"})
         (ui/column {:style {:width (str @response-size "px")}}
           (dom/div :.header "Response")
@@ -103,7 +103,7 @@
                 [:&.selected {:background "#cae9fb"}]]
                [:.code {:white-space "pre"}]]}
   (dom/div :.container {:classes [(if selected? :.selected)] :onClick #(on-select request-id)}
-    (pvh/pprint request)))
+    (pvh/pprint-str request)))
 
 (def request-item (fc/computed-factory RequestItem {:keyfn ::request-id}))
 

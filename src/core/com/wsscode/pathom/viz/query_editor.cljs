@@ -84,7 +84,7 @@
     (let [response (pvh/env-parser-response env)]
       (swap! state update-in ref assoc
         :ui/query-running? false
-        ::result (pvh/pprint (dissoc response :com.wsscode.pathom/trace)))
+        ::result (pvh/pprint-str (dissoc response :com.wsscode.pathom/trace)))
       (pvh/swap-in! env [] assoc-in [:ui/trace-viewer :com.wsscode.pathom/trace]
         (pvh/response-trace response))))
   (error-action [env]
