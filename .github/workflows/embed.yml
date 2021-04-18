@@ -25,6 +25,10 @@ jobs:
         with:
           version: '2021.03.31'
 
+      - uses: DeLaGuardo/setup-clojure@master
+        with:
+          tools-deps: '1.10.1.469'
+
       - name: Setup Babashka
         uses: turtlequeue/setup-babashka@master
         with:
