@@ -29,11 +29,26 @@
   ;                    "NODE_ENV"      "production"}}
   ;  "npx postcss src/css/tailwind.css -o ./shells/electron/css/compiled.css --verbose")
 
+  app-clean
+  (fs/delete-tree "shells/electron/js")
+
+  app-deps
+  (shell {:dir "shells/electron"} "npm install")
+
   app-js-watch
   (shell "npx shadow-cljs watch electron-background electron-renderer")
 
   app-js-release
-  (shell "npx shadow-cljs release electron-background electron-renderer")
+  {:depends [app-clean app-deps]
+   :task    (shell "npx shadow-cljs release electron-background electron-renderer")}
+
+  app-pack-test
+  {:depends [app-js-release]
+   :task    (shell {:dir "shells/electron"} "npx electron-builder --dir")}
+
+  app-pack
+  {:depends [app-js-release]
+   :task    (shell {:dir "shells/electron"} "npx electron-builder -mlw")}
 
   release-app
   tasks/release-app
