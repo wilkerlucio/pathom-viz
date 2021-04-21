@@ -19,9 +19,13 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v2
 
-      - uses: DeLaGuardo/setup-clojure@master
+      - name: Install clojure tools
+        uses: DeLaGuardo/setup-clojure@3.2
         with:
-          tools-deps: '1.10.1.469'
+          # Install just one or all simultaneously
+          cli: 1.10.1.693 # Clojure CLI based on tools.deps
+          lein: 2.9.1     # or use 'latest' to always provision latest version of leiningen
+          boot: 2.8.3     # or use 'latest' to always provision latest version of boot
 
       - name: Install Node.js, NPM and Yarn
         uses: actions/setup-node@v1
