@@ -22,7 +22,8 @@
     [com.wsscode.pathom.viz.codemirror6 :as cm6]
     [com.wsscode.pathom.viz.helpers :as pvh]
     [com.wsscode.pathom3.connect.built-in.resolvers :as pbir]
-    [com.wsscode.pathom3.interface.eql :as p.eql]))
+    [com.wsscode.pathom3.interface.eql :as p.eql]
+    [com.wsscode.pathom.viz.ui.kit :as uik]))
 
 (.use cytoscape cytoscape-dagre)
 
@@ -342,13 +343,16 @@
               (uip/section-header {}
                 (dom/div {:class "flex-row items-center"}
                   "Node Details"
+                  (uik/button {:classes ["ml-4"] :onClick #(on-select-node 0)} "View Graph Data")
                   (dom/div {:style {:flex "1"}})
-                  (dom/button {:onClick #(on-select-node nil)} "Unselect node")))
+                  (uik/button {:onClick #(on-select-node nil)} "Hide Details")))
               (cm6/clojure-read
-                (some-> (get-in run-stats [::pcp/nodes selected-node])
-                        (psm/sm-touch!
-                          [::pcr/node-run-duration-ms])
-                        (psm/sm-entity))))))))))
+                (if (zero? selected-node)
+                  (psm/sm-entity run-stats)
+                  (some-> (get-in run-stats [::pcp/nodes selected-node])
+                          (psm/sm-touch!
+                            [::pcr/node-run-duration-ms])
+                          (psm/sm-entity)))))))))))
 
 (h/defnc ^:export PlanSnapshots [{:keys [frames display]}]
   {:wrap [(h/memo =)]}
