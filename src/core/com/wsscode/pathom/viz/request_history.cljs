@@ -61,23 +61,7 @@
                (fn [snaps]
                  (fc/transact! this [(list 'com.wsscode.pathom.viz.electron.renderer.main/log-new-entry
                                        {:entry {:pathom.viz.log/type :pathom.viz.log.type/plan-snapshots
-                                                :pathom.viz.log/data snaps}})]))}))))
-
-      #_(if graph-view
-          (fc/fragment
-            (ui/drag-resize {:state trace-size :direction "down"})
-            (fc/fragment
-              (ui/section-header {}
-                (ui/row {}
-                  (dom/div (ui/gc :.flex) "Graph Viz")
-                  (ui/dom-select {:value    @ds
-                                  :onChange #(reset! ds %2)}
-                    (ui/dom-option {:value ::viz-plan/display-type-label} "Display: resolver name")
-                    (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))))
-              (dom/div :.trace {:style {:height (str @trace-size "px")}}
-                (h/$ viz-plan/PlanGraphView
-                  {:run-stats    graph-view
-                   :display-type @ds}))))))))
+                                                :pathom.viz.log/data snaps}})]))})))))))
 
 (def request-view (fc/factory RequestView {:keyfn ::request-id}))
 
