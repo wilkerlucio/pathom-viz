@@ -12,8 +12,13 @@
 (defn create-window []
   (let [win          (electron/BrowserWindow. #js {:width          1200
                                                    :height         800
-                                                   :webPreferences #js {:nodeIntegration         true
-                                                                        :nodeIntegrationInWorker true}})
+                                                   :webPreferences #js {:nodeIntegration            true
+                                                                        :contextIsolation           false
+                                                                        :enableRemoteModule         true
+                                                                        :sandbox                    false
+                                                                        :nodeIntegrationInSubFrames true
+                                                                        :nodeIntegrationInWorker    true
+                                                                        :webviewTag                 true}})
         web-contents (.-webContents win)]
     (.loadURL win (url/format #js {:pathname (path/join js/__dirname ".." ".." "index.html")
                                    :protocol "file:"
