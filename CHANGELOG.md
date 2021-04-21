@@ -1,7 +1,12 @@
 # Change Log
 
+## [2021.04.21]
+- Breaking change: messaging to log was modified
+- View node details on graph log
+- New feature to see full graph data (from any node details section)
+
 ## [2021.02.24]
-- Many UI Tweets
+- Many UI Tweeks
 - Fix to auto-complete: attributes that depends on multiple inputs were missing
 - Add bigger minimum size to avoid elements fully collapsing away
 
