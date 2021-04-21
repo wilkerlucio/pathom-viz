@@ -1,12 +1,16 @@
-{:tasks
+{:paths
+ ["src/tasks"]
+
+ :tasks
  {:requires
-  ([babashka.fs :as fs])
+  ([babashka.fs :as fs]
+   [tasks])
 
   ; region lint
 
   lint-deps
   (when (fs/modified-since ".clj-kondo/.cache" "deps.edn")
-      (shell "bash -c" "clj-kondo --copy-configs --dependencies --lint \"$(clojure -Spath -A:provided:dev)\" --parallel"))
+    (shell "bash -c" "clj-kondo --copy-configs --dependencies --lint \"$(clojure -Spath -A:provided:dev)\" --parallel"))
 
   lint
   {:depends [lint-deps]
@@ -14,16 +18,38 @@
 
   ; endregion
 
+  ; region app
+
+  app-css-watch
+  (shell {:extra-env {"TAILWIND_MODE" "watch"}}
+    "npx postcss src/css/tailwind.css -o ./shells/electron/css/compiled.css --verbose -w")
+
+  app-css-release
+  (shell {:extra-env {"TAILWIND_MODE" "build"
+                      "NODE_ENV"      "production"}}
+    "npx postcss src/css/tailwind.css -o ./shells/electron/css/compiled.css --verbose")
+
+  app-js-watch
+  (shell "npx shadow-cljs watch electron-background electron-renderer")
+
+  app-js-release
+  (shell "npx shadow-cljs release electron-background electron-renderer")
+
+  release-app
+  tasks/release-app
+
+  ; endregion
+
   ; region embed
 
   embed-css-watch
   (shell {:extra-env {"TAILWIND_MODE" "watch"}}
-      "npx postcss src/css/tailwind.css -o ./shells/embed/compiled-css/main.css --verbose -w")
+    "npx postcss src/css/tailwind.css -o ./shells/embed/compiled-css/main.css --verbose -w")
 
   embed-css-release
   (shell {:extra-env {"TAILWIND_MODE" "build"
                       "NODE_ENV"      "production"}}
-      "npx postcss src/css/tailwind.css -o ./shells/embed/compiled-css/main.css --verbose")
+    "npx postcss src/css/tailwind.css -o ./shells/embed/compiled-css/main.css --verbose")
 
   embed-js-watch
   (shell "npx shadow-cljs watch embed")
@@ -33,8 +59,8 @@
 
   embed-report
   (do
-      (shell "npx shadow-cljs run shadow.cljs.build-report embed embed-report.html")
-      (shell "open embed-report.html"))
+    (shell "npx shadow-cljs run shadow.cljs.build-report embed embed-report.html")
+    (shell "open embed-report.html"))
 
   e-open
   {:doc  "Open browser with embed dev."
