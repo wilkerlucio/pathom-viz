@@ -80,7 +80,8 @@
    :pathom.viz.embed.component/planner-explorer
    PlannerExplorer})
 
-(defn render-child-component [{:pathom.viz.embed/keys [component-name component-props]}]
+(defn render-child-component
+  [{:pathom.viz.embed/keys [component-name component-props]}]
   (if-let [Comp (get component-map component-name)]
     (h/$ Comp {:data component-props})
     (dom/div "Can't find component " component-name)))
@@ -107,3 +108,11 @@
     (js/document.getElementById "app")))
 
 (start)
+
+(comment
+  ; example message
+  {:pathom.viz.embed/component-name
+   :pathom.viz.embed.component/plan-view
+
+   :pathom.viz.embed/component-props
+   {}})
