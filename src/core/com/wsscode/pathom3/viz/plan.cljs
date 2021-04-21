@@ -22,8 +22,7 @@
     [com.wsscode.pathom.viz.codemirror6 :as cm6]
     [com.wsscode.pathom.viz.helpers :as pvh]
     [com.wsscode.pathom3.connect.built-in.resolvers :as pbir]
-    [com.wsscode.pathom3.interface.eql :as p.eql]
-    [com.wsscode.pathom.viz.ui.kit :as uik]))
+    [com.wsscode.pathom3.interface.eql :as p.eql]))
 
 (.use cytoscape cytoscape-dagre)
 
@@ -343,9 +342,9 @@
               (uip/section-header {}
                 (dom/div {:class "flex-row items-center"}
                   "Node Details"
-                  (uik/button {:classes ["ml-4"] :onClick #(on-select-node 0)} "View Graph Data")
+                  (uip/button {:classes ["ml-4"] :onClick #(on-select-node 0)} "View Graph Data")
                   (dom/div {:style {:flex "1"}})
-                  (uik/button {:onClick #(on-select-node nil)} "Hide Details")))
+                  (uip/button {:onClick #(on-select-node nil)} "Hide Details")))
               (cm6/clojure-read
                 (if (zero? selected-node)
                   (psm/sm-entity run-stats)
