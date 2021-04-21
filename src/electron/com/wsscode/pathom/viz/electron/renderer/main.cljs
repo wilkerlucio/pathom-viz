@@ -209,7 +209,7 @@
                 (let [selected-node-id! (pvh/use-fstate nil)]
                   (h/$ viz-plan/PlanGraphWithNodeDetails
                     {:run-stats      (assoc data ::viz-plan/node-in-focus @selected-node-id!)
-                     :display-type   ::viz-plan/display-type-label
+                     :display-type   @ds
                      :on-select-node (pvh/use-callback selected-node-id! [])}))))
 
             :pathom.viz.log.type/trace
