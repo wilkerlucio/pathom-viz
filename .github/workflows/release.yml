@@ -34,7 +34,7 @@ jobs:
         run: npm install
 
       - name: Build JS
-        run: ./scripts/build-electron
+        run: npx shadow-cljs release electron-background electron-renderer
 
       - name: Electron Builder Action
         uses: samuelmeuli/action-electron-builder@v1.6.0
