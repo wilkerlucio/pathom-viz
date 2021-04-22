@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        os: [macos-latest, ubuntu-latest, windows-latest]
 
     steps:
       - name: Check out Git repository
@@ -34,7 +34,13 @@ jobs:
         run: npm install
 
       - name: Build JS
+        if: ${{ matrix.os != 'windows-latest' }}
         run: npx shadow-cljs release electron-background electron-renderer
+        
+      - name: Build JS on Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: npx shadow-cljs release electron-background electron-renderer
+        shell: powershell
 
       - name: Electron Builder Action
         uses: samuelmeuli/action-electron-builder@v1.6.0
