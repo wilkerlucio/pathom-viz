@@ -2,6 +2,8 @@
 
 ## [2021.04.22]
 - In the request tab, recent requests now show on top of the list
+- Request tab items now have a border at the right to make easier to scroll the list
+- Request tab max size increased to cover 5 lines of query
 
 ## [2021.04.21]
 - Breaking change: messaging to log was modified
