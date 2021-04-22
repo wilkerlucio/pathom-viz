@@ -30,7 +30,9 @@
   ;  "npx postcss src/css/tailwind.css -o ./shells/electron/css/compiled.css --verbose")
 
   app-clean
-  (fs/delete-tree "shells/electron/js")
+  (do
+    (fs/delete-tree ".shadow-cljs")
+    (fs/delete-tree "shells/electron/js"))
 
   app-deps
   (shell {:dir "shells/electron"} "npm install")
