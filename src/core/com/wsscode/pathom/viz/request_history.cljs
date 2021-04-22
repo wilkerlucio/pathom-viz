@@ -72,7 +72,9 @@
    :query     [::request-id
                ::request
                ::trace-viewer]
-   :css       [[:.container
+   :css       [[:.outer
+                {:border-right "12px solid #eee"}]
+               [:.container
                 {:border-bottom "1px solid #ccc"
                  :cursor        "pointer"
                  :font-family   ui/font-code
@@ -84,8 +86,9 @@
                            :color      "#000"}]
                 [:&.selected {:background "#cae9fb"}]]
                [:.code {:white-space "pre"}]]}
-  (dom/div :.container {:classes [(if selected? :.selected)] :onClick #(on-select request-id)}
-    (pvh/pprint-str request)))
+  (dom/div :.outer
+    (dom/div :.container {:classes [(if selected? :.selected)] :onClick #(on-select request-id)}
+      (pvh/pprint-str request))))
 
 (def request-item (fc/computed-factory RequestItem {:keyfn ::request-id}))
 
