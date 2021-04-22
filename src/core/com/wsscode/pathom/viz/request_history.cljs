@@ -78,7 +78,7 @@
                 {:border-bottom "1px solid #ccc"
                  :cursor        "pointer"
                  :font-family   ui/font-code
-                 :max-height    "45px"
+                 :max-height    "104px"
                  :overflow      "auto"
                  :padding       "5px"
                  :white-space   "pre"}
