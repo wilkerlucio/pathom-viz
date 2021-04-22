@@ -1,5 +1,8 @@
 # Change Log
 
+## [2021.04.22]
+- In the request tab, recent requests now show on top of the list
+
 ## [2021.04.21]
 - Breaking change: messaging to log was modified
 - View node details on graph log

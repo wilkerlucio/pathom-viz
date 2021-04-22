@@ -128,7 +128,7 @@
             (dom/button {:onClick #(fc/transact! this [(clear-history {})])} "Clear"))
 
           (dom/div (ui/gc :.flex :.scrollbars)
-            (for [req requests]
+            (for [req (rseq requests)]
               (request-item req
                 {::on-select select-item
                  ::selected? (= (::request-id req) (::request-id active-request))})))
