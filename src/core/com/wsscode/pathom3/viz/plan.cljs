@@ -316,7 +316,7 @@
                                 :display "flex"}
                          (not selected-node)
                          (assoc :flex "1"))
-                :class "min-w-40"}
+                :class "min-w-40 bg-white"}
         (h/$ PlanGraphView {:run-stats      run-stats
                             :display-type   display-type
                             :on-select-node on-select-node}))
