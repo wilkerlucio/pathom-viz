@@ -1,5 +1,8 @@
 # Change Log
 
+## [Next]
+- Fix trace bug when all children disappear when the root children has over 20 items
+
 ## [2021.04.22]
 - In the request tab, recent requests now show on top of the list
 - Request tab items now have a border at the right to make easier to scroll the list

@@ -353,7 +353,7 @@ export function renderPathomTrace(element, settingsSource) {
   const dataTree = d3.hierarchy(data, d => d.children)
   dataTree.sum(d => d.name ? 1 : 0);
 
-  dataTree.each(d => {
+  dataTree.children.forEach(d => {
     if (d.children && d.children.length > 20) {
       d._children = d.children;
       d.children = null;
