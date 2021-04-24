@@ -208,6 +208,53 @@
                 (.play)))))
       500)))
 
+(def cytoscape-layout
+  #js {:name    "dagre"
+       :rankDir "LR"
+       ;:ready   #(fit-node-and-neighbors (gobj/get % "cy") nodes node-in-focus)
+       })
+
+(def cytoscape-style
+  #js [#js {:selector "node"
+            :style    #js {:text-valign         "center"
+                           :transition-property "border-color border-width"
+                           :transition-duration (str anim-duration "ms")}}
+       #js {:selector "node.node-and"
+            :style    #js {:background-color "#be8cd8"}}
+       #js {:selector "node.node-or"
+            :style    #js {:background-color "#17becf"}}
+       #js {:selector "node.node-resolver"
+            :style    #js {:background-color "#7f7f7f"}}
+       #js {:selector "node.root"
+            :style    #js {:border-width 3
+                           :border-color "#000"}}
+       #js {:selector "node.focus"
+            :style    #js {:border-width 3
+                           :border-color "#e00"}}
+       #js {:selector "node.node-success"
+            :style    #js {:background-color "#00cc00"}}
+       #js {:selector "node.node-empty-output"
+            :style    #js {:background-color "#cccc00"}}
+       #js {:selector "node.node-error"
+            :style    #js {:background-color "#ec6565"}}
+       #js {:selector "node.node-highlight"
+            :style    #js {:border-width 3
+                           :border-color "#00aa00"}}
+       #js {:selector "node.node-highlight-1"
+            :style    #js {:border-width 3
+                           :border-color "#0000aa"}}
+       #js {:selector "edge"
+            :style    #js {:curve-style        "bezier"
+                           :width              2
+                           :arrow-scale        0.8
+                           :target-arrow-shape "triangle"}}
+       #js {:selector "edge.branch"
+            :style    #js {:line-color         "#ff7f0e"
+                           :target-arrow-color "#ff7f0e"}}
+       #js {:selector "edge.next"
+            :style    #js {:line-color         "#000"
+                           :target-arrow-color "#000"}}])
+
 (defn cytoscape-plan-view-effect [cy-ref container-ref elements {::keys [node-in-focus]}
                                   on-select-node]
   (let [{:strs [nodes edges]} (group-by :group elements)
@@ -242,49 +289,8 @@
                 (.run))))
         (let [cy (cytoscape
                    #js {:container @container-ref
-                        :layout    #js {:name    "dagre"
-                                        :rankDir "LR"
-                                        ;:ready   #(fit-node-and-neighbors (gobj/get % "cy") nodes node-in-focus)
-                                        }
-                        :style     #js [#js {:selector "node"
-                                             :style    #js {:text-valign         "center"
-                                                            :transition-property "border-color border-width"
-                                                            :transition-duration (str anim-duration "ms")}}
-                                        #js {:selector "node.node-and"
-                                             :style    #js {:background-color "#be8cd8"}}
-                                        #js {:selector "node.node-or"
-                                             :style    #js {:background-color "#17becf"}}
-                                        #js {:selector "node.node-resolver"
-                                             :style    #js {:background-color "#7f7f7f"}}
-                                        #js {:selector "node.root"
-                                             :style    #js {:border-width 3
-                                                            :border-color "#000"}}
-                                        #js {:selector "node.focus"
-                                             :style    #js {:border-width 3
-                                                            :border-color "#e00"}}
-                                        #js {:selector "node.node-success"
-                                             :style    #js {:background-color "#00cc00"}}
-                                        #js {:selector "node.node-empty-output"
-                                             :style    #js {:background-color "#cccc00"}}
-                                        #js {:selector "node.node-error"
-                                             :style    #js {:background-color "#ec6565"}}
-                                        #js {:selector "node.node-highlight"
-                                             :style    #js {:border-width 3
-                                                            :border-color "#00aa00"}}
-                                        #js {:selector "node.node-highlight-1"
-                                             :style    #js {:border-width 3
-                                                            :border-color "#0000aa"}}
-                                        #js {:selector "edge"
-                                             :style    #js {:curve-style        "bezier"
-                                                            :width              2
-                                                            :arrow-scale        0.8
-                                                            :target-arrow-shape "triangle"}}
-                                        #js {:selector "edge.branch"
-                                             :style    #js {:line-color         "#ff7f0e"
-                                                            :target-arrow-color "#ff7f0e"}}
-                                        #js {:selector "edge.next"
-                                             :style    #js {:line-color         "#000"
-                                                            :target-arrow-color "#000"}}]
+                        :layout    cytoscape-layout
+                        :style     cytoscape-style
                         :elements  (clj->js elements)})]
           (.on cy "click" "node"
             (fn [e]
