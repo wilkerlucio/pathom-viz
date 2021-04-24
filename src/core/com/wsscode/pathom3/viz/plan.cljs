@@ -210,9 +210,7 @@
 
 (def cytoscape-layout
   #js {:name    "dagre"
-       :rankDir "LR"
-       ;:ready   #(fit-node-and-neighbors (gobj/get % "cy") nodes node-in-focus)
-       })
+       :rankDir "LR"})
 
 (def cytoscape-style
   #js [#js {:selector "node"
@@ -289,7 +287,13 @@
                 (.run))))
         (let [cy (cytoscape
                    #js {:container @container-ref
-                        :layout    cytoscape-layout
+                        :layout    #js {:name    "dagre"
+                                        :rankDir "LR"
+                                        :ready   (fn [^js e]
+                                                   (let [^js cy (gobj/get e "cy")]
+                                                     (js/setTimeout
+                                                       #(.fit cy)
+                                                       500)))}
                         :style     cytoscape-style
                         :elements  (clj->js elements)})]
           (.on cy "click" "node"
