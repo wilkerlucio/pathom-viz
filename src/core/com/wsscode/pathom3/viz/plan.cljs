@@ -2,7 +2,6 @@
   (:require
     ["cytoscape" :as cytoscape]
     ["cytoscape-dagre" :as cytoscape-dagre]
-    [clojure.datafy :as d]
     [com.wsscode.pathom3.connect.indexes :as pci]
     [com.wsscode.pathom3.connect.operation :as pco]
     [com.wsscode.pathom3.connect.planner :as pcp]
@@ -15,7 +14,6 @@
     [helix.core :as h]
     [helix.dom :as dom]
     [helix.hooks :as hooks]
-    [com.wsscode.misc.coll :as coll]
     [clojure.string :as str]
     [com.wsscode.pathom.viz.fulcro]
     [com.wsscode.pathom.viz.ui.kit :as uip]
@@ -291,12 +289,7 @@
           (.on cy "click" "node"
             (fn [e]
               (when-let [node-data (some-> e .-target (aget 0) (.data) (gobj/get "source-node") deref)]
-                (if on-select-node (on-select-node (::pcp/node-id node-data)))
-                (js/console.log (::pcp/node-id node-data)
-                  (-> node-data
-                      (psm/sm-touch! (vec (keys (d/datafy node-data))))
-                      d/datafy
-                      (->> (coll/remove-vals #{::pco/unknown-value})))))))
+                (if on-select-node (on-select-node (::pcp/node-id node-data))))))
           (reset! cy-ref cy))))
 
     (hooks/use-effect [node-in-focus]
@@ -353,7 +346,6 @@
         {::pcp/keys [snapshot-message] :as graph} (get frames current-frame)
         [display-type :as display-type-state] (hooks/use-state (or display ::display-type-node-id))
         selected-node-id! (pvh/use-fstate nil)]
-    (js/console.log "!! G" graph)
     (dom/div {:style {:width            "100%"
                       :height           "100%"
                       :display          "flex"
@@ -364,8 +356,7 @@
         (ui/dom-select {::ui/options [[::display-type-node-id "Node ID"]
                                       [::display-type-label "Label"]]
                         ::ui/state   display-type-state})
-        (dom/div {:class ["flex-1"]} (str snapshot-message))
-        (uip/button {:onClick #(js/console.log (-> graph psm/sm-env p.ent/entity))} "Log Graph"))
+        (dom/div {:class ["flex-1"]} (str snapshot-message)))
       (dom/div {:class "flex-row flex-1 overflow-hidden"}
         (uip/native-select
           (ui/dom-props {::ui/state (ui/state-hook-serialize frame-state)

@@ -17,7 +17,6 @@
     [com.wsscode.pathom.viz.codemirror6 :as cm6]
     [com.wsscode.pathom.viz.helpers :as pvh]
     [com.wsscode.pathom.viz.lib.local-storage :as ls]
-    [com.wsscode.pathom.viz.query-plan :as plan-view]
     [com.wsscode.pathom.viz.trace :as pvt]
     [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
     [com.wsscode.pathom.viz.ui.kit :as ui]
@@ -146,13 +145,12 @@
 (defn run-query! [this]
   (let [{::keys [id]
          :as    props} (fc/props this)
-        {:ui/keys  [query-running? plan-viewer]
+        {:ui/keys  [query-running?]
          ::keys    [id query request-trace?]
          ::cp/keys [parser-id]} (get-in (fc/component->state-map this) [::id id])
         {::keys [enable-trace?]
          :or    {enable-trace? true}} (fc/get-computed props)]
     (when-not query-running?
-      (plan-view/set-plan-view-graph! this plan-viewer nil)
       (if-let [query' (pvh/safe-read query)]
         (let [props' {::id                       id
                       ::request-trace?           (and request-trace? enable-trace?)
