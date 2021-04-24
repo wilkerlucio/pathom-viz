@@ -51,7 +51,7 @@
   [{:keys [data]}]
   (h/$ viz-plan/PlanSnapshots
     {:frames
-     (viz-plan/prepare-frames data)
+     data
 
      :display
      ::viz-plan/display-type-label}))

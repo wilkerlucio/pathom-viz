@@ -194,7 +194,7 @@
                   (dom/div (ui/gc :.flex) "Graph Viz Snapshots")))
               (ui/column {:classes [:.flex-1]}
                 (h/$ viz-plan/PlanSnapshots
-                  {:frames (viz-plan/prepare-frames data)})))
+                  {:frames data})))
 
             :pathom.viz.log.type/plan-view
             (fc/fragment

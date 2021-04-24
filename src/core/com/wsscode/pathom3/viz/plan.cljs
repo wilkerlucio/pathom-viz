@@ -78,8 +78,10 @@
    node-output-state])
 
 (defn smart-plan [plan]
-  (-> (psm/smart-run-stats plan)
-      (psm/sm-update-env pci/register node-extensions-registry)))
+  (if (psm/smart-map? plan)
+    plan
+    (-> (psm/smart-run-stats plan)
+        (psm/sm-update-env pci/register node-extensions-registry))))
 
 (def query-ast-resolvers
   [(pbir/single-attr-resolver ::eql/query :edn-query-language.ast/node eql/query->ast)
@@ -140,14 +142,6 @@
                                    :classes ["next"]}))))
                       nodes')]
     all))
-
-(defn prepare-frames [snapshots]
-  (into []
-        (map
-          (fn [snap]
-            (let [smart-snap (smart-plan snap)]
-              [smart-snap (compute-plan-elements smart-snap)])))
-        snapshots))
 
 (defn create-coll [^js cy elements]
   (.add (.collection cy) (into-array elements)))
@@ -309,9 +303,9 @@
       (if cy
         (fit-node-and-neighbors cy nodes node-in-focus)))))
 
-(h/defnc PlanGraphView [{:keys [elements run-stats display-type on-select-node]}]
-  (let [elements'     (hooks/use-memo [(hash run-stats) (hash elements)]
-                        (or elements (some-> run-stats smart-plan compute-plan-elements)))
+(h/defnc PlanGraphView [{:keys [run-stats display-type on-select-node]}]
+  (let [elements'     (hooks/use-memo [(hash run-stats)]
+                        (some-> run-stats smart-plan compute-plan-elements))
         container-ref (hooks/use-ref nil)
         cy-ref        (hooks/use-ref nil)]
     (cytoscape-plan-view-effect cy-ref container-ref elements' run-stats on-select-node)
@@ -320,8 +314,8 @@
                       :overflow "hidden"}
               :ref   container-ref})))
 
-(h/defnc PlanGraphWithNodeDetails [{:keys [run-stats display-type
-                                           on-select-node]}]
+(h/defnc PlanGraphWithNodeDetails
+  [{:keys [run-stats display-type on-select-node]}]
   (let [selected-node (get run-stats ::node-in-focus)
         details-size  (pvh/use-persistent-state ::node-details-size 200)]
     (dom/div {:class "flex-row flex-1 overflow-hidden"}
@@ -356,15 +350,17 @@
 (h/defnc ^:export PlanSnapshots [{:keys [frames display]}]
   {:wrap [(h/memo =)]}
   (let [[current-frame :as frame-state] (hooks/use-state (dec (count frames)))
-        [{::pcp/keys [snapshot-message] :as graph} elements] (get frames current-frame)
-        [display-type :as display-type-state] (hooks/use-state (or display ::display-type-node-id))]
+        {::pcp/keys [snapshot-message] :as graph} (get frames current-frame)
+        [display-type :as display-type-state] (hooks/use-state (or display ::display-type-node-id))
+        selected-node-id! (pvh/use-fstate nil)]
+    (js/console.log "!! G" graph)
     (dom/div {:style {:width            "100%"
                       :height           "100%"
                       :display          "flex"
                       :flex-direction   "column"
                       :background-color "#eee"
                       :color            "#000"}}
-      (dom/div {:class "flex-row items-center mb-1 space-x-2"}
+      (dom/div {:class "flex-row items-center mb-1 space-x-2 border-b border-gray-300 bg-gray-100 p-1"}
         (ui/dom-select {::ui/options [[::display-type-node-id "Node ID"]
                                       [::display-type-label "Label"]]
                         ::ui/state   display-type-state})
@@ -376,6 +372,9 @@
                          :classes   ["bg-none w-52"]
                          :style     {:paddingRight "0.5rem"}
                          :size      2})
-          (for [[i {::pcp/keys [snapshot-message]}] (->> frames (map first) (map vector (range)))]
+          (for [[i {::pcp/keys [snapshot-message]}] (->> frames (map vector (range)))]
             (dom/option {:key i :value i} snapshot-message)))
-        (h/$ PlanGraphView {:elements elements :display-type display-type})))))
+        (h/$ PlanGraphWithNodeDetails
+          {:run-stats      (assoc graph ::node-in-focus @selected-node-id!)
+           :display-type   display-type
+           :on-select-node selected-node-id!})))))
