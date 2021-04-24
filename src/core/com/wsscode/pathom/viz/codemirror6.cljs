@@ -86,8 +86,10 @@
                                                   extensions)}))))
     (hooks/use-effect [@!view] #(some-> @!view (j/call :destroy)))
 
-    (dom/div {:classes (into ["flex-row" "flex-1" "overflow-auto" "whitespace-nowrap"] (:classes props))
-              :ref     mount!})))
+    (dom/div
+      {:classes (into ["flex-row" "flex-1" "overflow-auto" "whitespace-nowrap" "bg-white"]
+                      (:classes props))
+       :ref     mount!})))
 
 (defn sorted-maps [x]
   (walk/postwalk
