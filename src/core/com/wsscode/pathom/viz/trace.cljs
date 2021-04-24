@@ -1,5 +1,5 @@
 (ns com.wsscode.pathom.viz.trace
-  (:require ["./d3-trace" :refer [renderPathomTrace updateTraceSize]]
+  (:require ["./d3-trace" :refer [renderPathomTrace updateTraceSize clearToolTip]]
             ["./detect-element-size" :refer [addResizeListener]]
             [clojure.walk :as walk]
             [com.wsscode.pathom.viz.helpers :as h]
@@ -186,7 +186,8 @@
                         :data        (-> trace-data add-edn-dna (h/stringify-keyword-values))
                         :showDetails (or on-show-details identity)})))
           (js/setTimeout size-handler 100)
-          (catch :default e (js/console.error "Error rendering trace" e)))))
+          (catch :default e (js/console.error "Error rendering trace" e))))
+      clearToolTip)
 
     ; size
     (hooks/use-effect [@container-ref trace-data on-show-details]

@@ -4,6 +4,10 @@ d3.select('body').selectAll('.pathom-tooltip').remove()
 
 const tooltipElement = d3.select('body').append("div").attr("class", 'pathom-tooltip')
 
+export function clearToolTip() {
+  tooltipElement.style('visibility', 'hidden')
+}
+
 function registerTooltip(nodes, labelF) {
   nodes
     .on('mouseover.tooltip', function(d) { tooltipElement.style('visibility', 'visible') })
