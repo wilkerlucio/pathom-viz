@@ -255,10 +255,10 @@
             :style    #js {:line-color         "#000"
                            :target-arrow-color "#000"}}])
 
-(defn cytoscape-plan-view-effect [cy-ref container-ref elements {::keys [node-in-focus]}
-                                  on-select-node]
+(defn cytoscape-plan-view-effect
+  [cy-ref container-ref elements _graph on-select-node]
   (let [{:strs [nodes edges]} (group-by :group elements)
-        cy ^js @cy-ref]
+        ^js cy @cy-ref]
 
     (hooks/use-effect [elements on-select-node]
       (if cy
