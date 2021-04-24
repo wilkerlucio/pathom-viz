@@ -297,7 +297,7 @@
               (when-let [node-data (some-> e .-target (aget 0) (.data) (gobj/get "source-node") deref)]
                 (if on-select-node (on-select-node (::pcp/node-id node-data))))))
           (reset! cy-ref cy))))
-
+    #_
     (hooks/use-effect [node-in-focus]
       (if cy
         (fit-node-and-neighbors cy nodes node-in-focus)))))
