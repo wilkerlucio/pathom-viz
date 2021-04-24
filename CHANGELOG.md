@@ -5,6 +5,7 @@
 - Ensure consistent background on CM6
 - Show node details on snapshots
 - Improve performance of snapshots rendering by lazy processing the elements
+- Fix bug when sorting maps with irregular values
 
 ## [2021.04.22]
 - In the request tab, recent requests now show on top of the list

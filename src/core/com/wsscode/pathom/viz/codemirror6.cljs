@@ -95,7 +95,9 @@
   (walk/postwalk
     (fn [x]
       (if (map? x)
-        (into (sorted-map) x)
+        (try
+          (into (sorted-map) x)
+          (catch :default _ x))
         x))
     x))
 
