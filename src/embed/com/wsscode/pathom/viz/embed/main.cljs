@@ -41,8 +41,7 @@
   [{:keys [data]}]
   (h/$ viz-plan/PlanSnapshots
     {:frames
-     (->> (viz-plan/compute-frames data)
-          (mapv (juxt identity viz-plan/compute-plan-elements)))
+     (viz-plan/compute-frames data)
 
      :display
      ::viz-plan/display-type-label}))
