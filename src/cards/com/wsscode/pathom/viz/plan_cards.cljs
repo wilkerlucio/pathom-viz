@@ -14,16 +14,15 @@
   (ct.react/react-card
     ($ viz-plan/PlanSnapshots
       {:frames
-       (->> (viz-plan/compute-frames
-              '{::pci/index-oir
-                {}
+       (viz-plan/compute-frames
+         '{::pci/index-oir
+           {}
 
-                :com.wsscode.pathom3.connect.planner/available-data
-                {}
+           :com.wsscode.pathom3.connect.planner/available-data
+           {}
 
-                ::eql/query
-                []})
-            (mapv (juxt identity viz-plan/compute-plan-elements)))
+           ::eql/query
+           []})
 
        :display
        ::viz-plan/display-type-node-id})))

@@ -46,8 +46,7 @@
                            query (h/safe-read-string @!query)]
                        (->> {::pci/index-oir                idx
                              :edn-query-language.core/query query}
-                            (viz-plan/compute-frames)
-                            (mapv (juxt identity viz-plan/compute-plan-elements))))))]
+                            (viz-plan/compute-frames)))))]
     (dom/div {:classes ["flex-col flex-1 overflow-hidden"]}
       (dom/div {:classes ["flex-row"]}
         (dom/textarea (merge {:classes ["flex-1 h-60"]}
