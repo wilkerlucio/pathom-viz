@@ -29,65 +29,66 @@
   ;                    "NODE_ENV"      "production"}}
   ;  "npx postcss src/css/tailwind.css -o ./shells/electron/css/compiled.css --verbose")
 
-  app-clean
+  app:clean
   (do
     (fs/delete-tree ".shadow-cljs")
     (fs/delete-tree "shells/electron/js"))
 
-  app-deps
+  app:js-deps
   (shell {:dir "shells/electron"} "npm install")
 
-  app-js-watch
-  (shell "npx shadow-cljs watch electron-background electron-renderer")
-
-  app-js-release
-  {:depends [app-clean app-deps]
+  app:js-release
+  {:depends [app:js-deps]
    :task    (shell "npx shadow-cljs release electron-background electron-renderer")}
 
-  app-pack-test
-  {:depends [app-js-release]
+  app:pack-test
+  {:depends [app:js-release]
    :task    (shell {:dir "shells/electron"} "npx electron-builder --dir")}
 
-  app-pack
-  {:depends [app-js-release]
+  app:pack
+  {:depends [app:js-release]
    :task    (shell {:dir "shells/electron"} "npx electron-builder -mlw")}
 
-  release-app
+  app:dev
+  (shell "npx shadow-cljs watch electron-background electron-renderer")
+
+  app:release
   tasks/release-app
 
   ; endregion
 
   ; region embed
 
-  embed-css-watch
+  embed:css-watch
   (shell {:extra-env {"TAILWIND_MODE" "watch"}}
     "npx postcss src/css/tailwind.css -o ./shells/embed/compiled-css/main.css --verbose -w")
 
-  embed-css-release
+  embed:css-release
   (shell {:extra-env {"TAILWIND_MODE" "build"
                       "NODE_ENV"      "production"}}
     "npx postcss src/css/tailwind.css -o ./shells/embed/compiled-css/main.css --verbose")
 
-  embed-js-watch
+  embed:js-watch
   (shell "npx shadow-cljs watch embed")
 
-  embed-js-release
+  embed:js-release
   (shell "npx shadow-cljs release embed")
 
-  embed-report
-  (do
-    (shell "npx shadow-cljs run shadow.cljs.build-report embed embed-report.html")
-    (shell "open embed-report.html"))
+  embed:build-report
+  {:doc  "Generate build report for embed"
+   :task (do
+           (shell "npx shadow-cljs run shadow.cljs.build-report embed embed-report.html")
+           (shell "open embed-report.html"))}
 
-  e-open
+  embed:launch
   {:doc  "Open browser with embed dev."
    :task (shell "open http://localhost:8087/embed.html")}
 
-  -embed-dev
-  {:depends [embed-css-watch embed-js-watch]
+  -embed:dev
+  {:depends [embed:css-watch embed:js-watch]
    :task    (shell "open http://localhost:8087/embed.html")}
 
-  e-dev
+  embed:dev
   {:doc  "Start watching builds to develop the embed component."
    :task (shell "bb run --parallel -embed-dev")}
 
