@@ -118,10 +118,10 @@ jobs:
           node-version: '12.x'
 
       - name: Compile Embed
-        run: bb embed-js-release
+        run: bb embed:js-release
 
       - name: Compile Embed CSS
-        run: bb embed-css-release
+        run: bb embed:css-release
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
