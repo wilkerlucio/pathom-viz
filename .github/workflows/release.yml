@@ -25,6 +25,11 @@ jobs:
           # Install just one or all simultaneously
           cli: 1.10.1.693 # Clojure CLI based on tools.deps
 
+      - name: Setup Babashka
+        uses: turtlequeue/setup-babashka@master
+        with:
+          babashka-version: 0.4.0
+
       - name: Install Node.js, NPM and Yarn
         uses: actions/setup-node@v1
         with:
@@ -33,13 +38,16 @@ jobs:
       - name: NPM Install
         run: npm install
 
+      - name: Build CSS
+        run: bb app:css-release
+
       - name: Build JS
         if: ${{ matrix.os != 'windows-latest' }}
-        run: npx shadow-cljs release electron-background electron-renderer
-        
+        run: bb app:js-release
+
       - name: Build JS on Windows
         if: ${{ matrix.os == 'windows-latest' }}
-        run: npx shadow-cljs release electron-background electron-renderer
+        run: bb app:js-release
         shell: powershell
 
       - name: Electron Builder Action

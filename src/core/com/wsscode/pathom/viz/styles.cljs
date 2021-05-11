@@ -10,5 +10,4 @@
 (def full-css
   (reduce into
     [pvt/trace-css
-     min-sizes
-     (tailwind/everything)]))
+     min-sizes]))

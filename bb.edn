@@ -34,8 +34,20 @@
     (fs/delete-tree ".shadow-cljs")
     (fs/delete-tree "shells/electron/js"))
 
+  app:css-watch
+  (shell {:extra-env {"TAILWIND_MODE" "watch"}}
+    "npx postcss src/css/tailwind.css -o ./shells/electron/compiled-css/main.css --verbose -w")
+
+  app:css-release
+  (shell {:extra-env {"TAILWIND_MODE" "build"
+                      "NODE_ENV"      "production"}}
+    "npx postcss src/css/tailwind.css -o ./shells/electron/compiled-css/main.css --verbose")
+
   app:js-deps
   (shell {:dir "shells/electron"} "npm install")
+
+  app:js-watch
+  (shell "npx shadow-cljs watch electron-background electron-renderer")
 
   app:js-release
   {:depends [app:js-deps]
@@ -49,8 +61,11 @@
   {:depends [app:js-release]
    :task    (shell {:dir "shells/electron"} "npx electron-builder -mlw")}
 
+  -app:dev
+  {:depends [app:css-watch app:js-watch]}
+
   app:dev
-  (shell "npx shadow-cljs watch electron-background electron-renderer")
+  (shell "bb run --parallel -app:dev")
 
   app:launch
   {:doc  "Open electron app."
@@ -89,8 +104,7 @@
    :task (shell "open http://localhost:8087/embed.html")}
 
   -embed:dev
-  {:depends [embed:css-watch embed:js-watch]
-   :task    (shell "open http://localhost:8087/embed.html")}
+  {:depends [embed:css-watch embed:js-watch]}
 
   embed:dev
   {:doc  "Start watching builds to develop the embed component."
