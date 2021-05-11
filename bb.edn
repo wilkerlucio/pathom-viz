@@ -52,6 +52,10 @@
   app:dev
   (shell "npx shadow-cljs watch electron-background electron-renderer")
 
+  app:launch
+  {:doc  "Open electron app."
+   :task (shell {:dir "shells/electron"} "npx electron .")}
+
   app:release
   tasks/release-app
 
