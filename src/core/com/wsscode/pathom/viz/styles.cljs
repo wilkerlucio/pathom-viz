@@ -1,6 +1,5 @@
 (ns com.wsscode.pathom.viz.styles
-  (:require [com.wsscode.pathom.viz.trace :as pvt]
-            [com.wsscode.tailwind-garden.core :as tailwind]))
+  (:require [com.wsscode.pathom.viz.trace :as pvt]))
 
 (def min-sizes
   [[:.min-w-40 {:min-width "10rem"}]
