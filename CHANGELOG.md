@@ -8,6 +8,8 @@
 - Fix bug when sorting maps with irregular values
 - Fix bug on trace that made tooltip stay on screen
 - Remove node zoom on click on the graph view
+- Use Tailwind JIT in the app
+- Fix trace exceptions when trace is blank
 
 ## [2021.04.22]
 - In the request tab, recent requests now show on top of the list
