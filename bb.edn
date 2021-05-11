@@ -53,6 +53,10 @@
   {:depends [app:js-deps]
    :task    (shell "npx shadow-cljs release electron-background electron-renderer")}
 
+  app:release
+  {:doc     "Release CSS and JS assets"
+   :depends [app:css-release app:js-release]}
+
   app:pack-test
   {:depends [app:js-release]
    :task    (shell {:dir "shells/electron"} "npx electron-builder --dir")}
@@ -71,8 +75,9 @@
   {:doc  "Open electron app."
    :task (shell {:dir "shells/electron"} "npx electron .")}
 
-  app:release
-  tasks/release-app
+  app:publish
+  {:doc  "Publish a new app version."
+   :task tasks/release-app}
 
   ; endregion
 
