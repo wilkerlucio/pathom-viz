@@ -170,7 +170,7 @@
         size-handler  (hooks/use-callback []
                         (fn []
                           (updateTraceSize
-                            (doto @data
+                            (doto (or @data #js {})
                               (gobj/set "svgWidth" (gobj/get @container-ref "clientWidth"))
                               (gobj/set "svgHeight" (gobj/get @container-ref "clientHeight"))))))]
 

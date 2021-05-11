@@ -357,6 +357,8 @@ export function renderPathomTrace(element, settingsSource) {
   const dataTree = d3.hierarchy(data, d => d.children)
   dataTree.sum(d => d.name ? 1 : 0);
 
+  if (!dataTree.children) return settings
+
   dataTree.children.forEach(d => {
     if (d.children && d.children.length > 20) {
       d._children = d.children;
@@ -370,6 +372,7 @@ export function renderPathomTrace(element, settingsSource) {
   })
 
   settings.data = dataTree
+  settings.enabled = true
 
   renderTrace(svg.select('.pathom-view-nodes-container'), settings)
   renderRule(svg, settings)
@@ -384,6 +387,9 @@ export function updateTraceSize(settings) {
   settings.axisX.tickSize(svgHeight)
 
   updateScale(settings)
+
+  if (!settings.enabled) return;
+
   renderTrace(svg.select('.pathom-view-nodes-container'), settings)
 
   settings.vruler.attr('y2', svgHeight)
