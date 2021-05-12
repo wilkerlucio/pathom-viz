@@ -5,4 +5,6 @@
 node_modules
 workspaces/assets/js
 standalone/assets/js
+shells/embed/compiled-css
 shells/electron/js
+shells/electron/compiled-css
