@@ -306,6 +306,9 @@
       (if cy
         (fit-node-and-neighbors cy nodes node-in-focus)))))
 
+(defn fit-all [^js cy]
+  (some-> cy .fit))
+
 (h/defnc PlanGraphView [{:keys [run-stats display-type on-select-node]}]
   (let [elements'     (hooks/use-memo [(hash run-stats)]
                         (some-> run-stats smart-plan compute-plan-elements))
@@ -313,9 +316,9 @@
         cy-ref        (hooks/use-ref nil)]
     (cytoscape-plan-view-effect cy-ref container-ref elements' run-stats on-select-node)
     (cytoscape-node-label-effect cy-ref (display-type->label display-type))
-    (dom/div {:style {:flex     "1"
-                      :overflow "hidden"}
-              :ref   container-ref})))
+    (dom/div {:class           "flex-1 overflow-hidden"
+              :on-double-click #(fit-all @cy-ref)
+              :ref             container-ref})))
 
 (h/defnc PlanGraphWithNodeDetails
   [{:keys [run-stats display-type on-select-node]}]

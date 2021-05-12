@@ -2,7 +2,7 @@ name: Embed Build
 
 on:
   push:
-    branch:
+    branches:
       - master
 
 jobs:
