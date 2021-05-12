@@ -322,11 +322,7 @@
   (let [selected-node (get run-stats ::node-in-focus)
         details-size  (pvh/use-persistent-state ::node-details-size 200)]
     (dom/div {:class "flex-row flex-1 overflow-hidden"}
-      (dom/div {:style (cond-> {:width   (str @details-size "px")
-                                :display "flex"}
-                         (not selected-node)
-                         (assoc :flex "1"))
-                :class "min-w-40 bg-white"}
+      (dom/div {:class "flex min-w-40 bg-white flex-1 overflow-hidden min-w-[100px]"}
         (h/$ PlanGraphView {:run-stats      run-stats
                             :display-type   display-type
                             :on-select-node on-select-node}))
@@ -334,8 +330,9 @@
       (if selected-node
         (let [run-stats (smart-plan run-stats)]
           (h/<>
-            (uip/drag-resize {:state details-size :direction "left"})
-            (dom/div {:class "flex-col flex-1 overflow-hidden min-w-40"}
+            (uip/drag-resize {:state details-size :direction "right"})
+            (dom/div {:class "flex-col overflow-hidden min-w-40"
+                      :style {:width (str @details-size "px")}}
               (uip/section-header {}
                 (dom/div {:class "flex-row items-center"}
                   "Node Details"
