@@ -352,13 +352,10 @@
   (let [[current-frame :as frame-state] (hooks/use-state (dec (count frames)))
         {::pcp/keys [snapshot-message] :as graph} (get frames current-frame)
         [display-type :as display-type-state] (hooks/use-state (or display ::display-type-node-id))
-        selected-node-id! (pvh/use-fstate nil)]
-    (dom/div {:style {:width            "100%"
-                      :height           "100%"
-                      :display          "flex"
-                      :flex-direction   "column"
-                      :background-color "#eee"
-                      :color            "#000"}}
+        selected-node-id! (pvh/use-fstate nil)
+        history-size      (pvh/use-persistent-state ::snapshot-history-size 200)]
+    (dom/div {:style {:background-color "#eee"}
+              :class "w-full h-full flex-col text-black"}
       (dom/div {:class "flex-row items-center mb-1 space-x-2 border-b border-gray-300 bg-gray-100 p-1"}
         (ui/dom-select {::ui/options [[::display-type-node-id "Node ID"]
                                       [::display-type-label "Label"]]
@@ -368,10 +365,12 @@
         (uip/native-select
           (ui/dom-props {::ui/state (ui/state-hook-serialize frame-state)
                          :classes   ["bg-none w-52"]
-                         :style     {:paddingRight "0.5rem"}
+                         :style     {:paddingRight "0.5rem"
+                                     :width        (str @history-size "px")}
                          :size      2})
           (for [[i {::pcp/keys [snapshot-message]}] (->> frames (map vector (range)))]
             (dom/option {:key i :value i} snapshot-message)))
+        (uip/drag-resize {:state history-size :direction "left"})
         (h/$ PlanGraphWithNodeDetails
           {:run-stats      (assoc graph ::node-in-focus @selected-node-id!)
            :display-type   display-type
