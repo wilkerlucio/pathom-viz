@@ -1,6 +1,6 @@
 # Change Log
 
-## [Next]
+## [2021.05.11]
 - Fix trace bug when all children disappear when the root children has over 20 items
 - Ensure consistent background on CM6
 - Show node details on snapshots
