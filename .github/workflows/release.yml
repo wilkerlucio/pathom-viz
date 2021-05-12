@@ -44,11 +44,17 @@ jobs:
 
       - name: Build CSS
         if: ${{ matrix.os != 'windows-latest' }}
-        run: TAILWIND_MODE=build NODE_ENV=production npx postcss src/css/tailwind.css -o ./shells/electron/compiled-css/main.css --verbose
+        run: npx postcss src/css/tailwind.css -o ./shells/electron/compiled-css/main.css --verbose
+        env:
+          TAILWIND_MODE: build
+          NODE_ENV: production
 
       - name: Build CSS on Windows
         if: ${{ matrix.os == 'windows-latest' }}
-        run: TAILWIND_MODE=build NODE_ENV=production npx postcss src/css/tailwind.css -o ./shells/electron/compiled-css/main.css --verbose
+        run: npx postcss src/css/tailwind.css -o ./shells/electron/compiled-css/main.css --verbose
+        env:
+          TAILWIND_MODE: build
+          NODE_ENV: production
         shell: powershell
 
       - name: Electron Builder Action
