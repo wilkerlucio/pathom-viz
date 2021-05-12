@@ -316,8 +316,7 @@
         cy-ref        (hooks/use-ref nil)]
     (cytoscape-plan-view-effect cy-ref container-ref elements' run-stats on-select-node)
     (cytoscape-node-label-effect cy-ref (display-type->label display-type))
-    (dom/div {:style           {:flex     "1"
-                                :overflow "hidden"}
+    (dom/div {:class           "flex-1 overflow-hidden"
               :on-double-click #(fit-all @cy-ref)
               :ref             container-ref})))
 
