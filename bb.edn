@@ -20,19 +20,8 @@
 
   ; region app
 
-  ;app-css-watch
-  ;(shell {:extra-env {"TAILWIND_MODE" "watch"}}
-  ;  "npx postcss src/css/tailwind.css -o ./shells/electron/css/compiled.css --verbose -w")
-  ;
-  ;app-css-release
-  ;(shell {:extra-env {"TAILWIND_MODE" "build"
-  ;                    "NODE_ENV"      "production"}}
-  ;  "npx postcss src/css/tailwind.css -o ./shells/electron/css/compiled.css --verbose")
-
-  app:clean
-  (do
-    (fs/delete-tree ".shadow-cljs")
-    (fs/delete-tree "shells/electron/js"))
+  app:css-clean
+  (fs/delete-if-exists "shells/electron/compiled-css/main.css")
 
   app:css-watch
   (shell {:extra-env {"TAILWIND_MODE" "watch"}}
@@ -42,6 +31,11 @@
   (shell {:extra-env {"TAILWIND_MODE" "build"
                       "NODE_ENV"      "production"}}
     "npx postcss src/css/tailwind.css -o ./shells/electron/compiled-css/main.css --verbose")
+
+  app:js-clean
+  (do
+    (fs/delete-tree ".shadow-cljs")
+    (fs/delete-tree "shells/electron/js"))
 
   app:js-deps
   (shell {:dir "shells/electron"} "npm install")
@@ -53,12 +47,15 @@
   {:depends [app:js-deps]
    :task    (shell "npx shadow-cljs release electron-background electron-renderer")}
 
+  app:clean
+  {:depends [app:css-clean app:js-clean]}
+
   app:release
   {:doc     "Release CSS and JS assets"
-   :depends [app:js-release app:css-release]}
+   :depends [app:clean app:js-release app:css-release]}
 
   app:pack-test
-  {:depends [app:js-release]
+  {:depends [app:release]
    :task    (shell {:dir "shells/electron"} "npx electron-builder --dir")}
 
   app:pack

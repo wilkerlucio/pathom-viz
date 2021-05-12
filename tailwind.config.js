@@ -2,7 +2,9 @@
 
 const PROD_PATHS = [
   "./shells/embed/js/main.js",
-  "./shells/electron/js/renderer/main.js"
+  "./shells/electron/js/renderer/main.js",
+  "./shells/electron/js/renderer/shared.js",
+  "./shells/electron/js/renderer/worker.js"
 ];
 
 const DEV_PATHS = [
