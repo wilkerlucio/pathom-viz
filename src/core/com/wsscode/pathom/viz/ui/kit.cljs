@@ -165,6 +165,23 @@
     ["text-blue-600"
      "hover:underline"]))
 
+(fc/defsc ErrorBoundary
+  [this _]
+  {:componentDidCatch
+   (fn [_this error info]
+     (js/console.error "Error boundary error" error info))
+
+   :getDerivedStateFromError
+   (fn [_error]
+     {::error-catch? true})}
+
+  (if (fc/get-state this ::error-catch?)
+    (dom/div {:className "flex-1 flex-row items-center justify-center bg-red-300 text-white"}
+      "Something went wrong :'(")
+    (fc/children this)))
+
+(def error-boundary (fc/factory ErrorBoundary))
+
 ; endregion
 
 ; region components

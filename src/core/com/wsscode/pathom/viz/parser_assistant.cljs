@@ -192,28 +192,29 @@
               :onClick          #(select-parser this p)}
              (str p)]))
 
-        (if parser-assistant
-          (helix/provider
-            {:context app/ProviderContext
-             :value   {::cp/parser-id (::cp/parser-id parser-assistant)}}
-            (parser-assistant-ui parser-assistant))
-          (dom/div :.blank
-            (if (seq available-parsers)
-              (dom/div :.large "Select a parser")
-              (dom/div
-                (dom/div :.large (ui/gc :.center) "Connect a parser")
-                (dom/div "Not sure what to do to? "
-                  (ui/link {:href    "#"
-                            :onClick #(do
-                                        (.preventDefault %)
-                                        (fc/transact! this [(mf/open-external {:url "https://roamresearch.com/#/app/wsscode/page/RG9C93Sip"})]))}
-                    "Docs for Pathom 2")
-                  " | "
-                  (ui/link {:href    "#"
-                            :onClick #(do
-                                        (.preventDefault %)
-                                        (fc/transact! this [(mf/open-external {:url "https://pathom3.wsscode.com/docs/debugging/#debug-with-pathom-viz"})]))}
-                    "Docs for Pathom 3")
-                  ".")))))))))
+        (ui/error-boundary {}
+          (if parser-assistant
+            (helix/provider
+              {:context app/ProviderContext
+               :value   {::cp/parser-id (::cp/parser-id parser-assistant)}}
+              (parser-assistant-ui parser-assistant))
+            (dom/div :.blank
+              (if (seq available-parsers)
+                (dom/div :.large "Select a parser")
+                (dom/div
+                  (dom/div :.large (ui/gc :.center) "Connect a parser")
+                  (dom/div "Not sure what to do to? "
+                    (ui/link {:href    "#"
+                              :onClick #(do
+                                          (.preventDefault %)
+                                          (fc/transact! this [(mf/open-external {:url "https://roamresearch.com/#/app/wsscode/page/RG9C93Sip"})]))}
+                      "Docs for Pathom 2")
+                    " | "
+                    (ui/link {:href    "#"
+                              :onClick #(do
+                                          (.preventDefault %)
+                                          (fc/transact! this [(mf/open-external {:url "https://pathom3.wsscode.com/docs/debugging/#debug-with-pathom-viz"})]))}
+                      "Docs for Pathom 3")
+                    "."))))))))))
 
 (def multi-parser-manager (fc/computed-factory MultiParserManager {:keyfn ::manager-id}))

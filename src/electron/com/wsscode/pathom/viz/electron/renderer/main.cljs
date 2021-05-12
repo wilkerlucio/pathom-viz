@@ -185,40 +185,43 @@
             (ui/dom-option {:key (.getTime t) :value t}
               (.toLocaleTimeString t)))))
       (ui/column {:style {:flex "1" :overflow "hidden"}}
-        (if-let [{:pathom.viz.log/keys [type data]} log-val]
-          (case type
-            :pathom.viz.log.type/plan-snapshots
-            (fc/fragment
-              (ui/section-header {}
-                (ui/row {:classes [:.center]}
-                  (dom/div (ui/gc :.flex) "Graph Viz Snapshots")))
-              (ui/column {:classes [:.flex-1]}
-                (h/$ viz-plan/PlanSnapshots
-                  {:frames data})))
+        (ui/error-boundary {}
+          (if-let [{:pathom.viz.log/keys [type data]} log-val]
+            (case type
+              :pathom.viz.log.type/plan-snapshots
+              (fc/fragment
+                (ui/section-header {}
+                  (ui/row {:classes [:.center]}
+                    (dom/div (ui/gc :.flex) "Graph Viz Snapshots")))
+                (ui/column {:classes [:.flex-1]}
+                  (h/$ viz-plan/PlanSnapshots
+                    {:frames data})))
 
-            :pathom.viz.log.type/plan-view
-            (fc/fragment
-              (ui/section-header {}
-                (ui/row {:classes [:.center]}
-                  (dom/div (ui/gc :.flex) "Graph Viz")
-                  (ui/dom-select {:value    @ds
-                                  :onChange #(reset! ds %2)}
-                    (ui/dom-option {:value ::viz-plan/display-type-label} "Display: resolver name")
-                    (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))))
-              (ui/column {:style {:flex "1"}}
-                (let [selected-node-id! (pvh/use-fstate nil)]
-                  (h/$ viz-plan/PlanGraphWithNodeDetails
-                    {:run-stats      (assoc data ::viz-plan/node-in-focus @selected-node-id!)
-                     :display-type   @ds
-                     :on-select-node (pvh/use-callback selected-node-id! [])}))))
+              :pathom.viz.log.type/plan-view
+              (fc/fragment
+                (ui/section-header {}
+                  (ui/row {:classes [:.center]}
+                    (dom/div (ui/gc :.flex) "Graph Viz")
+                    (ui/dom-select {:value    @ds
+                                    :onChange #(reset! ds %2)}
+                      (ui/dom-option {:value ::viz-plan/display-type-label} "Display: resolver name")
+                      (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))))
+                (ui/column {:style {:flex "1"}}
+                  (let [selected-node-id! (pvh/use-fstate nil)]
+                    (h/$ viz-plan/PlanGraphWithNodeDetails
+                      {:run-stats      (assoc data ::viz-plan/node-in-focus @selected-node-id!)
+                       :display-type   @ds
+                       :on-select-node (pvh/use-callback selected-node-id! [])}))))
 
-            :pathom.viz.log.type/trace
-            (fc/fragment
-              (ui/section-header {} "Trace")
-              (trace+plan/trace-with-plan
-                (pvh/response-trace data)))
+              :pathom.viz.log.type/trace
+              (fc/fragment
+                (ui/section-header {} "Trace")
+                (trace+plan/trace-with-plan
+                  (pvh/response-trace data)))
 
-            (pr-str log-val)))))))
+              (dom/div {:classes ["m-6"]}
+                (dom/h2 {:classes ["text-lg font-bold mb-2"]} "Invalid view type")
+                (dom/code {:classes ["bg-red-300 p-1 rounded"]} (pr-str type))))))))))
 
 (def logs-view (fc/factory LogsView))
 
