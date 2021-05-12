@@ -38,9 +38,6 @@ jobs:
       - name: NPM Install
         run: npm install
 
-      - name: Build CSS
-        run: bb app:css-release
-
       - name: Build JS
         if: ${{ matrix.os != 'windows-latest' }}
         run: bb app:js-release
@@ -49,6 +46,9 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         run: bb app:js-release
         shell: powershell
+
+      - name: Build CSS
+        run: bb app:css-release
 
       - name: Electron Builder Action
         uses: samuelmeuli/action-electron-builder@v1.6.0

@@ -55,7 +55,7 @@
 
   app:release
   {:doc     "Release CSS and JS assets"
-   :depends [app:css-release app:js-release]}
+   :depends [app:js-release app:css-release]}
 
   app:pack-test
   {:depends [app:js-release]
