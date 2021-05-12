@@ -331,7 +331,7 @@
         (let [run-stats (smart-plan run-stats)]
           (h/<>
             (uip/drag-resize {:state details-size :direction "right"})
-            (dom/div {:class "flex-col overflow-hidden min-w-40"
+            (dom/div {:class "flex-col overflow-hidden min-w-[100px]"
                       :style {:width (str @details-size "px")}}
               (uip/section-header {}
                 (dom/div {:class "flex-row items-center"}
