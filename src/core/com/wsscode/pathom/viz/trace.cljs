@@ -7,7 +7,8 @@
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [com.fulcrologic.fulcro.components :as fc]
             [goog.object :as gobj]
-            [helix.hooks :as hooks]))
+            [helix.hooks :as hooks]
+            [com.wsscode.pathom.viz.ui.kit :as ui]))
 
 (defn add-edn-dna [trace]
   (walk/postwalk
@@ -152,16 +153,13 @@
      (if (= (-> prev-props ::trace-data)
             (-> this fc/props ::trace-data))
        (recompute-trace-size this)
-       (render-trace this)))
+       (render-trace this)))}
 
-   :componentDidCatch
-   (fn [this _error _info]
-     (fc/set-state! this {::error-catch? true}))}
-
-  (dom/div {:className "flex-1 width-full height-full overflow-hidden" :ref #(gobj/set this "svgContainer" %)}
-    (if (fc/get-state this ::error-catch?)
-      (dom/div "Error rendering trace, check console for details")
-      (dom/svg {:ref #(gobj/set this "svg" %)}))))
+  (ui/error-boundary
+    (dom/div {:className "flex-1 width-full height-full overflow-hidden" :ref #(gobj/set this "svgContainer" %)}
+      (if (fc/get-state this ::error-catch?)
+        (dom/div "Error rendering trace, check console for details")
+        (dom/svg {:ref #(gobj/set this "svg" %)})))))
 
 (hx/defnc D3TraceHelix [{:keys [trace-data on-show-details]}]
   (let [container-ref (hooks/use-ref nil)

@@ -287,14 +287,9 @@
    :componentWillUnmount
    (fn [this]
      (if-let [settings (gobj/get this "renderedData")]
-       ((gobj/get settings "dispose"))))
-
-   :componentDidCatch
-   (fn [this _error _info]
-     (fc/set-state! this {::error-catch? true}))}
-  (dom/div :.container {:ref #(gobj/set this "svgContainer" %)}
-    (if (fc/get-state this ::error-catch?)
-      (dom/div "Error rendering trace, check console for details")
+       ((gobj/get settings "dispose"))))}
+  (ui/error-boundary
+    (dom/div :.container {:ref #(gobj/set this "svgContainer" %)}
       (dom/svg {:ref #(gobj/set this "svg" %)}))))
 
 (def attribute-graph (fc/factory AttributeGraph))
