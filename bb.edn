@@ -110,7 +110,7 @@
 
   embed:dev
   {:doc  "Start watching builds to develop the embed component."
-   :task (shell "bb run --parallel -embed-dev")}
+   :task (shell "bb run --parallel -embed:dev")}
 
   ; endregion
   }}
