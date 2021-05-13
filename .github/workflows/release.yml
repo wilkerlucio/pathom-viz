@@ -57,6 +57,13 @@ jobs:
           NODE_ENV: production
         shell: powershell
 
+      - name: Prepare for app notarization
+        if: startsWith(matrix.os, 'macos')
+        # Import Apple API key for app notarization on macOS
+        run: |
+          mkdir -p ~/private_keys/
+          echo '${{ secrets.API_KEY }}' > ~/private_keys/AuthKey_${{ secrets.API_KEY_ID }}.p8
+
       - name: Electron Builder Action
         uses: samuelmeuli/action-electron-builder@v1.6.0
         with:
@@ -68,3 +75,9 @@ jobs:
           package_root: shells/electron
           app_root: shells/electron
           skip_build: true
+          mac_certs: ${{ secrets.MAC_CERTS }}
+          mac_certs_password: ${{ secrets.MAC_CERTS_PASSWORD }}
+        env:
+          # macOS notarization API key
+          API_KEY_ID: ${{ secrets.API_KEY_ID }}
+          API_KEY_ISSUER_ID: ${{ secrets.API_KEY_ISSUER_ID }}

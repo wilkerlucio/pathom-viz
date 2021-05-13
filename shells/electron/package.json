@@ -1,7 +1,7 @@
 {
   "name": "pathom-viz",
   "productName": "Pathom Viz",
-  "version": "2021.05.11",
+  "version": "2021.05.13-cs1",
   "description": "Pathom visualization tools for parser development.",
   "homepage": "https://github.com/wilkerlucio/pathom-viz",
   "main": "js/background/main.js",
@@ -20,7 +20,8 @@
   },
   "devDependencies": {
     "electron": "^12.0.4",
-    "electron-builder": "^22.10.5"
+    "electron-builder": "^22.10.5",
+    "electron-builder-notarize": "^1.2.0"
   },
   "scripts": {
     "start": "npm install && electron .",
@@ -30,8 +31,10 @@
   },
   "build": {
     "appId": "com.wsscode.pathom-viz-standalone",
+    "afterSign": "electron-builder-notarize",
     "mac": {
-      "category": "public.app-category.developer-tools"
+      "category": "public.app-category.developer-tools",
+      "hardenedRuntime": true
     },
     "dmg": {},
     "linux": {
