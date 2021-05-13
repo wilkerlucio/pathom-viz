@@ -3,7 +3,6 @@
     ["electron" :as electron]
     ["path" :as path]
     ["url" :as url]
-    ["electron-updater" :refer [autoUpdater]]
     [com.wsscode.pathom.viz.electron.background.server :as server]))
 
 (defonce web-contents* (atom nil))
@@ -29,5 +28,4 @@
     (server/start! {::server/web-contents web-contents})))
 
 (defn init []
-  (.checkForUpdatesAndNotify autoUpdater)
   (electron/app.on "ready" create-window))
