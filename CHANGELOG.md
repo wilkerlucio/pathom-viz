@@ -1,5 +1,10 @@
 # Change Log
 
+## [2021.05.13]
+- Double-click on graph view to fit content
+- Mac App Signed
+- Auto updates
+
 ## [2021.05.11]
 - Fix trace bug when all children disappear when the root children has over 20 items
 - Ensure consistent background on CM6
