@@ -381,10 +381,10 @@
   {:use-hooks? true}
   (let [text (h/use-atom-state (or value ""))]
     (modal {}
-      (dom/div :$space-y-2
+      (dom/div {:classes ["space-y-2"]}
         (dom/div (str prompt))
         (dom/div (input {:state text}))
-        (dom/div :$space-x-1
+        (dom/div {:classes ["space-x-1"]}
           (button {:onClick #(on-finish @text)} "Ok")
           (button {:onClick #(on-finish nil)} "Cancel"))))))
 
