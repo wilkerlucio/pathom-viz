@@ -10,6 +10,7 @@
     [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
     [com.wsscode.async.async-cljs :refer [<?maybe go-promise <!]]
     [com.wsscode.pathom.connect :as pc]
+    [com.wsscode.pathom.viz.ws-connector.pathom3.adapter :refer [ensure-pathom2-indexes]]
     [com.wsscode.pathom.core :as p]
     [com.wsscode.pathom.misc :as p.misc]
     [com.wsscode.pathom.viz.client-parser :as cp]
@@ -22,7 +23,8 @@
     [com.wsscode.pathom.viz.ui.kit :as ui]
     [com.wsscode.pathom3.viz.plan :as viz-plan]
     [helix.core :as h]
-    [helix.hooks :as hooks]))
+    [helix.hooks :as hooks]
+    [com.wsscode.pathom3.connect.indexes :as pci]))
 
 (declare QueryEditor TransactionResponse)
 
@@ -71,11 +73,8 @@
 ;; Parser
 
 (def index-query
-  [{::pc/indexes [::pc/index-attributes ::pc/idents ::pc/index-io ::pc/autocomplete-ignore]}])
-
-(pc/defresolver indexes [{::keys [client-parser]} _]
-  {::pc/output [::pc/indexes]}
-  (client-parser {} index-query))
+  [{::pc/indexes [::pc/index-attributes ::pc/idents ::pc/index-io ::pc/autocomplete-ignore]}
+   {::pci/indexes [::pci/index-attributes ::pci/index-io ::pci/index-resolvers]}])
 
 #_:clj-kondo/ignore
 (fm/defmutation run-query [{::keys [request-trace?]}]
@@ -105,6 +104,7 @@
         :ui/query-running? false
         ::pc/indexes (-> response
                          p/elide-special-outputs
+                         ensure-pathom2-indexes
                          ::pc/indexes))))
   (error-action [env]
     (js/console.log "QUERY ERROR" env))
