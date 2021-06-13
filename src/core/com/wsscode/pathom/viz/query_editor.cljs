@@ -177,7 +177,8 @@
                           :cursor        "pointer"
                           :font-family   ui/font-code
                           :max-height    "45px"
-                          :overflow      "auto"
+                          :align-items   "center"
+                          :overflow      "hidden"
                           :padding       "5px"
                           :white-space   "pre"
                           :display       "flex"}
@@ -188,7 +189,7 @@
     (for [query (rseq query-history)]
       (dom/div :.history-item {:key     (hash query)
                                :onClick #(on-pick-query query %)}
-        (dom/div {:style {:flex "1"}} (str query))
+        (dom/div {:classes ["flex-1 overflow-auto"]} (str query))
         (dom/div :.actions
           {:onClick (fn [e]
                       (.stopPropagation e)
