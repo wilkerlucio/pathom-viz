@@ -3,7 +3,8 @@
             [cljs.spec.alpha :as s]
             [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
             [com.wsscode.async.async-cljs :refer [go-promise <!p <?]]
-            [com.wsscode.pathom.viz.transit :as transit]
+            [com.wsscode.transito :as tt]
+            [com.wsscode.pathom3.connect.operation.transit :as pcot]
             [goog.object :as gobj]))
 
 ; region specs
@@ -56,7 +57,7 @@
       (assoc request ::request-body-text request-body)
       (case request-as
         ::request-as-transit
-        (assoc request ::request-body-text (transit/write request-body))
+        (assoc request ::request-body-text (tt/write-str request-body {:handlers pcot/write-handlers}))
 
         ::request-as-edn
         (assoc request ::request-body-text (pr-str request-body))
@@ -117,7 +118,7 @@
 (defn normalize-response-body [{::keys [response-body-text request-as] :as response}]
   (case request-as
     ::request-as-transit
-    (assoc response ::response-body (transit/read response-body-text))
+    (assoc response ::response-body (tt/read-str response-body-text {:handlers pcot/read-handlers}))
 
     ::request-as-edn
     (assoc response ::response-body (read-string response-body-text))

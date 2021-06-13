@@ -12,8 +12,9 @@
   com.wsscode/fuzzy                                 {:mvn/version "1.0.0"}
   com.wsscode/pathom                                {:mvn/version "2.3.1"}
   com.wsscode/pathom-viz-connector                  {:mvn/version "2021.01.22"}
+  com.wsscode/pathom3                               {:git/url "https://github.com/wilkerlucio/pathom3" :sha "acf3134aa52668d83cffd326c46fca1ef0120e99"}
   com.wsscode/promesa-bridges                       {:mvn/version "2021.01.20"}
-  com.wsscode/pathom3                               {:git/url "https://github.com/wilkerlucio/pathom3" :sha "11bcdacee25d80c70d786b355c0ff7f1ea0c1b17"}
+  com.wsscode/transito                              {:git/url "https://github.com/wilkerlucio/transito" :sha "7119312488e8e8eac0262b86b0c74f6d940de78e"}
   lilactown/helix                                   {:mvn/version "0.0.15"}
   nextjournal.clojure-mode/nextjournal.clojure-mode {:git/url "https://github.com/nextjournal/clojure-mode" :sha "f46688eba79953648e7a8920ca79e48fc1414867"}
   org.clojure/clojure                               {:mvn/version "1.10.1"}
