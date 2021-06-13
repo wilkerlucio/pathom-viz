@@ -383,7 +383,7 @@
     (modal {}
       (dom/div {:classes ["space-y-2"]}
         (dom/div (str prompt))
-        (dom/div (input {:state text}))
+        (dom/div (input {:state text :autoFocus true}))
         (dom/div {:classes ["space-x-1"]}
           (button {:onClick #(on-finish @text)} "Ok")
           (button {:onClick #(on-finish nil)} "Cancel"))))))
