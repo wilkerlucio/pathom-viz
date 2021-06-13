@@ -38,7 +38,7 @@
 
 (defn history-append [history query]
   (-> (into [] (comp (remove #{query})
-                     (take (dec history-max-size))) history)
+                     (drop 1)) history)
       (p.misc/vconj query)))
 
 ;; Registry
