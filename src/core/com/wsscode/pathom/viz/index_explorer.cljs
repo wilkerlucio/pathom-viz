@@ -1,26 +1,28 @@
 (ns com.wsscode.pathom.viz.index-explorer
-  (:require ["./d3-attribute-graph" :as d3attr]
-            [cljs.reader :refer [read-string]]
-            [cljs.spec.alpha :as s]
-            [clojure.string :as str]
-            [clojure.test.check.generators :as gen]
-            [com.fulcrologic.fulcro-css.localized-dom :as dom]
-            [com.fulcrologic.fulcro.algorithms.merge :as merge]
-            [com.fulcrologic.fulcro.application :as fa]
-            [com.fulcrologic.fulcro.components :as fc]
-            [com.fulcrologic.fulcro.mutations :as fm]
-            [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
-            [com.wsscode.fuzzy :as fuzzy]
-            [com.wsscode.pathom.connect :as pc]
-            [com.wsscode.pathom.core :as p]
-            [com.wsscode.pathom.viz.helpers :as pvh]
-            [com.wsscode.pathom.viz.ui.context :as uic]
-            [com.wsscode.pathom.viz.ui.expandable-tree :as ex-tree]
-            [com.wsscode.pathom.viz.ui.kit :as ui]
-            [com.wsscode.spec-inspec :as si]
-            [edn-query-language.core :as eql]
-            [goog.object :as gobj]
-            [com.wsscode.pathom.viz.client-parser :as cp]))
+  (:require
+    ["./d3-attribute-graph" :as d3attr]
+    [cljs.reader :refer [read-string]]
+    [cljs.spec.alpha :as s]
+    [clojure.string :as str]
+    [clojure.test.check.generators :as gen]
+    [com.fulcrologic.fulcro-css.localized-dom :as dom]
+    [com.fulcrologic.fulcro.algorithms.merge :as merge]
+    [com.fulcrologic.fulcro.application :as fa]
+    [com.fulcrologic.fulcro.components :as fc]
+    [com.fulcrologic.fulcro.mutations :as fm]
+    [com.fulcrologic.guardrails.core :refer [>def >defn >fdef => | <- ?]]
+    [com.wsscode.fuzzy :as fuzzy]
+    [com.wsscode.pathom.connect :as pc]
+    [com.wsscode.pathom.core :as p]
+    [com.wsscode.pathom.viz.client-parser :as cp]
+    [com.wsscode.pathom.viz.helpers :as pvh]
+    [com.wsscode.pathom.viz.ui.context :as uic]
+    [com.wsscode.pathom.viz.ui.expandable-tree :as ex-tree]
+    [com.wsscode.pathom.viz.ui.kit :as ui]
+    [com.wsscode.pathom.viz.ws-connector.pathom3.adapter :refer [ensure-pathom2-indexes]]
+    [com.wsscode.spec-inspec :as si]
+    [edn-query-language.core :as eql]
+    [goog.object :as gobj]))
 
 ; region specs
 
@@ -288,7 +290,7 @@
    (fn [this]
      (if-let [settings (gobj/get this "renderedData")]
        ((gobj/get settings "dispose"))))}
-  (ui/error-boundary
+  (ui/error-boundary {}
     (dom/div :.container {:ref #(gobj/set this "svgContainer" %)}
       (dom/svg {:ref #(gobj/set this "svg" %)}))))
 
@@ -1361,15 +1363,17 @@
 
 (fm/defmutation load-indexes* [_]
   (action [{:keys [state ref]}]
-    #_ (swap! state update-in ref assoc :ui/query-running? true)
+    #_(swap! state update-in ref assoc :ui/query-running? true)
     nil)
   (ok-action [{:keys [state ref] :as env}]
-    (let [indexes (-> (pvh/env-parser-response env)
-                      ::pc/indexes)]
+    (let [response (pvh/env-parser-response env)]
       (swap! state merge/merge-component IndexExplorer {::id    (second ref)
-                                                        ::index (p/elide-special-outputs indexes)})))
+                                                        ::index (-> response
+                                                                    (p/elide-special-outputs)
+                                                                    ensure-pathom2-indexes
+                                                                    ::pc/indexes)})))
   (error-action [env]
-    #_ (js/console.log "QUERY ERROR" env)
+    #_(js/console.log "QUERY ERROR" env)
     nil)
   (remote [{:keys [ast]}]
     (assoc ast :key `cp/client-parser-mutation)))
@@ -1379,6 +1383,6 @@
         ::cp/keys [parser-id]}]
   (let [props {::id                       id
                ::cp/parser-id             parser-id
-               ::cp/client-parser-request [::pc/indexes]}]
+               ::cp/client-parser-request [::pc/indexes :com.wsscode.pathom3.connect.indexes/indexes]}]
     (fc/transact! app [(load-indexes* props)]
       {:ref [::id id]})))
