@@ -312,8 +312,9 @@
                     :disabled (not (seq query-history))
                     :style    {:marginRight "6px"}}
           "History")
-        (ui/button {:onClick #(load-indexes (fc/any->app this) (fc/props this))
-                    :style   {:marginRight "6px"}}
+        (ui/button {:onClick  #(load-indexes (fc/any->app this) (fc/props this))
+                    :disabled query-running?
+                    :style    {:marginRight "6px"}}
           "Refresh index")
         (ui/button {:onClick  run-query
                     :disabled query-running?}
