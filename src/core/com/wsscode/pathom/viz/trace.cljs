@@ -155,7 +155,7 @@
        (recompute-trace-size this)
        (render-trace this)))}
 
-  (ui/error-boundary
+  (ui/error-boundary {}
     (dom/div {:className "flex-1 width-full height-full overflow-hidden" :ref #(gobj/set this "svgContainer" %)}
       (if (fc/get-state this ::error-catch?)
         (dom/div "Error rendering trace, check console for details")
