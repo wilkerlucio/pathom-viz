@@ -38,13 +38,16 @@
   {::pc/params [::parser-id]}
   (swap! parsers* dissoc parser-id))
 
-(pc/defmutation client-parser-mutation
+(pc/defmutation client-parser-request
   [{::keys [parsers]}
-   {::keys [parser-id client-parser-request]}]
-  {::pc/params [::client-parser-request ::parser-id]
+   {::keys [parser-id client-parser-request client-parser-data]}]
+  {::pc/params [::parser-id ::client-parser-request ::client-parser-data]
    ::pc/output [::client-parser-response]}
   (if-let [parser (get parsers parser-id)]
-    (let-chan [response (parser {} client-parser-request)]
+    (let-chan [response (parser {} (if client-parser-data
+                                     {:pathom/eql    client-parser-request
+                                      :pathom/entity client-parser-data}
+                                     client-parser-request))]
       {::client-parser-response response})
     (throw (ex-info "Parser not found" {::parser-id parser-id}))))
 
@@ -52,4 +55,4 @@
   [client-parser-names
    add-client-parser-from-url
    remove-client-parser
-   client-parser-mutation])
+   client-parser-request])

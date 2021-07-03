@@ -139,7 +139,7 @@
 
 (defn env-parser-response [env]
   (-> env :result :body
-      (get 'com.wsscode.pathom.viz.client-parser/client-parser-mutation)
+      (get 'com.wsscode.pathom.viz.client-parser/client-parser-request)
       :com.wsscode.pathom.viz.client-parser/client-parser-response))
 
 (defn transform->css [{:keys [x y k] :as t}]
