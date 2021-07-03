@@ -300,7 +300,8 @@
   [this {::keys [collapsed? on-toggle title]
          :or    {on-toggle identity}
          :as    p}]
-  {:css [[:.container {:cursor "pointer"}]
+  {:css [[:.container {:cursor   "pointer"
+                       :overflow "hidden"}]
          [:.header {:background "#f3f3f3"
                     :color      "#717171"
                     :padding    "1px 0"}
