@@ -169,13 +169,6 @@
                        p3?
                        (assoc ::cp/client-parser-data (if (map? entity-data) entity-data)))]
           (fc/transact! this [(run-query props')
-                              (fm/set-props {:ui/entity-input-error (and p3?
-                                                                         (cond
-                                                                           (nil? entity-data)
-                                                                           "Failed to parse data."
-
-                                                                           (not (map? entity-data))
-                                                                           "Entity data must be a map."))})
                               (add-query-to-history {::cp/parser-id parser-id
                                                      ::query        (str/trim query)})]))))))
 
@@ -246,7 +239,7 @@
    {::keys    [query result request-trace? query-history]
     ::pc/keys [indexes]
     ::cp/keys [parser-id]
-    :ui/keys  [query-running? trace-viewer entity-input-error pathom-version]
+    :ui/keys  [query-running? trace-viewer pathom-version]
     :as       props}
    {::keys [editor-props enable-trace?
             default-trace-size
@@ -264,8 +257,7 @@
                             ::result               ""
                             ::query-history        []
                             :ui/show-history?      true
-                            :ui/query-running?     false
-                            :ui/entity-input-error false}
+                            :ui/query-running?     false}
                       current-normalized data-tree)))
 
    :ident       ::id
@@ -280,7 +272,6 @@
                  :ui/query-running?
                  :ui/pathom-version
                  :ui/show-history?
-                 :ui/entity-input-error
                  :com.wsscode.pathom/trace
                  :ui/graph-view
                  :ui/trace-viewer]
@@ -322,16 +313,25 @@
    :css-include [pvt/D3Trace HistoryView]
    :use-hooks?  true}
   (pvh/use-layout-effect #(init-query-editor this) [])
-  (let [run-query     (pvh/use-callback #(run-query! this))
-        css           (css/get-classnames QueryEditor)
-        entity        (pvh/use-component-prop this ::entity)
-        show-history? (pvh/use-persistent-state ::show-history? true)
-        history-size  (pvh/use-persistent-state ::history-width (or default-history-size 250))
-        query-size    (pvh/use-persistent-state ::query-width (or default-query-size 400))
-        entity-size   (pvh/use-persistent-state ::entity-height 200)
-        trace-size    (pvh/use-persistent-state ::trace-height (or default-trace-size 200))
-        entity-shape  (pvh/use-memo #(some-> @entity pvh/safe-read pfsd/data->shape-descriptor) [@entity])
-        p3?           (= 3 pathom-version)]
+  (let [run-query          (pvh/use-callback #(run-query! this))
+        css                (css/get-classnames QueryEditor)
+        entity             (pvh/use-component-prop this ::entity)
+        show-history?      (pvh/use-persistent-state ::show-history? true)
+        history-size       (pvh/use-persistent-state ::history-width (or default-history-size 250))
+        query-size         (pvh/use-persistent-state ::query-width (or default-query-size 400))
+        entity-size        (pvh/use-persistent-state ::entity-height 200)
+        trace-size         (pvh/use-persistent-state ::trace-height (or default-trace-size 200))
+        entity-data        (pvh/use-memo #(some-> @entity pvh/safe-read) [@entity])
+        entity-shape       (pvh/use-memo #(pfsd/data->shape-descriptor entity-data) [(hash entity-data)])
+
+        p3?                (= 3 pathom-version)
+        entity-input-error (and p3?
+                                (cond
+                                  (nil? entity-data)
+                                  "Failed to parse data."
+
+                                  (not (map? entity-data))
+                                  "Entity data must be a map."))]
     (dom/div :.container
       (dom/div :.toolbar
         (if (trace-switch? props)
