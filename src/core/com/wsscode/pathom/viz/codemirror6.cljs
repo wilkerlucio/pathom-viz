@@ -58,17 +58,23 @@
                         (.of view/keymap historyKeymap)
                         #_(.of (.-lineWrapping EditorView) "false")])
 
-(h/defnc Editor [{:keys [source readonly props]
+(h/defnc Editor [{:keys [source readonly props state]
                   :or   {readonly false}}]
   (let [!view  (pvh/use-fstate nil)
         mount! (hooks/use-callback []
                  (fn [el]
-                   (let [state (.create EditorState #js {:doc        source
-                                                         :extensions (if readonly
-                                                                       #js [extensions
-                                                                            (.of (.-editable EditorView) "false")]
-                                                                       extensions)})
-                         v     (new EditorView
+                   (let [state (.create EditorState #js {:doc        (or (if state @state source) "")
+                                                         :extensions (cond-> #js [extensions]
+                                                                       readonly
+                                                                       (.concat #js [(.of (.-editable EditorView) "false")])
+
+                                                                       state
+                                                                       (.concat #js [(.of (.-updateListener EditorView)
+                                                                                       (fn [^js v]
+                                                                                         (let [str (.. v -state -doc toString)]
+                                                                                           (if (not= str @state)
+                                                                                             (state str)))))]))})
+                         ^js v (new EditorView
                                  (j/obj :state
                                    state
                                    :parent el
@@ -79,16 +85,23 @@
     (hooks/use-effect [source @!view]
       (when @!view
         (.setState @!view
-          (.create EditorState #js {:doc        source
-                                    :extensions (if readonly
-                                                  #js [extensions
-                                                       (.of (.-editable EditorView) "false")]
-                                                  extensions)}))))
+          (.create EditorState #js {:doc        (or (if state @state source) "")
+                                    :extensions (cond-> #js [extensions]
+                                                  readonly
+                                                  (.concat #js [(.of (.-editable EditorView) "false")])
+
+                                                  state
+                                                  (.concat #js [(.of (.-updateListener EditorView)
+                                                                  (fn [^js v]
+                                                                    (let [str (.. v -state -doc toString)]
+                                                                      (if (not= str @state)
+                                                                        (state str)))))]))}))))
     (hooks/use-effect [@!view] #(some-> @!view (j/call :destroy)))
 
     (dom/div
       {:classes (into ["flex-row" "flex-1" "overflow-auto" "whitespace-nowrap" "bg-white"]
                       (:classes props))
+       :style   (:style props)
        :ref     mount!})))
 
 (defn sorted-maps [x]
@@ -118,9 +131,14 @@
   ([source props]
    (h/$ EditorReadWrap {:source source :props props})))
 
+(defn clojure-entity-write
+  [state props]
+  (h/$ Editor {:state state
+               :props  props}))
+
 (>def ::source string?)
 (>def ::props map?)
 
 (defc clojure-editor [{::keys [source props]}]
   (h/$ Editor {:source source
-               :props props}))
+               :props  props}))
