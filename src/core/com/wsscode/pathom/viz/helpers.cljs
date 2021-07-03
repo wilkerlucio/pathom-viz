@@ -367,17 +367,11 @@
   IDeref
   (-deref [_o] (-> comp fc/props (get prop)))
 
-  IReset
-  (-reset! [_o new-value] (fm/set-value! comp prop new-value) new-value)
-
-  ISwap
-  (-swap! [a f] (fm/set-value! comp prop (f @a)))
-  (-swap! [a f x] (fm/set-value! comp prop (f @a x)))
-  (-swap! [a f x y] (fm/set-value! comp prop (f @a x y)))
-  (-swap! [a f x y more] (fm/set-value! comp prop (apply f @a x y more))))
+  IFn
+  (-invoke [_o x] (fm/set-value! comp prop x)))
 
 (defn use-component-prop [comp prop]
-  (use-memo (->FulcroComponentProp comp prop) [(-> comp fc/props (get prop))]))
+  (->FulcroComponentProp comp prop))
 
 ;; hooks
 
