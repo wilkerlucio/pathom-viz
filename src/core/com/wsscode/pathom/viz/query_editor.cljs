@@ -24,7 +24,8 @@
     [com.wsscode.pathom3.viz.plan :as viz-plan]
     [helix.core :as h]
     [helix.hooks :as hooks]
-    [com.wsscode.pathom3.connect.indexes :as pci]))
+    [com.wsscode.pathom3.connect.indexes :as pci]
+    [com.wsscode.pathom3.format.shape-descriptor :as pfsd]))
 
 (declare QueryEditor TransactionResponse)
 
@@ -329,6 +330,7 @@
         query-size    (pvh/use-persistent-state ::query-width (or default-query-size 400))
         entity-size   (pvh/use-persistent-state ::entity-height 200)
         trace-size    (pvh/use-persistent-state ::trace-height (or default-trace-size 200))
+        entity-shape  (pvh/use-memo #(some-> @entity pvh/safe-read pfsd/data->shape-descriptor) [@entity])
         p3?           (= 3 pathom-version)]
     (dom/div :.container
       (dom/div :.toolbar
@@ -372,7 +374,7 @@
                     :style       {:width  (str @query-size "px")
                                   :height (str @entity-size "px")}
                     :value       (or (str query) "")
-                    ::pc/indexes (if (map? indexes) (p/elide-not-found indexes))
+                    ::pc/indexes (if (map? indexes) (p/elide-not-found (assoc indexes ::cm/available-data entity-shape)))
                     ::cm/options {::cm/extraKeys
                                   {"Cmd-Enter"   run-query
                                    "Ctrl-Enter"  run-query

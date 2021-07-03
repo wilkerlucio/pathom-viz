@@ -198,18 +198,20 @@
         (get (paths-for-context* env (pop context)) head)))
     {}))
 
-(defn paths-for-context* [env context]
-  (p.cache/cached ::ctx-path-cache* env [(select-keys env [::pc/index-io]) context]
+(defn paths-for-context* [{::keys [available-data] :as env} context]
+  (p.cache/cached ::ctx-path-cache* env [(select-keys env [::pc/index-io]) context (some-> available-data hash)]
     (fn []
       (let [context      (into [] context)
-            context-data (fetch-context-data env context)]
-        (pci/reachable-paths env context-data)))))
+            context-data (fetch-context-data env context)
+            entity-data  (some-> available-data (get-in context))
+            all-data     (merge context-data entity-data)]
+        (pci/reachable-paths env all-data)))))
 
-(defn paths-for-context [env context]
+(defn paths-for-context [index context]
   (paths-for-context*
-    (assoc env ::ctx-path-cache* pathom-cache
-               ::pci/index-io (::pc/index-io env)
-               ::pci/index-attributes (::pc/index-attributes env))
+    (assoc index ::ctx-path-cache* pathom-cache
+                 ::pci/index-io (::pc/index-io index)
+                 ::pci/index-attributes (::pc/index-attributes index))
     context))
 
 (defn ^:export completions [index token reg]
