@@ -321,10 +321,18 @@
         query-size         (pvh/use-persistent-state ::query-width (or default-query-size 400))
         entity-size        (pvh/use-persistent-state ::entity-height 200)
         trace-size         (pvh/use-persistent-state ::trace-height (or default-trace-size 200))
+        query-data         (pvh/use-memo #(pvh/safe-read query) [query])
         entity-data        (pvh/use-memo #(some-> @entity pvh/safe-read) [@entity])
         entity-shape       (pvh/use-memo #(pfsd/data->shape-descriptor entity-data) [(hash entity-data)])
 
         p3?                (= 3 pathom-version)
+        query-error        (cond
+                             (nil? query-data)
+                             "Failed to parse data"
+
+                             (not (vector? query-data))
+                             "EQL must start as a vector")
+
         entity-input-error (and p3?
                                 (cond
                                   (nil? entity-data)
@@ -368,7 +376,12 @@
                :state     history-size})))
 
         (dom/div {:classes ["flex-col"]}
-          (dom/div :.title "EQL Request")
+          (dom/div :.title {:classes ["flex flex-row items-center" (if query-error "bg-yellow-300")]}
+            (dom/div "EQL Request")
+            (dom/div {:className "flex-1"})
+            (if query-error
+              (dom/div {:title query-error}
+                (dom/span {:className "text-red-900 text-xs"} query-error))))
           (cm/pathom
             (merge {:className   (str (:editor css) " min-w-40")
                     :style       {:width  (str @query-size "px")
