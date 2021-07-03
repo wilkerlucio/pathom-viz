@@ -1,19 +1,10 @@
 (ns com.wsscode.pathom.viz.codemirror6
   (:require-macros [com.wsscode.pathom.viz.embed.macros :refer [defc]])
   (:require
-    ;["@codemirror/closebrackets" :refer [closeBrackets]]
-    ["@codemirror/fold" :as fold]
-    ["@codemirror/gutter" :refer [lineNumbers]]
-    ["@codemirror/highlight" :as highlight]
-    ["@codemirror/history" :refer [history historyKeymap]]
-    ["@codemirror/state" :refer [EditorState]]
-    ["@codemirror/view" :as view :refer [EditorView]]
     ; ["lezer" :as lezer]
     ; ["lezer-generator" :as lg]
     ; ["lezer-tree" :as lz-tree]
-    [applied-science.js-interop :as j]
-    [com.fulcrologic.guardrails.core :refer [<- => >def >defn >fdef ? |]]
-    [nextjournal.clojure-mode :as cm-clj]
+    ;["@codemirror/closebrackets" :refer [closeBrackets]]
     ;[nextjournal.clojure-mode.extensions.close-brackets :as close-brackets]
     ;[nextjournal.clojure-mode.extensions.formatting :as format]
     ;[nextjournal.clojure-mode.extensions.selection-history :as sel-history]
@@ -22,11 +13,24 @@
     ;[nextjournal.clojure-mode.node :as n]
     ;[nextjournal.clojure-mode.selections :as sel]
     ;[nextjournal.clojure-mode.test-utils :as test-utils]
-    [helix.hooks :as hooks]
-    [helix.core :as h]
+    ["@codemirror/autocomplete" :as autocomplete]
+    ["@codemirror/fold" :as fold]
+    ["@codemirror/gutter" :refer [lineNumbers]]
+    ["@codemirror/highlight" :as highlight]
+    ["@codemirror/history" :refer [history historyKeymap]]
+    ["@codemirror/state" :refer [EditorState]]
+    ["@codemirror/view" :as view :refer [EditorView]]
+    [applied-science.js-interop :as j]
+    [clojure.string :as str]
+    [clojure.walk :as walk]
     [com.fulcrologic.fulcro.dom :as dom]
+    [com.fulcrologic.guardrails.core :refer [<- => >def >defn >fdef ? |]]
     [com.wsscode.pathom.viz.helpers :as pvh]
-    [clojure.walk :as walk]))
+    [helix.core :as h]
+    [helix.hooks :as hooks]
+    [nextjournal.clojure-mode :as cm-clj]
+    [nextjournal.clojure-mode.node :as n]
+    [nextjournal.clojure-mode.util :as u]))
 
 (def theme
   (.theme EditorView
@@ -58,22 +62,32 @@
                         (.of view/keymap historyKeymap)
                         #_(.of (.-lineWrapping EditorView) "false")])
 
-(h/defnc Editor [{:keys [source readonly props state]
-                  :or   {readonly false}}]
+(defn make-extensions [{:keys [state readonly completion-words]
+                        :or   {readonly false}}]
+  (cond-> #js [extensions]
+    completion-words
+    (.concat #js [(autocomplete/autocompletion
+                    #js {:activateOnTyping true
+                         :override         #js [(autocomplete/completeFromList
+                                                  (into-array (mapv pr-str completion-words)))]})])
+
+    readonly
+    (.concat #js [(.of (.-editable EditorView) "false")])
+
+    state
+    (.concat #js [(.of (.-updateListener EditorView)
+                    (fn [^js v]
+                      (let [str (.. v -state -doc toString)]
+                        (if (not= str @state)
+                          (state str)))))])))
+
+(h/defnc Editor [{:keys [source props state]
+                  :as   options}]
   (let [!view  (pvh/use-fstate nil)
         mount! (hooks/use-callback []
                  (fn [el]
                    (let [state (.create EditorState #js {:doc        (or (if state @state source) "")
-                                                         :extensions (cond-> #js [extensions]
-                                                                       readonly
-                                                                       (.concat #js [(.of (.-editable EditorView) "false")])
-
-                                                                       state
-                                                                       (.concat #js [(.of (.-updateListener EditorView)
-                                                                                       (fn [^js v]
-                                                                                         (let [str (.. v -state -doc toString)]
-                                                                                           (if (not= str @state)
-                                                                                             (state str)))))]))})
+                                                         :extensions (make-extensions options)})
                          ^js v (new EditorView
                                  (j/obj :state
                                    state
@@ -86,16 +100,7 @@
       (when @!view
         (.setState @!view
           (.create EditorState #js {:doc        (or (if state @state source) "")
-                                    :extensions (cond-> #js [extensions]
-                                                  readonly
-                                                  (.concat #js [(.of (.-editable EditorView) "false")])
-
-                                                  state
-                                                  (.concat #js [(.of (.-updateListener EditorView)
-                                                                  (fn [^js v]
-                                                                    (let [str (.. v -state -doc toString)]
-                                                                      (if (not= str @state)
-                                                                        (state str)))))]))}))))
+                                    :extensions (make-extensions options)}))))
     (hooks/use-effect [@!view] #(some-> @!view (j/call :destroy)))
 
     (dom/div
@@ -132,9 +137,8 @@
    (h/$ EditorReadWrap {:source source :props props})))
 
 (defn clojure-entity-write
-  [state props]
-  (h/$ Editor {:state state
-               :props  props}))
+  [props]
+  (h/$ Editor {:& props}))
 
 (>def ::source string?)
 (>def ::props map?)

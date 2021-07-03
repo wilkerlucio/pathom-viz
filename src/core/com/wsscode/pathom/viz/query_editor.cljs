@@ -100,14 +100,16 @@
   (action [{:keys [state ref]}]
     (swap! state update-in ref assoc :ui/query-running? true))
   (ok-action [{:keys [state ref] :as env}]
-    (let [response (pvh/env-parser-response env)]
+    (let [response (pvh/env-parser-response env)
+          idx      (-> response
+                       p/elide-special-outputs
+                       ensure-pathom2-indexes
+                       ::pc/indexes)]
       (swap! state update-in ref assoc
         :ui/query-running? false
         :ui/pathom-version (if (::pci/indexes response) 3 2)
-        ::pc/indexes (-> response
-                         p/elide-special-outputs
-                         ensure-pathom2-indexes
-                         ::pc/indexes))))
+        :ui/completions (into [] (filter keyword?) (keys (::pc/index-attributes idx)))
+        ::pc/indexes idx)))
   (error-action [env]
     (js/console.log "QUERY ERROR" env))
   (remote [{:keys [ast]}]
@@ -239,7 +241,7 @@
    {::keys    [query result request-trace? query-history]
     ::pc/keys [indexes]
     ::cp/keys [parser-id]
-    :ui/keys  [query-running? trace-viewer pathom-version]
+    :ui/keys  [query-running? trace-viewer pathom-version completions]
     :as       props}
    {::keys [editor-props enable-trace?
             default-trace-size
@@ -271,6 +273,7 @@
                  ::pc/indexes
                  :ui/query-running?
                  :ui/pathom-version
+                 :ui/completions
                  :ui/show-history?
                  :com.wsscode.pathom/trace
                  :ui/graph-view
@@ -409,7 +412,9 @@
                   (dom/div {:title entity-input-error}
                     (dom/span {:className "text-red-900 text-xs"} entity-input-error))))
 
-              (cm6/clojure-entity-write entity {:classes ["flex-1 min-h-40"]}))))
+              (cm6/clojure-entity-write {:state            entity
+                                         :props            {:classes ["flex-1 min-h-40"]}
+                                         :completion-words completions}))))
 
         (ui/drag-resize
           {:direction "left"
