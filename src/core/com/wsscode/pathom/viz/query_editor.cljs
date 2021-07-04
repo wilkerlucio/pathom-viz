@@ -75,7 +75,8 @@
 
 (def index-query
   [{::pc/indexes [::pc/index-attributes ::pc/idents ::pc/index-io ::pc/autocomplete-ignore]}
-   {::pci/indexes [::pci/index-attributes ::pci/index-io ::pci/index-resolvers]}])
+   {::pci/indexes [::pci/index-attributes ::pci/index-io ::pci/index-resolvers ::pci/transient-attrs]}
+   :pathom.viz/support-boundary-interface?])
 
 #_:clj-kondo/ignore
 (fm/defmutation run-query [{::keys [request-trace?]}]
@@ -100,15 +101,18 @@
   (action [{:keys [state ref]}]
     (swap! state update-in ref assoc :ui/query-running? true))
   (ok-action [{:keys [state ref] :as env}]
-    (let [response (pvh/env-parser-response env)
-          idx      (-> response
-                       p/elide-special-outputs
-                       ensure-pathom2-indexes
-                       ::pc/indexes)]
+    (let [response       (pvh/env-parser-response env)
+          idx            (-> response
+                             p/elide-special-outputs
+                             ensure-pathom2-indexes
+                             ::pc/indexes)
+          pathom-version (if (::pci/indexes response) 3 2)]
       (swap! state update-in ref assoc
         :ui/query-running? false
-        :ui/pathom-version (if (::pci/indexes response) 3 2)
-        :ui/completions (into [] (filter keyword?) (keys (::pc/index-attributes idx)))
+        :pathom.viz/support-boundary-interface? (or (= 3 pathom-version) (:pathom.viz/support-boundary-interface? response))
+        :ui/pathom-version pathom-version
+        :ui/completions (into [] (comp (filter keyword?)
+                                       (remove (or (::pc/autocomplete-ignore idx) #{}))) (keys (::pc/index-attributes idx)))
         ::pc/indexes idx)))
   (error-action [env]
     (js/console.log "QUERY ERROR" env))
@@ -153,12 +157,12 @@
 (defn run-query! [this]
   (let [{::keys [id]
          :as    props} (fc/props this)
-        {:ui/keys  [query-running? pathom-version]
-         ::keys    [id query request-trace? entity]
-         ::cp/keys [parser-id]} (get-in (fc/component->state-map this) [::id id])
+        {:ui/keys         [query-running?]
+         ::keys           [id query request-trace? entity]
+         :pathom.viz/keys [support-boundary-interface?]
+         ::cp/keys        [parser-id]} (get-in (fc/component->state-map this) [::id id])
         {::keys [enable-trace?]
          :or    {enable-trace? true}} (fc/get-computed props)
-        p3?         (= 3 pathom-version)
         entity-data (pvh/safe-read-string entity)]
     (when-not query-running?
       (if-let [query' (pvh/safe-read query)]
@@ -168,7 +172,7 @@
                         ::cp/parser-id             parser-id
                         ::cp/client-parser-request query'}
 
-                       p3?
+                       support-boundary-interface?
                        (assoc ::cp/client-parser-data (if (map? entity-data) entity-data)))]
           (fc/transact! this [(run-query props')
                               (add-query-to-history {::cp/parser-id parser-id
@@ -238,11 +242,12 @@
 
 (fc/defsc QueryEditor
   [this
-   {::keys    [query result request-trace? query-history]
-    ::pc/keys [indexes]
-    ::cp/keys [parser-id]
-    :ui/keys  [query-running? trace-viewer pathom-version completions]
-    :as       props}
+   {::keys           [query result request-trace? query-history]
+    ::pc/keys        [indexes]
+    ::cp/keys        [parser-id]
+    :pathom.viz/keys [support-boundary-interface?]
+    :ui/keys         [query-running? trace-viewer pathom-version completions]
+    :as              props}
    {::keys [editor-props enable-trace?
             default-trace-size
             default-query-size
@@ -271,6 +276,7 @@
                  ::query-history
                  ::cp/parser-id
                  ::pc/indexes
+                 :pathom.viz/support-boundary-interface?
                  :ui/query-running?
                  :ui/pathom-version
                  :ui/completions
@@ -410,9 +416,12 @@
               (dom/div {:title entity-input-error}
                 (dom/span {:className "text-red-900 text-xs"} entity-input-error))))
 
-          (cm6/clojure-entity-write {:state            entity
-                                     :props            {:classes ["flex-1 min-h-40"]}
-                                     :completion-words completions}))
+          (if support-boundary-interface?
+            (cm6/clojure-entity-write {:state            entity
+                                       :props            {:classes ["flex-1 min-h-40"]}
+                                       :completion-words completions})
+            (dom/div {:classes ["flex-1 flex-row items-center justify-center text-gray-100 bg-gray-600"]}
+              "Entity data unsupported, upgrade Pathom to enable it.")))
 
         (ui/drag-resize
           {:direction "left"
