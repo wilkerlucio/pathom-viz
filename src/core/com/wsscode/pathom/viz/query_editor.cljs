@@ -109,7 +109,7 @@
           pathom-version (if (::pci/indexes response) 3 2)]
       (swap! state update-in ref assoc
         :ui/query-running? false
-        :pathom.viz/support-boundary-interface? (or (= 3 pathom-version) (:pathom.viz/support-boundary-interface? response))
+        :pathom.viz/support-boundary-interface? (or (= 3 pathom-version) (:pathom.viz/support-boundary-interface? response) false)
         :ui/pathom-version pathom-version
         :ui/completions (into [] (comp (filter keyword?)
                                        (remove (or (::pc/autocomplete-ignore idx) #{}))) (keys (::pc/index-attributes idx)))
@@ -257,14 +257,15 @@
                   (let [id (or (::id data-tree)
                                (::id current-normalized)
                                (random-uuid))]
-                    (merge {::id                   id
-                            ::request-trace?       true
-                            ::query                "[]"
-                            ::entity               "{}"
-                            ::result               ""
-                            ::query-history        []
-                            :ui/show-history?      true
-                            :ui/query-running?     false}
+                    (merge {::id                                    id
+                            ::request-trace?                        true
+                            ::query                                 "[]"
+                            ::entity                                "{}"
+                            ::result                                ""
+                            ::query-history                         []
+                            :pathom.viz/support-boundary-interface? nil
+                            :ui/show-history?                       true
+                            :ui/query-running?                      false}
                       current-normalized data-tree)))
 
    :ident       ::id
@@ -420,9 +421,11 @@
             (cm6/clojure-entity-write {:state            entity
                                        :props            {:classes ["flex-1 min-h-40"]}
                                        :completion-words completions})
-            (dom/div {:classes ["flex-1 flex-row items-center justify-center text-gray-100 bg-gray-600"]}
-              "Entity data requires Pathom 2.4.0+" (dom/br)
-              "Or latest Pathom 3 from Git")))
+            (dom/div {:classes ["flex-1 flex-row items-center justify-center text-gray-700 bg-gray-300"]}
+              (if (false? support-boundary-interface?)
+                (h/<>
+                  "Entity data requires Pathom 2.4.0+" (dom/br)
+                  "Or latest Pathom 3 from Git")))))
 
         (ui/drag-resize
           {:direction "left"
