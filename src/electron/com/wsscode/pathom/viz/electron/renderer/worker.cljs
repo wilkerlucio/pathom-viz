@@ -1,6 +1,6 @@
 (ns com.wsscode.pathom.viz.electron.renderer.worker
   (:require [com.wsscode.async.processing :as wap]
-            [com.wsscode.transit :as wt]
+            [com.wsscode.transito :as wt]
             [com.wsscode.async.async-cljs :refer [go-promise <! go <? <!p <?maybe]]
             [com.wsscode.pathom3.connect.operation :as pco]
             [com.wsscode.pathom3.connect.indexes :as pci]
@@ -21,7 +21,6 @@
     [compute-trace]))
 
 (defn handle-message [msg]
-  (js/console.log "!! GOT MSG" msg)
   (case (:type msg)
     :eql
     (p/let [response (p.a.eql/process env (:tx msg))]
