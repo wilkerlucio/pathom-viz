@@ -421,7 +421,8 @@
                                        :props            {:classes ["flex-1 min-h-40"]}
                                        :completion-words completions})
             (dom/div {:classes ["flex-1 flex-row items-center justify-center text-gray-100 bg-gray-600"]}
-              "Entity data unsupported, upgrade Pathom to enable it.")))
+              "Entity data requires Pathom 2.4.0+" (dom/br)
+              "Or latest Pathom 3 from Git")))
 
         (ui/drag-resize
           {:direction "left"
