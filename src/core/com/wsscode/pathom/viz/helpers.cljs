@@ -113,7 +113,6 @@
                   :default identity}
       (str/replace s "TaggedValue:" "TaggedValue"))
     (catch :default e
-      (js/console.warn "Safe read failed to read." s e)
       nil)))
 
 (defn safe-read-string

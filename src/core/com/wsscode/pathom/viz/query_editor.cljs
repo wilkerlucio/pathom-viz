@@ -400,21 +400,19 @@
                     :onChange    #(fm/set-value! this ::query %)}
               editor-props))
 
-          (if p3?
-            (fc/fragment
-              (ui/drag-resize
-                {:direction "up"
-                 :state     entity-size})
-              (dom/div :.title {:classes ["flex flex-row items-center" (if entity-input-error "bg-yellow-300")]}
-                (dom/div "Entity Data")
-                (dom/div {:className "flex-1"})
-                (if entity-input-error
-                  (dom/div {:title entity-input-error}
-                    (dom/span {:className "text-red-900 text-xs"} entity-input-error))))
+          (ui/drag-resize
+            {:direction "up"
+             :state     entity-size})
+          (dom/div :.title {:classes ["flex flex-row items-center" (if entity-input-error "bg-yellow-300")]}
+            (dom/div "Entity Data")
+            (dom/div {:className "flex-1"})
+            (if entity-input-error
+              (dom/div {:title entity-input-error}
+                (dom/span {:className "text-red-900 text-xs"} entity-input-error))))
 
-              (cm6/clojure-entity-write {:state            entity
-                                         :props            {:classes ["flex-1 min-h-40"]}
-                                         :completion-words completions}))))
+          (cm6/clojure-entity-write {:state            entity
+                                     :props            {:classes ["flex-1 min-h-40"]}
+                                     :completion-words completions}))
 
         (ui/drag-resize
           {:direction "left"
