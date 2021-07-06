@@ -1,5 +1,12 @@
 # Change Log
 
+## [Next]
+- Support Pathom 3 Indexes directly
+- Query History fix trash icon position
+- Query History fix appending after overflow
+- New entity editor 🎉
+- Add from URL autofocus on input on dialog open
+
 ## [2021.05.13]
 - Double-click on graph view to fit content
 - Mac App Signed

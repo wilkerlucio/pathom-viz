@@ -1,13 +1,13 @@
 (ns com.wsscode.pathom.viz.lib.local-storage
   (:refer-clojure :exclude [get set!])
   (:require [cljs.reader :refer [read-string]]
-            [com.wsscode.transit :as transit]))
+            [com.wsscode.transito :as transit]))
 
 (defn read-transit [s]
-  (transit/read s))
+  (transit/read-str s))
 
 (defn write-transit [x]
-  (transit/write x))
+  (transit/write-str x))
 
 ;; edn
 

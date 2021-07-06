@@ -24,7 +24,8 @@
     [com.wsscode.pathom3.viz.plan :as viz-plan]
     [helix.core :as h]
     [helix.hooks :as hooks]
-    [com.wsscode.pathom3.connect.indexes :as pci]))
+    [com.wsscode.pathom3.connect.indexes :as pci]
+    [com.wsscode.pathom3.format.shape-descriptor :as pfsd]))
 
 (declare QueryEditor TransactionResponse)
 
@@ -39,9 +40,10 @@
   (into [] (remove #{query}) history))
 
 (defn history-append [history query]
-  (-> (into [] (comp (remove #{query})
-                     (drop 1)) history)
-      (p.misc/vconj query)))
+  (let [excess (- (inc (count history)) history-max-size)]
+    (-> (into [] (comp (remove #{query})
+                       (drop (if (pos? excess) excess 0))) history)
+        (p.misc/vconj query))))
 
 ;; Registry
 
@@ -74,7 +76,8 @@
 
 (def index-query
   [{::pc/indexes [::pc/index-attributes ::pc/idents ::pc/index-io ::pc/autocomplete-ignore]}
-   {::pci/indexes [::pci/index-attributes ::pci/index-io ::pci/index-resolvers]}])
+   {::pci/indexes [::pci/index-attributes ::pci/index-io ::pci/index-resolvers ::pci/transient-attrs]}
+   :pathom.viz/support-boundary-interface?])
 
 #_:clj-kondo/ignore
 (fm/defmutation run-query [{::keys [request-trace?]}]
@@ -89,8 +92,8 @@
         (pvh/response-trace response))))
   (error-action [env]
     (js/console.log "QUERY ERROR" env))
-  (remote [{:keys [ast]}]
-    (cond-> (assoc ast :key `cp/client-parser-mutation)
+  (remote [{:keys [ast state ref]}]
+    (cond-> (assoc ast :key `cp/client-parser-request)
       request-trace?
       (update-in [:params ::cp/client-parser-request] conj :com.wsscode.pathom/trace))))
 
@@ -99,17 +102,23 @@
   (action [{:keys [state ref]}]
     (swap! state update-in ref assoc :ui/query-running? true))
   (ok-action [{:keys [state ref] :as env}]
-    (let [response (pvh/env-parser-response env)]
+    (let [response       (pvh/env-parser-response env)
+          idx            (-> response
+                             p/elide-special-outputs
+                             ensure-pathom2-indexes
+                             ::pc/indexes)
+          pathom-version (if (::pci/indexes response) 3 2)]
       (swap! state update-in ref assoc
         :ui/query-running? false
-        ::pc/indexes (-> response
-                         p/elide-special-outputs
-                         ensure-pathom2-indexes
-                         ::pc/indexes))))
+        :pathom.viz/support-boundary-interface? (or (= 3 pathom-version) (:pathom.viz/support-boundary-interface? response) false)
+        :ui/pathom-version pathom-version
+        :ui/completions (into [] (comp (filter keyword?)
+                                       (remove (or (::pc/autocomplete-ignore idx) #{}))) (keys (::pc/index-attributes idx)))
+        ::pc/indexes idx)))
   (error-action [env]
     (js/console.log "QUERY ERROR" env))
   (remote [{:keys [ast]}]
-    (assoc ast :key `cp/client-parser-mutation)))
+    (assoc ast :key `cp/client-parser-request)))
 
 #_:clj-kondo/ignore
 (fm/defmutation add-query-to-history [{::keys [query]}]
@@ -142,20 +151,30 @@
 
 (defn load-query-editor-index [])
 
+(defn trace-switch? [props]
+  (let [v (get props :ui/pathom-version)]
+    (and v (not= v 3))))
+
 (defn run-query! [this]
   (let [{::keys [id]
          :as    props} (fc/props this)
-        {:ui/keys  [query-running?]
-         ::keys    [id query request-trace?]
-         ::cp/keys [parser-id]} (get-in (fc/component->state-map this) [::id id])
+        {:ui/keys         [query-running?]
+         ::keys           [id query request-trace? entity]
+         :pathom.viz/keys [support-boundary-interface?]
+         ::cp/keys        [parser-id]} (get-in (fc/component->state-map this) [::id id])
         {::keys [enable-trace?]
-         :or    {enable-trace? true}} (fc/get-computed props)]
+         :or    {enable-trace? true}} (fc/get-computed props)
+        entity-data (pvh/safe-read-string entity)]
     (when-not query-running?
       (if-let [query' (pvh/safe-read query)]
-        (let [props' {::id                       id
-                      ::request-trace?           (and request-trace? enable-trace?)
-                      ::cp/parser-id             parser-id
-                      ::cp/client-parser-request query'}]
+        (let [props' (cond->
+                       {::id                       id
+                        ::request-trace?           (and (trace-switch? props) request-trace? enable-trace?)
+                        ::cp/parser-id             parser-id
+                        ::cp/client-parser-request query'}
+
+                       support-boundary-interface?
+                       (assoc ::cp/client-parser-data (if (map? entity-data) entity-data)))]
           (fc/transact! this [(run-query props')
                               (add-query-to-history {::cp/parser-id parser-id
                                                      ::query        (str/trim query)})]))))))
@@ -224,10 +243,12 @@
 
 (fc/defsc QueryEditor
   [this
-   {::keys    [query result request-trace? query-history]
-    ::pc/keys [indexes]
-    ::cp/keys [parser-id]
-    :ui/keys  [query-running? trace-viewer]}
+   {::keys           [query result request-trace? query-history]
+    ::pc/keys        [indexes]
+    ::cp/keys        [parser-id]
+    :pathom.viz/keys [support-boundary-interface?]
+    :ui/keys         [query-running? trace-viewer pathom-version completions]
+    :as              props}
    {::keys [editor-props enable-trace?
             default-trace-size
             default-query-size
@@ -237,24 +258,30 @@
                   (let [id (or (::id data-tree)
                                (::id current-normalized)
                                (random-uuid))]
-                    (merge {::id               id
-                            ::request-trace?   true
-                            ::query            "[]"
-                            ::result           ""
-                            ::query-history    []
-                            :ui/show-history?  true
-                            :ui/query-running? false}
+                    (merge {::id                                    id
+                            ::request-trace?                        true
+                            ::query                                 "[]"
+                            ::entity                                "{}"
+                            ::result                                ""
+                            ::query-history                         []
+                            :pathom.viz/support-boundary-interface? nil
+                            :ui/show-history?                       true
+                            :ui/query-running?                      false}
                       current-normalized data-tree)))
 
    :ident       ::id
    :query       [::id
                  ::request-trace?
                  ::query
+                 ::entity
                  ::result
                  ::query-history
                  ::cp/parser-id
                  ::pc/indexes
+                 :pathom.viz/support-boundary-interface?
                  :ui/query-running?
+                 :ui/pathom-version
+                 :ui/completions
                  :ui/show-history?
                  :com.wsscode.pathom/trace
                  :ui/graph-view
@@ -265,6 +292,10 @@
                                :flex           "1"
                                :max-width      "100%"
                                :min-height     "200px"}]
+                 [:.title {:background    "#eee"
+                           :border-bottom "1px solid #ccc"
+                           :padding       "6px"}
+                  ui/text-sans-13]
                  [:.query-row {:display  "flex"
                                :flex     "1"
                                :overflow "hidden"
@@ -293,20 +324,42 @@
    :css-include [pvt/D3Trace HistoryView]
    :use-hooks?  true}
   (pvh/use-layout-effect #(init-query-editor this) [])
-  (let [run-query     (pvh/use-callback #(run-query! this))
-        css           (css/get-classnames QueryEditor)
-        show-history? (pvh/use-persistent-state ::show-history? true)
-        history-size  (pvh/use-persistent-state ::history-width (or default-history-size 250))
-        query-size    (pvh/use-persistent-state ::query-width (or default-query-size 400))
-        trace-size    (pvh/use-persistent-state ::trace-height (or default-trace-size 200))]
+  (let [run-query          (pvh/use-callback #(run-query! this))
+        css                (css/get-classnames QueryEditor)
+        entity             (pvh/use-component-prop this ::entity)
+        show-history?      (pvh/use-persistent-state ::show-history? true)
+        history-size       (pvh/use-persistent-state ::history-width (or default-history-size 250))
+        query-size         (pvh/use-persistent-state ::query-width (or default-query-size 400))
+        entity-size        (pvh/use-persistent-state ::entity-height 200)
+        trace-size         (pvh/use-persistent-state ::trace-height (or default-trace-size 200))
+        query-data         (pvh/use-memo #(pvh/safe-read query) [query])
+        entity-data        (pvh/use-memo #(some-> @entity pvh/safe-read) [@entity])
+        entity-shape       (pvh/use-memo #(pfsd/data->shape-descriptor entity-data) [(hash entity-data)])
+
+        p3?                (= 3 pathom-version)
+        query-error        (cond
+                             (nil? query-data)
+                             "Failed to parse data"
+
+                             (not (vector? query-data))
+                             "EQL must start as a vector")
+
+        entity-input-error (and p3?
+                                (cond
+                                  (nil? entity-data)
+                                  "Failed to parse data."
+
+                                  (not (map? entity-data))
+                                  "Entity data must be a map."))]
     (dom/div :.container
       (dom/div :.toolbar
-        (if enable-trace?
-          (dom/label
-            (dom/input {:type     "checkbox"
-                        :checked  request-trace?
-                        :onChange #(fm/toggle! this ::request-trace?)})
-            "Request trace"))
+        (if (trace-switch? props)
+          (if enable-trace?
+            (dom/label
+              (dom/input {:type     "checkbox"
+                          :checked  request-trace?
+                          :onChange #(fm/toggle! this ::request-trace?)})
+              "Request trace")))
         (dom/div :.flex)
         (ui/button {:onClick  #(swap! show-history? not)
                     :disabled (not (seq query-history))
@@ -333,25 +386,55 @@
                :key       "dragHandlerHistory"
                :state     history-size})))
 
-        (cm/pathom
-          (merge {:className   (str (:editor css) " min-w-40")
-                  :style       {:width (str @query-size "px")}
-                  :value       (or (str query) "")
-                  ::pc/indexes (if (map? indexes) (p/elide-not-found indexes))
-                  ::cm/options {::cm/extraKeys
-                                {"Cmd-Enter"   run-query
-                                 "Ctrl-Enter"  run-query
-                                 "Shift-Enter" run-query
-                                 "Cmd-J"       "pathomJoin"
-                                 "Ctrl-Space"  "autocomplete"}}
-                  :onChange    #(fm/set-value! this ::query %)}
-            editor-props))
+        (dom/div {:classes ["flex-col"]}
+          (dom/div :.title {:classes ["flex flex-row items-center" (if query-error "bg-yellow-300")]}
+            (dom/div "EQL Request")
+            (dom/div {:className "flex-1"})
+            (if query-error
+              (dom/div {:title query-error}
+                (dom/span {:className "text-red-900 text-xs"} query-error))))
+          (cm/pathom
+            (merge {:className   (str (:editor css) " min-w-40")
+                    :style       {:width  (str @query-size "px")
+                                  :height (str @entity-size "px")}
+                    :value       (or (str query) "")
+                    ::pc/indexes (if (map? indexes) (p/elide-not-found (assoc indexes ::cm/available-data entity-shape)))
+                    ::cm/options {::cm/extraKeys
+                                  {"Cmd-Enter"   run-query
+                                   "Ctrl-Enter"  run-query
+                                   "Shift-Enter" run-query
+                                   "Cmd-J"       "pathomJoin"
+                                   "Ctrl-Space"  "autocomplete"}}
+                    :onChange    #(fm/set-value! this ::query %)}
+              editor-props))
+
+          (ui/drag-resize
+            {:direction "up"
+             :state     entity-size})
+          (dom/div :.title {:classes ["flex flex-row items-center" (if entity-input-error "bg-yellow-300")]}
+            (dom/div "Entity Data")
+            (dom/div {:className "flex-1"})
+            (if entity-input-error
+              (dom/div {:title entity-input-error}
+                (dom/span {:className "text-red-900 text-xs"} entity-input-error))))
+
+          (if support-boundary-interface?
+            (cm6/clojure-entity-write {:state            entity
+                                       :props            {:classes ["flex-1 min-h-40"]}
+                                       :completion-words completions})
+            (dom/div {:classes ["flex-1 flex-row items-center justify-center text-gray-700 bg-gray-300"]}
+              (if (false? support-boundary-interface?)
+                (h/<>
+                  "Entity data requires Pathom 2.4.0+" (dom/br)
+                  "Or latest Pathom 3 from Git")))))
 
         (ui/drag-resize
           {:direction "left"
            :state     query-size})
 
-        (cm6/clojure-read result {:classes ["min-w-40"]}))
+        (dom/div {:classes ["flex-col flex-1"]}
+          (dom/div :.title "Result")
+          (cm6/clojure-read result {:classes ["min-w-40 flex-1"]})))
 
       (if trace-viewer
         (fc/fragment

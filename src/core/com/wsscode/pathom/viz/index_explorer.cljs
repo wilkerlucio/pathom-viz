@@ -1376,7 +1376,7 @@
     #_(js/console.log "QUERY ERROR" env)
     nil)
   (remote [{:keys [ast]}]
-    (assoc ast :key `cp/client-parser-mutation)))
+    (assoc ast :key `cp/client-parser-request)))
 
 (defn load-indexes
   [app {::keys    [id]
