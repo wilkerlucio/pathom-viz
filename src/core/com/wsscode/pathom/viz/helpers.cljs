@@ -112,8 +112,7 @@
                             'object nil}
                   :default identity}
       (str/replace s "TaggedValue:" "TaggedValue"))
-    (catch :default e
-      nil)))
+    (catch :default _ nil)))
 
 (defn safe-read-string
   [s]

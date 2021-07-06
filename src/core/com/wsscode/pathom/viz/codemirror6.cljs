@@ -21,16 +21,13 @@
     ["@codemirror/state" :refer [EditorState]]
     ["@codemirror/view" :as view :refer [EditorView]]
     [applied-science.js-interop :as j]
-    [clojure.string :as str]
     [clojure.walk :as walk]
     [com.fulcrologic.fulcro.dom :as dom]
     [com.fulcrologic.guardrails.core :refer [<- => >def >defn >fdef ? |]]
     [com.wsscode.pathom.viz.helpers :as pvh]
     [helix.core :as h]
     [helix.hooks :as hooks]
-    [nextjournal.clojure-mode :as cm-clj]
-    [nextjournal.clojure-mode.node :as n]
-    [nextjournal.clojure-mode.util :as u]))
+    [nextjournal.clojure-mode :as cm-clj]))
 
 (def theme
   (.theme EditorView
