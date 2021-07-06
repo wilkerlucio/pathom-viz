@@ -40,9 +40,10 @@
   (into [] (remove #{query}) history))
 
 (defn history-append [history query]
-  (-> (into [] (comp (remove #{query})
-                     (drop 1)) history)
-      (p.misc/vconj query)))
+  (let [excess (- (inc (count history)) history-max-size)]
+    (-> (into [] (comp (remove #{query})
+                       (drop (if (pos? excess) excess 0))) history)
+        (p.misc/vconj query))))
 
 ;; Registry
 

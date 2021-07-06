@@ -1,14 +1,15 @@
 (ns com.wsscode.pathom.viz.trace
-  (:require ["./d3-trace" :refer [renderPathomTrace updateTraceSize clearToolTip]]
-            ["./detect-element-size" :refer [addResizeListener]]
-            [clojure.walk :as walk]
-            [com.wsscode.pathom.viz.helpers :as h]
-            [helix.core :as hx]
-            [com.fulcrologic.fulcro-css.localized-dom :as dom]
-            [com.fulcrologic.fulcro.components :as fc]
-            [goog.object :as gobj]
-            [helix.hooks :as hooks]
-            [com.wsscode.pathom.viz.ui.kit :as ui]))
+  (:require
+    ["./d3-trace" :refer [renderPathomTrace updateTraceSize clearToolTip]]
+    ["./detect-element-size" :refer [addResizeListener]]
+    [clojure.walk :as walk]
+    [com.fulcrologic.fulcro-css.localized-dom :as dom]
+    [com.fulcrologic.fulcro.components :as fc]
+    [com.wsscode.pathom.viz.helpers :as h]
+    [com.wsscode.pathom.viz.ui.kit :as ui]
+    [goog.object :as gobj]
+    [helix.core :as hx]
+    [helix.hooks :as hooks]))
 
 (defn add-edn-dna [trace]
   (walk/postwalk
