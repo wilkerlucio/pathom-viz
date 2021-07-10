@@ -362,7 +362,6 @@
               "Request trace")))
         (dom/div :.flex)
         (ui/button {:onClick  #(swap! show-history? not)
-                    :disabled (not (seq query-history))
                     :style    {:marginRight "6px"}}
           "History")
         (ui/button {:onClick  #(load-indexes (fc/any->app this) (fc/props this))
@@ -374,7 +373,7 @@
           "Run query"))
 
       (dom/div :.query-row$min-h-20
-        (if (and @show-history? (seq query-history))
+        (if @show-history?
           (fc/fragment
             (dom/div :.history-container$min-w-40 {:style {:width (str @history-size "px")}}
               (history-view {::query-history   query-history
