@@ -202,7 +202,7 @@
               (if (seq available-parsers)
                 (dom/div :.large "Select a parser")
                 (dom/div
-                  (dom/div :.large (ui/gc :.center) "Connect a parser")
+                  (dom/div :.large (ui/gc :.center) "Connect Pathom")
                   (dom/div "Not sure what to do to? "
                     (ui/link {:href    "#"
                               :onClick #(do
