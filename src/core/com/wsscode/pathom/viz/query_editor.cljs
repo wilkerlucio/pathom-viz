@@ -374,7 +374,7 @@
           "Run query"))
 
       (dom/div :.query-row$min-h-20
-        (if (and @show-history? (seq query-history))
+        (if @show-history?
           (fc/fragment
             (dom/div :.history-container$min-w-40 {:style {:width (str @history-size "px")}}
               (history-view {::query-history   query-history
