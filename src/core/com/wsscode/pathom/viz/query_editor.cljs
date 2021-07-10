@@ -362,7 +362,6 @@
               "Request trace")))
         (dom/div :.flex)
         (ui/button {:onClick  #(swap! show-history? not)
-                    :disabled (not (seq query-history))
                     :style    {:marginRight "6px"}}
           "History")
         (ui/button {:onClick  #(load-indexes (fc/any->app this) (fc/props this))
