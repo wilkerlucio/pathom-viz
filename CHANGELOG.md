@@ -1,6 +1,6 @@
 # Change Log
 
-## [Next]
+## [2021.07.11]
 - Support Pathom 3 Indexes directly
 - Query History fix trash icon position
 - Query History fix appending after overflow
