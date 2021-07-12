@@ -22,7 +22,8 @@
     [com.wsscode.pathom.viz.ws-connector.pathom3.adapter :refer [ensure-pathom2-indexes]]
     [com.wsscode.spec-inspec :as si]
     [edn-query-language.core :as eql]
-    [goog.object :as gobj]))
+    [goog.object :as gobj]
+    [com.wsscode.pathom3.connect.operation :as pco]))
 
 ; region specs
 
@@ -1383,6 +1384,7 @@
         ::cp/keys [parser-id]}]
   (let [props {::id                       id
                ::cp/parser-id             parser-id
-               ::cp/client-parser-request [::pc/indexes :com.wsscode.pathom3.connect.indexes/indexes]}]
+               ::cp/client-parser-request [(pco/? ::pc/indexes)
+                                           (pco/? :com.wsscode.pathom3.connect.indexes/indexes)]}]
     (fc/transact! app [(load-indexes* props)]
       {:ref [::id id]})))

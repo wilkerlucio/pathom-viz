@@ -25,7 +25,8 @@
     [helix.core :as h]
     [helix.hooks :as hooks]
     [com.wsscode.pathom3.connect.indexes :as pci]
-    [com.wsscode.pathom3.format.shape-descriptor :as pfsd]))
+    [com.wsscode.pathom3.format.shape-descriptor :as pfsd]
+    [com.wsscode.pathom3.connect.operation :as pco]))
 
 (declare QueryEditor TransactionResponse)
 
@@ -75,9 +76,17 @@
 ;; Parser
 
 (def index-query
-  [{::pc/indexes [::pc/index-attributes ::pc/idents ::pc/index-io ::pc/autocomplete-ignore]}
-   {::pci/indexes [::pci/index-attributes ::pci/index-io ::pci/index-resolvers ::pci/transient-attrs]}
-   :pathom.viz/support-boundary-interface?])
+  [{(pco/? ::pc/indexes)
+    [(pco/? ::pc/index-attributes)
+     (pco/? ::pc/idents)
+     (pco/? ::pc/index-io)
+     (pco/? ::pc/autocomplete-ignore)]}
+   {(pco/? ::pci/indexes)
+    [(pco/? ::pci/index-attributes)
+     (pco/? ::pci/index-io)
+     (pco/? ::pci/index-resolvers)
+     (pco/? ::pci/transient-attrs)]}
+   (pco/? :pathom.viz/support-boundary-interface?)])
 
 #_:clj-kondo/ignore
 (fm/defmutation run-query [{::keys [request-trace?]}]
@@ -270,22 +279,23 @@
                       current-normalized data-tree)))
 
    :ident       ::id
-   :query       [::id
-                 ::request-trace?
-                 ::query
-                 ::entity
-                 ::result
-                 ::query-history
-                 ::cp/parser-id
-                 ::pc/indexes
-                 :pathom.viz/support-boundary-interface?
-                 :ui/query-running?
-                 :ui/pathom-version
-                 :ui/completions
-                 :ui/show-history?
-                 :com.wsscode.pathom/trace
-                 :ui/graph-view
-                 :ui/trace-viewer]
+   :query       (fn [_]
+                  [::id
+                   ::request-trace?
+                   ::query
+                   ::entity
+                   ::result
+                   ::query-history
+                   ::cp/parser-id
+                   (pco/? ::pc/indexes)
+                   :pathom.viz/support-boundary-interface?
+                   :ui/query-running?
+                   :ui/pathom-version
+                   :ui/completions
+                   :ui/show-history?
+                   :com.wsscode.pathom/trace
+                   :ui/graph-view
+                   :ui/trace-viewer])
    :css         [[:.container {:border         "1px solid #ddd"
                                :display        "flex"
                                :flex-direction "column"
