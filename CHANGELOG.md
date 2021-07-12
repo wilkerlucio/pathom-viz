@@ -7,6 +7,7 @@
 - New entity editor 🎉
 - Add from URL autofocus on input on dialog open
 - Allow display of empty query history
+- Display error indicators on query editor and entity editor
 
 ## [2021.05.13]
 - Double-click on graph view to fit content
