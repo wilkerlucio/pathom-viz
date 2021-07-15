@@ -1,5 +1,9 @@
 # Change Log
 
+## [Next]
+- Fix overflow size in query result panel
+- Adjust indexes request to deal with Pathom 3 strict mode
+
 ## [2021.07.11]
 - Support Pathom 3 Indexes directly
 - Query History fix trash icon position
