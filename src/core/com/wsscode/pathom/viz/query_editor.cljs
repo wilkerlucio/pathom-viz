@@ -441,7 +441,7 @@
           {:direction "left"
            :state     query-size})
 
-        (dom/div {:classes ["flex-col flex-1"]}
+        (dom/div {:classes ["flex-col flex-1 overflow-hidden"]}
           (dom/div :.title "Result")
           (cm6/clojure-read result {:classes ["min-w-40 flex-1"]})))
 
