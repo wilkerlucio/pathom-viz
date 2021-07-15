@@ -103,7 +103,7 @@
   (apply str (repeatedly 5 (partial rand-nth cid-chars))))
 
 (defn normalize-request-cid [{::keys [request-cid] :as request}]
-  (let [cid (or request-cid (str "NuFetchCLJS." (random-cid-fragment)))]
+  (let [cid (or request-cid (str "FetchCLJS." (random-cid-fragment)))]
     (default-request-header request "X-Correlation-ID" cid)))
 
 (>defn normalize-request [request-options]

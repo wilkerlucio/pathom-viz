@@ -11,7 +11,7 @@
   com.wsscode/async                                 {:mvn/version "2021.01.15"}
   com.wsscode/fuzzy                                 {:mvn/version "1.0.0"}
   com.wsscode/pathom                                {:mvn/version "2.3.1"}
-  com.wsscode/pathom-viz-connector                  {:mvn/version "2021.07.04"}
+  com.wsscode/pathom-viz-connector                  {:mvn/version "2021.07.14"}
   com.wsscode/pathom3                               {:git/url "https://github.com/wilkerlucio/pathom3" :sha "acf3134aa52668d83cffd326c46fca1ef0120e99"}
   com.wsscode/promesa-bridges                       {:mvn/version "2021.01.20"}
   com.wsscode/transito                              {:git/url "https://github.com/wilkerlucio/transito" :sha "7119312488e8e8eac0262b86b0c74f6d940de78e"}
