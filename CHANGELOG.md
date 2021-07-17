@@ -1,6 +1,6 @@
 # Change Log
 
-## [Next]
+## [2021.07.16]
 - Fix overflow size in query result panel
 - Adjust indexes request to deal with Pathom 3 strict mode
 
