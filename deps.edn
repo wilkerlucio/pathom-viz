@@ -5,7 +5,7 @@
  {com.cognitect/transit-clj                         {:mvn/version "1.0.324"}
   com.cognitect/transit-cljs                        {:mvn/version "0.8.264"}
   com.fulcrologic/fulcro                            {:mvn/version "3.4.16"}
-  com.fulcrologic/fulcro-garden-css                 {:mvn/version "3.0.7"}
+  com.fulcrologic/fulcro-garden-css                 {:mvn/version "3.0.9"}
   com.fulcrologic/guardrails                        {:mvn/version "1.1.4"}
   com.taoensso/sente                                {:mvn/version "1.16.0"}
   com.wsscode/async                                 {:mvn/version "2021.01.15"}
