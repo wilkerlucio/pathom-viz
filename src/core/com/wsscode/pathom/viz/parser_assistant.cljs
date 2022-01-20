@@ -123,7 +123,7 @@
               ::manager-id]})
    js/undefined))
 
-(defn prompt [this message initial]
+(defn add-from-url-prompt [this message initial]
   (let [ch (async/promise-chan)]
     (fc/with-parent-context this
       (let [el (js/document.createElement "div")]
@@ -139,8 +139,8 @@
 
 (defn add-from-url! [this]
   (go-promise
-    (when-let [parser-url (<? (prompt this "Type the URL for the parser you want to add." "https://"))]
-      (fc/transact! this [(add-parser-from-url {::cp/url parser-url})])
+    (when-let [{:keys [url headers]} (<? (add-from-url-prompt this "Type the URL for the parser you want to add." "https://"))]
+      (fc/transact! this [(add-parser-from-url {::cp/url url ::cp/headers headers})])
       (reload-available-parsers this))))
 
 (defn hidden-parser? [x]

@@ -23,14 +23,15 @@
 
 (pc/defmutation add-client-parser-from-url
   [{::keys [parsers*]}
-   {::keys [url]}]
+   {::keys [url headers]}]
   {::pc/params [::url]}
   (swap! parsers* assoc url
     (fn [_ tx]
-      (fetch/fetch-body {::fetch/request-url    url
-                         ::fetch/request-body   tx
-                         ::fetch/request-method "POST"
-                         ::fetch/request-as     ::fetch/request-as-transit}))))
+      (fetch/fetch-body {::fetch/request-url     url
+                         ::fetch/request-body    tx
+                         ::fetch/request-headers headers
+                         ::fetch/request-method  "POST"
+                         ::fetch/request-as      ::fetch/request-as-transit}))))
 
 (pc/defmutation remove-client-parser
   [{::keys [parsers*]}
