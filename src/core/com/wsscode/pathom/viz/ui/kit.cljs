@@ -384,16 +384,12 @@
         headers          (h/use-atom-state {})
         new-header-key   (h/use-atom-state "")
         new-header-value (h/use-atom-state "")
-        add-header!      (h/use-memo
-                           (fn []
-                             (fn []
-                               (swap! headers assoc @new-header-key @new-header-value)
-                               (reset! new-header-key "")
-                               (reset! new-header-value ""))))
-        remove-header!   (h/use-memo
-                           (fn []
-                             (fn [k]
-                               (swap! headers dissoc k))))]
+        add-header!      (fn []
+                           (swap! headers assoc @new-header-key @new-header-value)
+                           (reset! new-header-key "")
+                           (reset! new-header-value ""))
+        remove-header!   (fn [k]
+                           (swap! headers dissoc k))]
     (modal {}
       (dom/div {:classes ["space-y-2"]}
         (dom/div (str prompt))
@@ -405,8 +401,8 @@
           (button {:onClick add-header!} "+"))
         (dom/div
           (for [[k v] (sort-by key @headers)]
-            (dom/div {:classes ["flex" "space-x-2"] :key k}
-              (dom/div k)
+            (dom/div {:classes ["flex" "space-x-2" "text-sm"] :key k}
+              (dom/div {:classes ["text-gray-700" "font-bold"]} (str k ":"))
               (dom/div {:classes ["max-w-[50vw]" "text-ellipsis" "overflow-hidden" "whitespace-nowrap"]} v)
               (button {:onClick #(remove-header! k)} "-"))))
         (dom/div {:classes ["space-x-1"]}
