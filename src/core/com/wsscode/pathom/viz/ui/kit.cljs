@@ -375,7 +375,7 @@
 
 (defn input [{:keys [state] :as props}]
   (let [props (dissoc props :state)]
-    (dom/input :$border$rounded$w-full (assoc props :value @state :onChange #(reset! state (event-value %))))))
+    (dom/input :$border$rounded$w-full$text-sm$p-1 (assoc props :value @state :onChange #(reset! state (event-value %))))))
 
 (fc/defsc PromptModal
   [_this {:keys [prompt value on-finish]}]
