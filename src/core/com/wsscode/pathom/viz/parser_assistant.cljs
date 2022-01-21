@@ -129,9 +129,9 @@
       (let [el (js/document.createElement "div")]
         (js/document.body.appendChild el)
         (js/ReactDOM.render
-          (ui/prompt-modal {:prompt    message
-                            :value     initial
-                            :on-finish #(do
+          (ui/add-url-connection-modal {:prompt message
+                            :value              initial
+                            :on-finish          #(do
                                           (if % (async/put! ch %) (async/close! ch))
                                           (js/document.body.removeChild el))})
           el)))
