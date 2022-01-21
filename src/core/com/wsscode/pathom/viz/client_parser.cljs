@@ -26,7 +26,6 @@
   [{::keys [parsers*]}
    {::keys [url headers]}]
   {::pc/params [::url ::headers]}
-  ()
 
   (swap! parsers* assoc url
     (fn [_ tx]
