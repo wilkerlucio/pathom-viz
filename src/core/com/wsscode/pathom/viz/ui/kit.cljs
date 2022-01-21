@@ -375,21 +375,61 @@
 
 (defn input [{:keys [state] :as props}]
   (let [props (dissoc props :state)]
-    (dom/input :$border$rounded$w-full (assoc props :value @state :onChange #(reset! state (event-value %))))))
+    (dom/input :$border$rounded$w-full$text-sm$p-1 (assoc props :value @state :onChange #(reset! state (event-value %))))))
 
-(fc/defsc PromptModal
+(defn add-recent! [state new-item]
+  (swap! state #(->> (conj % new-item) (take 5))))
+
+(defn remove-recent! [state conn]
+  (swap! state #(remove #{conn} %)))
+
+(fc/defsc AddUrlConnectionModal
   [_this {:keys [prompt value on-finish]}]
   {:use-hooks? true}
-  (let [text (h/use-atom-state (or value ""))]
+  (let [text               (h/use-atom-state (or value ""))
+        headers            (h/use-atom-state {})
+        new-header-key     (h/use-atom-state "")
+        new-header-value   (h/use-atom-state "")
+        recent-connections (h/use-persistent-state ::recent-connections (list))
+        add-header!        (fn []
+                             (swap! headers assoc @new-header-key @new-header-value)
+                             (reset! new-header-key "")
+                             (reset! new-header-value ""))
+        remove-header!     (fn [k]
+                             (swap! headers dissoc k))]
     (modal {}
       (dom/div {:classes ["space-y-2"]}
         (dom/div (str prompt))
         (dom/div (input {:state text :autoFocus true}))
+        (dom/div "Headers")
+        (dom/div {:classes ["flex" "items-center" "space-x-2"]}
+          (input {:state new-header-key :placeholder "Header Key"})
+          (input {:state new-header-value :placeholder "Header Value"})
+          (button {:onClick add-header!} "+"))
+        (dom/div
+          (for [[k v] (sort-by key @headers)]
+            (dom/div {:classes ["flex" "space-x-2" "text-sm"] :key k}
+              (dom/div {:classes ["text-gray-700" "font-bold"]} (str k ":"))
+              (dom/div {:classes ["max-w-[50vw]" "text-ellipsis" "overflow-hidden" "whitespace-nowrap"]} v)
+              (button {:onClick #(remove-header! k)} "-"))))
         (dom/div {:classes ["space-x-1"]}
-          (button {:onClick #(on-finish @text)} "Ok")
-          (button {:onClick #(on-finish nil)} "Cancel"))))))
+          (button {:onClick #(let [conn {:url @text :headers @headers}]
+                               (add-recent! recent-connections conn)
+                               (on-finish conn))} "Ok")
+          (button {:onClick #(on-finish nil)} "Cancel"))
 
-(def prompt-modal (fc/factory PromptModal))
+        (dom/hr)
+
+        (dom/div {:classes ["font-bold"]} "Recent Connections")
+
+        (for [{:keys [url] :as connection} @recent-connections]
+          (dom/div {:key url :classes ["flex" "items-center" "space-x-2"]}
+            (dom/a {:href    "#" :classes ["text-blue-600"]
+                    :onClick (h/pd #(on-finish connection))}
+              (str url))
+            (button {:onClick #(remove-recent! recent-connections connection)} "-")))))))
+
+(def add-url-connection-modal (fc/factory AddUrlConnectionModal))
 
 (fc/defsc TextField
   [this {:keys  [value]

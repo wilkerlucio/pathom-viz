@@ -15,6 +15,7 @@
 (>def ::client-parser-request ::eql/query)
 (>def ::client-parser-response map?)
 (>def ::url string?)
+(>def ::headers (s/map-of string? string?))
 
 (pc/defresolver client-parser-names
   [{::keys [parsers]} _]
@@ -23,14 +24,16 @@
 
 (pc/defmutation add-client-parser-from-url
   [{::keys [parsers*]}
-   {::keys [url]}]
-  {::pc/params [::url]}
+   {::keys [url headers]}]
+  {::pc/params [::url ::headers]}
+
   (swap! parsers* assoc url
     (fn [_ tx]
-      (fetch/fetch-body {::fetch/request-url    url
-                         ::fetch/request-body   tx
-                         ::fetch/request-method "POST"
-                         ::fetch/request-as     ::fetch/request-as-transit}))))
+      (fetch/fetch-body {::fetch/request-url     url
+                         ::fetch/request-body    tx
+                         ::fetch/request-headers headers
+                         ::fetch/request-method  "POST"
+                         ::fetch/request-as      ::fetch/request-as-transit}))))
 
 (pc/defmutation remove-client-parser
   [{::keys [parsers*]}
