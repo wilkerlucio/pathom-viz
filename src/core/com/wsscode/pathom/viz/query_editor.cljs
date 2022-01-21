@@ -349,7 +349,7 @@
         p3?                (= 3 pathom-version)
         query-error        (cond
                              (nil? query-data)
-                             "Failed to parse data"
+                             "Invalid EDN"
 
                              (not (vector? query-data))
                              "EQL must start as a vector")
@@ -357,7 +357,7 @@
         entity-input-error (and p3?
                                 (cond
                                   (nil? entity-data)
-                                  "Failed to parse data."
+                                  "Invalid EDN"
 
                                   (not (map? entity-data))
                                   "Entity data must be a map."))]
