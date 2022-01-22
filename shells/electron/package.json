@@ -17,7 +17,7 @@
     "electron-updater": "^4.3.9",
     "express": "^4.16.3",
     "express-ws": "^4.0.0",
-    "node-fetch": "^2.6.0"
+    "node-fetch": "^3.1.1"
   },
   "devDependencies": {
     "electron": "^12.0.4",
