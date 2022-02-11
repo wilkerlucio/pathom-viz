@@ -28,7 +28,8 @@
             [helix.core :as h]
             [helix.hooks :as hooks]
             [promesa.core :as p]
-            [com.wsscode.pathom.viz.client-parser :as cp]))
+            [com.wsscode.pathom.viz.client-parser :as cp]
+            [com.wsscode.pathom.viz.timeline :as timeline]))
 
 (>def ::channel any?)
 (>def ::message-type qualified-keyword?)
@@ -217,7 +218,7 @@
               (fc/fragment
                 (ui/section-header {} "Trace")
                 (trace+plan/trace-with-plan
-                  (pvh/response-trace data)))
+                  (timeline/response-trace data)))
 
               (dom/div {:classes ["m-6"]}
                 (dom/h2 {:classes ["text-lg font-bold mb-2"]} "Invalid view type")

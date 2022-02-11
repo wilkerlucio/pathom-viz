@@ -229,3 +229,8 @@
                                 (compute-nodes-children path start run-stats-plain run-stats)))
                         (sort-by :start)
                         vec)}))))
+
+(defn response-trace [x]
+  (or (:com.wsscode.pathom/trace x)
+      (if (some-> x meta :com.wsscode.pathom3.connect.runner/run-stats)
+        (compute-timeline-tree x))))

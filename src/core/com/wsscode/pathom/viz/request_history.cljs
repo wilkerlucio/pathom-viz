@@ -6,13 +6,14 @@
             [com.fulcrologic.fulcro.mutations :as fm]
             [com.wsscode.pathom.viz.codemirror :as cm]
             [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
-            [com.wsscode.pathom.viz.codemirror6 :as cm6]))
+            [com.wsscode.pathom.viz.codemirror6 :as cm6]
+            [com.wsscode.pathom.viz.timeline :as timeline]))
 
 (defn pre-merge-request [{:keys [current-normalized data-tree]}]
   (let [id        (or (::request-id data-tree)
                       (::request-id current-normalized)
                       (random-uuid))
-        trace     (pvh/response-trace (::response data-tree))
+        trace     (timeline/response-trace (::response data-tree))
         data-tree (cond-> data-tree
                     trace
                     (assoc ::trace-viewer

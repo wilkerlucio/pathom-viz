@@ -391,7 +391,3 @@
 
 (defn pathom-run-stats [x]
   (some-> x meta :com.wsscode.pathom3.connect.runner/run-stats))
-
-(defn response-trace [x]
-  (or (:com.wsscode.pathom/trace x)
-      x))

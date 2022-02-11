@@ -26,7 +26,8 @@
     [helix.hooks :as hooks]
     [com.wsscode.pathom3.connect.indexes :as pci]
     [com.wsscode.pathom3.format.shape-descriptor :as pfsd]
-    [com.wsscode.pathom3.connect.operation :as pco]))
+    [com.wsscode.pathom3.connect.operation :as pco]
+    [com.wsscode.pathom.viz.timeline :as timeline]))
 
 (declare QueryEditor TransactionResponse)
 
@@ -97,8 +98,9 @@
       (swap! state update-in ref assoc
         :ui/query-running? false
         ::result (pvh/pprint-str (dissoc response :com.wsscode.pathom/trace)))
-      (pvh/swap-in! env [] assoc-in [:ui/trace-viewer :com.wsscode.pathom/trace]
-        (pvh/response-trace response))))
+      (if-let [trace (timeline/response-trace response)]
+        (pvh/swap-in! env [] assoc-in [:ui/trace-viewer :com.wsscode.pathom/trace] trace)
+        (pvh/swap-in! env [] assoc :ui/trace-viewer nil))))
   (error-action [env]
     (js/console.log "QUERY ERROR" env))
   (remote [{:keys [ast state ref]}]
