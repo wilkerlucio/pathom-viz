@@ -1315,7 +1315,7 @@
                     [:$tag {:margin-left "4px"}]]]
    :css-include   [AttributeLink ResolverLink MutationLink ui/UIKit]
    :use-hooks?    true}
-  (let [menu-size        (pvh/use-persistent-state ::menu-size 300)
+  (let [menu-size        (pvh/use-persistent-state ::menu-size 20)
         select-attribute (pvh/use-callback #(fc/transact! this [`(navigate-to-attribute {::pc/attribute ~%})]))
         select-resolver  (pvh/use-callback #(fc/transact! this [`(navigate-to-resolver {::pc/sym ~%})]))
         select-mutation  (pvh/use-callback #(fc/transact! this [`(navigate-to-mutation {::mutation-sym ~%})]))
@@ -1326,11 +1326,11 @@
     (dom/create-element (gobj/get ExtensionContext "Provider") #js {:value extensions}
       (ui/row {:react-key "container" :classes (ui/ccss this :.out-container)}
         (ui/column {:classes (ui/ccss this :.menu)
-                    :style   {:width (str @menu-size "px")}}
+                    :style   {:width (str @menu-size "%")}}
           (search-everything menu {::on-select-attribute select-attribute
                                    ::on-select-resolver  select-resolver
                                    ::on-select-mutation  select-mutation}))
-        (ui/drag-resize {:state menu-size :direction "left"})
+        (ui/drag-resize {:state menu-size :direction "left" :mode "%"})
         (ui/column (ui/gc :.flex :.no-scrollbars)
           (dom/div {:classes ["flex-row align-center space-x-2"]}
             (dom/div {:classes ["flex-row align-center"]}

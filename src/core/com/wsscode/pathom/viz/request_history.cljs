@@ -37,8 +37,8 @@
                 [:.trace {:display  "flex"
                           :overflow "hidden"}]]
    :use-hooks? true}
-  (let [response-size (pvh/use-persistent-state ::response-size 400)
-        trace-size    (pvh/use-persistent-state ::trace-size 300)]
+  (let [response-size (pvh/use-persistent-state ::response-size 50)
+        trace-size    (pvh/use-persistent-state ::trace-size 50)]
     (ui/column (ui/gc :.flex)
       (ui/row (ui/gc :.flex)
         (ui/column (ui/gc :.flex)
@@ -48,15 +48,15 @@
                                      :overflow "auto"
                                      :position "relative"}
                        :value       (pvh/pprint-str request)}))
-        (ui/drag-resize {:state response-size :direction "right"})
-        (ui/column {:style {:width (str @response-size "px")}}
+        (ui/drag-resize {:state response-size :direction "right" :mode "%"})
+        (ui/column {:style {:width (str @response-size "%")}}
           (dom/div :.header "Response")
           (cm6/clojure-read (dissoc response :com.wsscode.pathom/trace))))
       (if trace-viewer
         (fc/fragment
-          (ui/drag-resize {:state trace-size :direction "down"})
+          (ui/drag-resize {:state trace-size :direction "down" :mode "%"})
           (dom/div :.header "Trace")
-          (dom/div :.trace {:style {:height (str @trace-size "px")}}
+          (dom/div :.trace {:style {:height (str @trace-size "%")}}
             (trace+plan/trace-with-plan (:com.wsscode.pathom/trace trace-viewer)
               {:on-log-snaps
                (fn [snaps]
@@ -123,7 +123,7 @@
    :css-include [RequestItem ui/UIKit]
    :use-hooks?  true}
   (let [select-item  (pvh/use-callback #(fm/set-value! this :ui/active-request [::request-id %]))
-        request-size (pvh/use-persistent-state ::request-size 300)]
+        request-size (pvh/use-persistent-state ::request-size 50)]
     (ui/column {:classes [(ui/component-class RequestHistory :.container)]}
       (if (seq requests)
         (fc/fragment
@@ -139,9 +139,9 @@
 
           (if active-request
             (fc/fragment
-              (ui/drag-resize {:state request-size :direction "down"})
+              (ui/drag-resize {:state request-size :direction "down" :mode "%"})
               (ui/column {:classes [(ui/css :.scrollbars)]
-                          :style   {:height (str @request-size "px")}}
+                          :style   {:height (str @request-size "%")}}
                 (request-view active-request)))))
         (dom/div :.blank "No request tracked yet.")))))
 

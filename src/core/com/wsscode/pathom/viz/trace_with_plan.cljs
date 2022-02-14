@@ -29,7 +29,7 @@
         run-stats!        (pvh/use-fstate nil)
         selected-node-id! (pvh/use-fstate nil)
         {::cp/keys [parser-id]} (pvh/use-context app/ProviderContext)
-        plan-size         (pvh/use-persistent-state ::plan-size 200)
+        plan-size         (pvh/use-persistent-state ::plan-size 40)
         display-type      (pvh/use-persistent-state ::viz-plan/display-type ::viz-plan/display-type-label)
         details-handle    (pvh/use-callback
                             (fn [events el]
@@ -59,6 +59,7 @@
         (fc/fragment
           (ui/drag-resize
             {:state     plan-size
+             :mode "%"
              :direction "down"}
             (dom/div {:className "flex items-center space-x-2"}
               (dom/div :.flex-1 "Graph Viz")
@@ -71,7 +72,7 @@
                 (ui/dom-option {:value ::viz-plan/display-type-node-id} "Display: node id"))
               (ui/button {:onClick #(run-stats! nil)} "Close")))
 
-          (dom/div :.flex.min-h-20 {:style {:height (str @plan-size "px")}}
+          (dom/div :.flex.min-h-20 {:style {:height (str @plan-size "%")}}
             (h/$ viz-plan/PlanGraphWithNodeDetails
               {:run-stats      (assoc @run-stats! ::viz-plan/node-in-focus @selected-node-id!)
                :display-type   @display-type
