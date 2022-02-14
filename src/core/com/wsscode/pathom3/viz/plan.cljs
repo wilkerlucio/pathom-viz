@@ -365,14 +365,14 @@
                         ::ui/state   display-type-state})
         (dom/div {:class ["flex-1"]} (str snapshot-message)))
       (dom/div {:class "flex-row flex-1 overflow-hidden"}
-        (uip/native-select
-          (ui/dom-props {::ui/state (ui/state-hook-serialize frame-state)
-                         :classes   ["bg-none w-52"]
-                         :style     {:paddingRight "0.5rem"
-                                     :width        (str @history-size "%")}
-                         :size      2})
-          (for [[i {::pcp/keys [snapshot-message]}] (->> frames (map vector (range)))]
-            (dom/option {:key i :value i} snapshot-message)))
+        (dom/div {:style {:width (str @history-size "%")}}
+          (uip/native-select
+            (ui/dom-props {::ui/state (ui/state-hook-serialize frame-state)
+                           :classes   ["bg-none w-full h-full"]
+                           :style     {:paddingRight "0.5rem"}
+                           :size      2})
+            (for [[i {::pcp/keys [snapshot-message]}] (->> frames (map vector (range)))]
+              (dom/option {:key i :value i} snapshot-message))))
         (uip/drag-resize {:state history-size :direction "left" :mode "%"})
         (h/$ PlanGraphWithNodeDetails
           {:run-stats      (assoc graph ::node-in-focus @selected-node-id!)
