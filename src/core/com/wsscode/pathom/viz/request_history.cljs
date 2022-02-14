@@ -22,12 +22,13 @@
       current-normalized data-tree)))
 
 (fc/defsc RequestView
-  [this {::keys [request response trace-viewer]}]
+  [this {::keys [entity request response trace-viewer]}]
   {:pre-merge  pre-merge-request
    :ident      ::request-id
    :query      [::request-id
                 ::request
                 ::response
+                ::entity
                 :ui/graph-view
                 ::trace-viewer]
    :css        [[:.header {:background    "#f7f7f7"
@@ -38,6 +39,7 @@
                           :overflow "hidden"}]]
    :use-hooks? true}
   (let [response-size (pvh/use-persistent-state ::response-size 50)
+        data-size     (pvh/use-persistent-state ::response-size 50)
         trace-size    (pvh/use-persistent-state ::trace-size 50)]
     (ui/column (ui/gc :.flex)
       (ui/row (ui/gc :.flex)
@@ -48,6 +50,14 @@
                                      :overflow "auto"
                                      :position "relative"}
                        :value       (pvh/pprint-str request)}))
+
+        (if (seq entity)
+          (fc/fragment
+            (ui/drag-resize {:state data-size :direction "right" :mode "%"})
+            (ui/column {:style {:width (str @data-size "%")}}
+              (dom/div :.header "Entity Data")
+              (cm6/clojure-read entity))))
+
         (ui/drag-resize {:state response-size :direction "right" :mode "%"})
         (ui/column {:style {:width (str @response-size "%")}}
           (dom/div :.header "Response")

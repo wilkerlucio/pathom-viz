@@ -48,8 +48,9 @@
    ::pc/output [::client-parser-response]}
   (if-let [parser (get parsers parser-id)]
     (let-chan [response (parser {} (if client-parser-data
-                                     {:pathom/eql    client-parser-request
-                                      :pathom/entity client-parser-data}
+                                     {:pathom/eql            client-parser-request
+                                      :pathom/entity         client-parser-data
+                                      :pathom/include-stats? true}
                                      client-parser-request))]
       {::client-parser-response response})
     (throw (ex-info "Parser not found" {::parser-id parser-id}))))

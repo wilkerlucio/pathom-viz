@@ -114,10 +114,11 @@
     (js/console.log "Disconnect client")
 
     ::pathom-request
-    (let [{:com.wsscode.pathom.viz.ws-connector.core/keys [request-id tx]} msg]
+    (let [{:com.wsscode.pathom.viz.ws-connector.core/keys [request-id tx entity]} msg]
       (merge/merge-component! this request-history/RequestView
         {::request-history/request-id request-id
-         ::request-history/request    tx}
+         ::request-history/request    tx
+         ::request-history/entity     entity}
         :append [::request-history/id client-id ::request-history/requests]))
 
     ::pathom-request-done

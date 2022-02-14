@@ -4,6 +4,7 @@
 - Fix situation where Pathom 3 renders a Trace view with blank data
 - Support report from strict errors in Pathom 3
 - Resize panels now uses % instead of absolute sizes for a better app resize flow
+- Render entity data in query history when available
 
 ## [2022.01.21]
 - Support custom headers when adding parsers by URL
