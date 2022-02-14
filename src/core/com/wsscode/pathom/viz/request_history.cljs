@@ -6,13 +6,14 @@
             [com.fulcrologic.fulcro.mutations :as fm]
             [com.wsscode.pathom.viz.codemirror :as cm]
             [com.wsscode.pathom.viz.trace-with-plan :as trace+plan]
-            [com.wsscode.pathom.viz.codemirror6 :as cm6]))
+            [com.wsscode.pathom.viz.codemirror6 :as cm6]
+            [com.wsscode.pathom.viz.timeline :as timeline]))
 
 (defn pre-merge-request [{:keys [current-normalized data-tree]}]
   (let [id        (or (::request-id data-tree)
                       (::request-id current-normalized)
                       (random-uuid))
-        trace     (pvh/response-trace (::response data-tree))
+        trace     (timeline/response-trace (::response data-tree))
         data-tree (cond-> data-tree
                     trace
                     (assoc ::trace-viewer
@@ -21,12 +22,13 @@
       current-normalized data-tree)))
 
 (fc/defsc RequestView
-  [this {::keys [request response trace-viewer]}]
+  [this {::keys [entity request response trace-viewer]}]
   {:pre-merge  pre-merge-request
    :ident      ::request-id
    :query      [::request-id
                 ::request
                 ::response
+                ::entity
                 :ui/graph-view
                 ::trace-viewer]
    :css        [[:.header {:background    "#f7f7f7"
@@ -36,8 +38,9 @@
                 [:.trace {:display  "flex"
                           :overflow "hidden"}]]
    :use-hooks? true}
-  (let [response-size (pvh/use-persistent-state ::response-size 400)
-        trace-size    (pvh/use-persistent-state ::trace-size 300)]
+  (let [response-size (pvh/use-persistent-state ::response-size 50)
+        data-size     (pvh/use-persistent-state ::response-size 50)
+        trace-size    (pvh/use-persistent-state ::trace-size 50)]
     (ui/column (ui/gc :.flex)
       (ui/row (ui/gc :.flex)
         (ui/column (ui/gc :.flex)
@@ -47,15 +50,23 @@
                                      :overflow "auto"
                                      :position "relative"}
                        :value       (pvh/pprint-str request)}))
-        (ui/drag-resize {:state response-size :direction "right"})
-        (ui/column {:style {:width (str @response-size "px")}}
+
+        (if (seq entity)
+          (fc/fragment
+            (ui/drag-resize {:state data-size :direction "right" :mode "%"})
+            (ui/column {:style {:width (str @data-size "%")}}
+              (dom/div :.header "Entity Data")
+              (cm6/clojure-read entity))))
+
+        (ui/drag-resize {:state response-size :direction "right" :mode "%"})
+        (ui/column {:style {:width (str @response-size "%")}}
           (dom/div :.header "Response")
           (cm6/clojure-read (dissoc response :com.wsscode.pathom/trace))))
       (if trace-viewer
         (fc/fragment
-          (ui/drag-resize {:state trace-size :direction "down"})
+          (ui/drag-resize {:state trace-size :direction "down" :mode "%"})
           (dom/div :.header "Trace")
-          (dom/div :.trace {:style {:height (str @trace-size "px")}}
+          (dom/div :.trace {:style {:height (str @trace-size "%")}}
             (trace+plan/trace-with-plan (:com.wsscode.pathom/trace trace-viewer)
               {:on-log-snaps
                (fn [snaps]
@@ -122,7 +133,7 @@
    :css-include [RequestItem ui/UIKit]
    :use-hooks?  true}
   (let [select-item  (pvh/use-callback #(fm/set-value! this :ui/active-request [::request-id %]))
-        request-size (pvh/use-persistent-state ::request-size 300)]
+        request-size (pvh/use-persistent-state ::request-size 50)]
     (ui/column {:classes [(ui/component-class RequestHistory :.container)]}
       (if (seq requests)
         (fc/fragment
@@ -138,9 +149,9 @@
 
           (if active-request
             (fc/fragment
-              (ui/drag-resize {:state request-size :direction "down"})
+              (ui/drag-resize {:state request-size :direction "down" :mode "%"})
               (ui/column {:classes [(ui/css :.scrollbars)]
-                          :style   {:height (str @request-size "px")}}
+                          :style   {:height (str @request-size "%")}}
                 (request-view active-request)))))
         (dom/div :.blank "No request tracked yet.")))))
 

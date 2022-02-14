@@ -28,7 +28,8 @@
             [helix.core :as h]
             [helix.hooks :as hooks]
             [promesa.core :as p]
-            [com.wsscode.pathom.viz.client-parser :as cp]))
+            [com.wsscode.pathom.viz.client-parser :as cp]
+            [com.wsscode.pathom.viz.timeline :as timeline]))
 
 (>def ::channel any?)
 (>def ::message-type qualified-keyword?)
@@ -113,10 +114,11 @@
     (js/console.log "Disconnect client")
 
     ::pathom-request
-    (let [{:com.wsscode.pathom.viz.ws-connector.core/keys [request-id tx]} msg]
+    (let [{:com.wsscode.pathom.viz.ws-connector.core/keys [request-id tx entity]} msg]
       (merge/merge-component! this request-history/RequestView
         {::request-history/request-id request-id
-         ::request-history/request    tx}
+         ::request-history/request    tx
+         ::request-history/entity     entity}
         :append [::request-history/id client-id ::request-history/requests]))
 
     ::pathom-request-done
@@ -217,7 +219,7 @@
               (fc/fragment
                 (ui/section-header {} "Trace")
                 (trace+plan/trace-with-plan
-                  (pvh/response-trace data)))
+                  (timeline/response-trace data)))
 
               (dom/div {:classes ["m-6"]}
                 (dom/h2 {:classes ["text-lg font-bold mb-2"]} "Invalid view type")

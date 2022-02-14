@@ -1,6 +1,6 @@
 (ns com.wsscode.pathom.viz.ui.kit
   (:require ["react-draggable" :refer [DraggableCore]]
-            [cljs.spec.alpha :as s]
+            [clojure.spec.alpha :as s]
             [com.fulcrologic.fulcro-css.css :as css]
             [com.fulcrologic.fulcro-css.localized-dom :as dom]
             [com.fulcrologic.fulcro.components :as fc]
@@ -735,47 +735,72 @@
 
 (>def ::direction #{"up" "down" "left" "right"})
 
-(hx/defnc DragResizeHelix [{:keys [state direction props react-key kids]}]
-  (let [start      (h/use-atom-state nil)
-        start-size (h/use-atom-state nil)
-        axis       (get {"left"  "x"
-                         "right" "x"
-                         "up"    "y"
-                         "down"  "y"} direction "x")
-        invert?    (get {"left"  true
-                         "right" false
-                         "up"    true
-                         "down"  false} direction true)
-        css        (if (= "x" axis) {:cursor        "ew-resize"
-                                     :width         "20px"
-                                     :background    "#eee"
-                                     :border        "1px solid #e0e0e0"
-                                     :borderTop     "0"
-                                     :borderBottom  "0"
-                                     :pointerEvents "all"
-                                     :zIndex        "2"}
-                                    {:cursor        "ns-resize"
-                                     :minHeight     "20px"
-                                     :background    "#eee"
-                                     :border        "1px solid #e0e0e0"
-                                     :borderLeft    "0"
-                                     :borderRight   "0"
-                                     :pointerEvents "all"
-                                     :padding       "4px 8px"
-                                     :zIndex        "2"})]
+(defn bound-pct [x]
+  (if (< x 5)
+    5
+    (if (> x 95)
+      95
+      x)))
+
+(hx/defnc DragResizeHelix [{:keys [state direction props react-key kids mode]}]
+  (let [start          (h/use-atom-state nil)
+        start-size     (h/use-atom-state nil)
+        container-size (h/use-atom-state nil)
+        drag-ref       (h/use-ref nil)
+        axis           (get {"left"  "x"
+                             "right" "x"
+                             "up"    "y"
+                             "down"  "y"} direction "x")
+        axis-size      (get {"x" "width" "y" "height"} axis)
+        invert?        (get {"left"  true
+                             "right" false
+                             "up"    true
+                             "down"  false} direction true)
+        css            (if (= "x" axis) {:cursor        "ew-resize"
+                                         :width         "20px"
+                                         :background    "#eee"
+                                         :border        "1px solid #e0e0e0"
+                                         :borderTop     "0"
+                                         :borderBottom  "0"
+                                         :pointerEvents "all"
+                                         :zIndex        "2"}
+                                        {:cursor        "ns-resize"
+                                         :minHeight     "20px"
+                                         :background    "#eee"
+                                         :border        "1px solid #e0e0e0"
+                                         :borderLeft    "0"
+                                         :borderRight   "0"
+                                         :pointerEvents "all"
+                                         :padding       "4px 8px"
+                                         :zIndex        "2"})]
     (js/React.createElement DraggableCore
       #js {:key     (or react-key "dragHandler")
            :onStart (fn [_e dd]
                       (reset! start (gobj/get dd axis))
-                      (reset! start-size @state))
+
+                      (if (= "%" mode)
+                        (let [box  (.. drag-ref -current -parentElement getBoundingClientRect)
+                              size (gobj/get box axis-size)]
+                          (reset! container-size size)
+                          (reset! start-size (* (/ (bound-pct @state) 100.0) size)))
+                        (reset! start-size @state)))
            :onDrag  (fn [_e dd]
-                      (let [start    @start
-                            size     @start-size
-                            value    (gobj/get dd axis)
-                            new-size (+ size (if invert? (- value start) (- start value)))]
-                        (reset! state new-size)))}
-      (apply dom/div (merge {:classes   (into text-sans-13' ["flex-shrink-0"])
-                             :style     css} props) kids))))
+                      (if (= "%" mode)
+                        (let [start     @start
+                              size      @start-size
+                              container @container-size
+                              value     (gobj/get dd axis)
+                              new-size  (+ size (if invert? (- value start) (- start value)))
+                              new-pct   (* (/ new-size container) 100)]
+                          (reset! state (bound-pct new-pct)))
+                        (let [start    @start
+                              size     @start-size
+                              value    (gobj/get dd axis)
+                              new-size (+ size (if invert? (- value start) (- start value)))]
+                          (reset! state new-size))))}
+      (apply dom/div (merge {:classes (into text-sans-13' ["flex-shrink-0"])
+                             :ref     drag-ref
+                             :style   css} props) kids))))
 
 (defn drag-resize
   "Creates a visual component that can be dragged to control the size of another component.

@@ -323,7 +323,7 @@
 (h/defnc PlanGraphWithNodeDetails
   [{:keys [run-stats display-type on-select-node]}]
   (let [selected-node (get run-stats ::node-in-focus)
-        details-size  (pvh/use-persistent-state ::node-details-size 200)]
+        details-size  (pvh/use-persistent-state ::node-details-size 50)]
     (dom/div {:class "flex-row flex-1 overflow-hidden"}
       (dom/div {:class "flex min-w-40 bg-white flex-1 overflow-hidden min-w-[100px]"}
         (h/$ PlanGraphView {:run-stats      run-stats
@@ -333,9 +333,9 @@
       (if selected-node
         (let [run-stats (smart-plan run-stats)]
           (h/<>
-            (uip/drag-resize {:state details-size :direction "right"})
+            (uip/drag-resize {:state details-size :direction "right" :mode "%"})
             (dom/div {:class "flex-col overflow-hidden min-w-[100px]"
-                      :style {:width (str @details-size "px")}}
+                      :style {:width (str @details-size "%")}}
               (uip/section-header {}
                 (dom/div {:class "flex-row items-center"}
                   "Node Details"
@@ -356,7 +356,7 @@
         {::pcp/keys [snapshot-message] :as graph} (get frames current-frame)
         [display-type :as display-type-state] (hooks/use-state (or display ::display-type-node-id))
         selected-node-id! (pvh/use-fstate nil)
-        history-size      (pvh/use-persistent-state ::snapshot-history-size 200)]
+        history-size      (pvh/use-persistent-state ::snapshot-history-size 30)]
     (dom/div {:style {:background-color "#eee"}
               :class "w-full h-full flex-col text-black"}
       (dom/div {:class "flex-row items-center mb-1 space-x-2 border-b border-gray-300 bg-gray-100 p-1"}
@@ -365,15 +365,15 @@
                         ::ui/state   display-type-state})
         (dom/div {:class ["flex-1"]} (str snapshot-message)))
       (dom/div {:class "flex-row flex-1 overflow-hidden"}
-        (uip/native-select
-          (ui/dom-props {::ui/state (ui/state-hook-serialize frame-state)
-                         :classes   ["bg-none w-52"]
-                         :style     {:paddingRight "0.5rem"
-                                     :width        (str @history-size "px")}
-                         :size      2})
-          (for [[i {::pcp/keys [snapshot-message]}] (->> frames (map vector (range)))]
-            (dom/option {:key i :value i} snapshot-message)))
-        (uip/drag-resize {:state history-size :direction "left"})
+        (dom/div {:style {:width (str @history-size "%")}}
+          (uip/native-select
+            (ui/dom-props {::ui/state (ui/state-hook-serialize frame-state)
+                           :classes   ["bg-none w-full h-full"]
+                           :style     {:paddingRight "0.5rem"}
+                           :size      2})
+            (for [[i {::pcp/keys [snapshot-message]}] (->> frames (map vector (range)))]
+              (dom/option {:key i :value i} snapshot-message))))
+        (uip/drag-resize {:state history-size :direction "left" :mode "%"})
         (h/$ PlanGraphWithNodeDetails
           {:run-stats      (assoc graph ::node-in-focus @selected-node-id!)
            :display-type   display-type

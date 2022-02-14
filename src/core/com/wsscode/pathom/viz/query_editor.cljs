@@ -26,7 +26,8 @@
     [helix.hooks :as hooks]
     [com.wsscode.pathom3.connect.indexes :as pci]
     [com.wsscode.pathom3.format.shape-descriptor :as pfsd]
-    [com.wsscode.pathom3.connect.operation :as pco]))
+    [com.wsscode.pathom3.connect.operation :as pco]
+    [com.wsscode.pathom.viz.timeline :as timeline]))
 
 (declare QueryEditor TransactionResponse)
 
@@ -97,8 +98,9 @@
       (swap! state update-in ref assoc
         :ui/query-running? false
         ::result (pvh/pprint-str (dissoc response :com.wsscode.pathom/trace)))
-      (pvh/swap-in! env [] assoc-in [:ui/trace-viewer :com.wsscode.pathom/trace]
-        (pvh/response-trace response))))
+      (if-let [trace (timeline/response-trace response)]
+        (pvh/swap-in! env [] assoc-in [:ui/trace-viewer :com.wsscode.pathom/trace] trace)
+        (pvh/swap-in! env [] assoc :ui/trace-viewer nil))))
   (error-action [env]
     (js/console.log "QUERY ERROR" env))
   (remote [{:keys [ast state ref]}]
@@ -338,10 +340,10 @@
         css                (css/get-classnames QueryEditor)
         entity             (pvh/use-component-prop this ::entity)
         show-history?      (pvh/use-persistent-state ::show-history? true)
-        history-size       (pvh/use-persistent-state ::history-width (or default-history-size 250))
-        query-size         (pvh/use-persistent-state ::query-width (or default-query-size 400))
-        entity-size        (pvh/use-persistent-state ::entity-height 200)
-        trace-size         (pvh/use-persistent-state ::trace-height (or default-trace-size 200))
+        history-size       (pvh/use-persistent-state ::history-width (or default-history-size 20))
+        result-size         (pvh/use-persistent-state ::query-width (or default-query-size 400))
+        entity-size        (pvh/use-persistent-state ::entity-height 10)
+        trace-size         (pvh/use-persistent-state ::trace-height (or default-trace-size 30))
         query-data         (pvh/use-memo #(pvh/safe-read query) [query])
         entity-data        (pvh/use-memo #(some-> @entity pvh/safe-read) [@entity])
         entity-shape       (pvh/use-memo #(pfsd/data->shape-descriptor entity-data) [(hash entity-data)])
@@ -385,7 +387,7 @@
       (dom/div :.query-row$min-h-20
         (if @show-history?
           (fc/fragment
-            (dom/div :.history-container$min-w-40 {:style {:width (str @history-size "px")}}
+            (dom/div :.history-container$min-w-40 {:style {:width (str @history-size "%")}}
               (history-view {::query-history   query-history
                              ::on-pick-query   #(fm/set-value! this ::query %)
                              ::on-delete-query #(fc/transact! this [(remove-query-from-history {::query        %
@@ -393,9 +395,10 @@
             (ui/drag-resize
               {:direction "left"
                :key       "dragHandlerHistory"
+               :mode      "%"
                :state     history-size})))
 
-        (dom/div {:classes ["flex-col"]}
+        (dom/div {:classes ["flex-col flex-1"]}
           (dom/div :.title {:classes ["flex flex-row items-center" (if query-error "bg-yellow-300")]}
             (dom/div "EQL Request")
             (dom/div {:className "flex-1"})
@@ -404,8 +407,7 @@
                 (dom/span {:className "text-red-900 text-xs"} query-error))))
           (cm/pathom
             (merge {:className   (str (:editor css) " min-w-40")
-                    :style       {:width  (str @query-size "px")
-                                  :height (str @entity-size "px")}
+                    :style       {:height (str @entity-size "%")}
                     :value       (or (str query) "")
                     ::pc/indexes (if (map? indexes) (p/elide-not-found (assoc indexes ::cm/available-data entity-shape)))
                     ::cm/options {::cm/extraKeys
@@ -419,6 +421,7 @@
 
           (ui/drag-resize
             {:direction "up"
+             :mode      "%"
              :state     entity-size})
           (dom/div :.title {:classes ["flex flex-row items-center" (if entity-input-error "bg-yellow-300")]}
             (dom/div "Entity Data")
@@ -438,10 +441,12 @@
                   "Or latest Pathom 3 from Git")))))
 
         (ui/drag-resize
-          {:direction "left"
-           :state     query-size})
+          {:direction "right"
+           :mode      "%"
+           :state     result-size})
 
-        (dom/div {:classes ["flex-col flex-1 overflow-hidden"]}
+        (dom/div {:classes ["flex-col overflow-hidden"]
+                  :style   {:width (str @result-size "%")}}
           (dom/div :.title "Result")
           (cm6/clojure-read result {:classes ["min-w-40 flex-1"]})))
 
@@ -449,9 +454,10 @@
         (fc/fragment
           (ui/drag-resize
             {:direction "down"
+             :mode      "%"
              :state     trace-size})
 
-          (dom/div :.trace$min-h-20 {:style {:height (str @trace-size "px")}}
+          (dom/div :.trace$min-h-20 {:style {:height (str @trace-size "%")}}
             (trace+plan/trace-with-plan
               (:com.wsscode.pathom/trace trace-viewer)
               {:on-log-snaps
