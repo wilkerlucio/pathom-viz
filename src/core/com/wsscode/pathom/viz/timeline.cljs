@@ -230,7 +230,13 @@
                         (sort-by :start)
                         vec)}))))
 
+(defn p3-error->entity [{:com.wsscode.pathom3.entity-tree/keys     [entity-tree]
+                         :com.wsscode.pathom3.connect.planner/keys [graph]}]
+  (vary-meta entity-tree assoc ::pcr/run-stats graph))
+
 (defn response-trace [x]
   (or (:com.wsscode.pathom/trace x)
       (if (some-> x meta :com.wsscode.pathom3.connect.runner/run-stats)
-        (compute-timeline-tree x))))
+        (compute-timeline-tree x))
+      (if (::pcr/processor-error? x)
+        (-> x p3-error->entity compute-timeline-tree))))
