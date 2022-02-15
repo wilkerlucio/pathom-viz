@@ -187,26 +187,26 @@
 
   Basic fetch request example:
 
-      (nuf/fetch {::nuf/request-url \"/some-page.edn\"
-                  ::nuf/request-as  ::nuf/request-as-edn})
+      (fetch/fetch {::fetch/request-url \"/some-page.edn\"
+                    ::fetch/request-as  ::fetch/request-as-edn})
 
   POST example:
 
-      (nuf/fetch {::nuf/request-url    \"/do-something\"
-                  ::nuf/request-method \"POST\"
-                  ::nuf/request-body   {:some \"data\"}
-                  ::nuf/request-as     ::nuf/request-as-edn})
+      (fetch/fetch {::fetch/request-url    \"/do-something\"
+                    ::fetch/request-method \"POST\"
+                    ::fetch/request-body   {:some \"data\"}
+                    ::fetch/request-as     ::fetch/request-as-edn})
 
-  The `::nuf/as` will set proper content-type and encode the dart.
+  The `::fetch/as` will set proper content-type and encode the dart.
 
   Fetch also supports building the URL from parts, example:
 
 
-      (nuf/fetch {::nuf/request-service     :nubank.service/auth
-                  ::nuf/request-path        \"/api/token\"
-                  ::nuf/request-country     \"mx\"
-                  ::nuf/request-environment \"prod\"
-                  ::nuf/request-prototype   \"s2\"})
+      (fetch/fetch {::fetch/request-service     :nubank.service/auth
+                    ::fetch/request-path        \"/api/token\"
+                    ::fetch/request-country     \"mx\"
+                    ::fetch/request-environment \"prod\"
+                    ::fetch/request-prototype   \"s2\"})
 
   If you like to cache some request, there is a built-in feature you can use, just send
   the `::nuf/cache-key` param, after the first successful access it will load the next
