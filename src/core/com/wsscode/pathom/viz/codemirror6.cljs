@@ -95,7 +95,8 @@
                      (!view v))))]
 
     (hooks/use-effect [source @!view]
-      (when @!view
+      (when (and @!view
+                 (not= source (.. @!view -state -doc toString)))
         (.setState @!view
           (.create EditorState #js {:doc        (or (if state @state source) "")
                                     :extensions (make-extensions options)}))))
