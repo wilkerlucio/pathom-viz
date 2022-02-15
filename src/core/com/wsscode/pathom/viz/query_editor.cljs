@@ -47,27 +47,35 @@
                        (drop (if (pos? excess) excess 0))) history)
         (p.misc/vconj query))))
 
+(defn history-read [parser-id]
+  (->> (ls/get [::query-history parser-id] [])
+       (mapv #(if (string? %) {::query % ::entity nil} %))))
+
 ;; Registry
 
-(pc/defmutation add-query-to-history-remote [_ {::keys [query] ::cp/keys [parser-id]}]
+(pc/defmutation add-query-to-history-remote [_ {::keys [query entity] ::cp/keys [parser-id]}]
   {::pc/params [::query ::cp/parser-id]}
   (let [store-key       [::query-history parser-id]
-        current-history (ls/get store-key [])
-        new-history     (history-append current-history query)]
+        current-history (history-read parser-id)
+        new-history     (history-append current-history {::query  query
+                                                         ::entity entity})]
     (ls/set! store-key new-history)))
 
-(pc/defmutation remove-query-from-history-remote [_ {::keys [query] ::cp/keys [parser-id]}]
+(pc/defmutation remove-query-from-history-remote [_ {::keys [query entity] ::cp/keys [parser-id]}]
   {::pc/params [::query ::cp/parser-id]}
   (let [store-key       [::query-history parser-id]
-        current-history (ls/get store-key [])
-        new-history     (history-remove current-history query)]
+        current-history (history-read parser-id)
+        new-history     (history-remove current-history {::query  query
+                                                         ::entity entity})]
+    (js/console.log "!! CUR" current-history {::query  query
+                                              ::entity entity})
     (ls/set! store-key new-history)))
 
 (pc/defresolver query-history-resolver
   [_env {::cp/keys [parser-id]}]
   {::pc/input  #{::cp/parser-id}
    ::pc/output [::query-history]}
-  {::query-history (ls/get [::query-history parser-id] [])})
+  {::query-history (history-read parser-id)})
 
 (def registry
   [add-query-to-history-remote
@@ -132,16 +140,18 @@
     (assoc ast :key `cp/client-parser-request)))
 
 #_:clj-kondo/ignore
-(fm/defmutation add-query-to-history [{::keys [query]}]
+(fm/defmutation add-query-to-history [{::keys [query entity]}]
   (action [{:keys [state ref]}]
-    (swap! state update-in (conj ref ::query-history) history-append query))
+    (swap! state update-in (conj ref ::query-history) history-append {::query  query
+                                                                      ::entity entity}))
   (remote [{:keys [ast]}]
     (assoc ast :key `add-query-to-history-remote)))
 
 #_:clj-kondo/ignore
-(fm/defmutation remove-query-from-history [{::keys [query]}]
+(fm/defmutation remove-query-from-history [{::keys [query entity]}]
   (action [{:keys [state ref]}]
-    (swap! state update-in (conj ref ::query-history) history-remove query))
+    (swap! state update-in (conj ref ::query-history) history-remove {::query  query
+                                                                      ::entity entity}))
   (remote [{:keys [ast]}]
     (assoc ast :key `remove-query-from-history-remote)))
 
@@ -188,7 +198,8 @@
                        (assoc ::cp/client-parser-data (if (map? entity-data) entity-data)))]
           (fc/transact! this [(run-query props')
                               (add-query-to-history {::cp/parser-id parser-id
-                                                     ::query        (str/trim query)})]))))))
+                                                     ::query        (str/trim query)
+                                                     ::entity       (if (seq entity-data) entity)})]))))))
 
 (fc/defsc HistoryView
   [_this
@@ -216,14 +227,17 @@
            [:.actions {:display "flex"}]]]]}
   (dom/div :.container
     (dom/div :.title "History")
-    (for [query (rseq query-history)]
-      (dom/div :.history-item {:key     (hash query)
-                               :onClick #(on-pick-query query %)}
-        (dom/div {:classes ["flex-1 overflow-auto"]} (str query))
+    (for [{::keys [query entity] :as entry} (rseq query-history)]
+      (dom/div :.history-item {:key     (hash entry)
+                               :onClick #(on-pick-query entry %)}
+        (dom/div {:classes ["flex-1 overflow-auto"]}
+          (dom/div (str query))
+          (if entity
+            (dom/div (str entity))))
         (dom/div :.actions
           {:onClick (fn [e]
                       (.stopPropagation e)
-                      (on-delete-query query e))}
+                      (on-delete-query entry e))}
           (dom/i {:classes ["fa" "fa-trash"]}))))))
 
 (def history-view (fc/factory HistoryView))
@@ -341,7 +355,7 @@
         entity             (pvh/use-component-prop this ::entity)
         show-history?      (pvh/use-persistent-state ::show-history? true)
         history-size       (pvh/use-persistent-state ::history-width (or default-history-size 20))
-        result-size         (pvh/use-persistent-state ::query-width (or default-query-size 400))
+        result-size        (pvh/use-persistent-state ::query-width (or default-query-size 400))
         entity-size        (pvh/use-persistent-state ::entity-height 10)
         trace-size         (pvh/use-persistent-state ::trace-height (or default-trace-size 30))
         query-data         (pvh/use-memo #(pvh/safe-read query) [query])
@@ -389,9 +403,10 @@
           (fc/fragment
             (dom/div :.history-container$min-w-40 {:style {:width (str @history-size "%")}}
               (history-view {::query-history   query-history
-                             ::on-pick-query   #(fm/set-value! this ::query %)
-                             ::on-delete-query #(fc/transact! this [(remove-query-from-history {::query        %
-                                                                                                ::cp/parser-id parser-id})])}))
+                             ::on-pick-query   #(do
+                                                  (fm/set-value! this ::query (::query %))
+                                                  (entity (or (::entity %) "{}")))
+                             ::on-delete-query #(fc/transact! this [(remove-query-from-history (assoc % ::cp/parser-id parser-id))])}))
             (ui/drag-resize
               {:direction "left"
                :key       "dragHandlerHistory"

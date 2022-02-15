@@ -81,9 +81,10 @@
 (h/defnc Editor [{:keys [source props state]
                   :as   options}]
   (let [!view  (pvh/use-fstate nil)
+        source (if state @state source)
         mount! (hooks/use-callback []
                  (fn [el]
-                   (let [state (.create EditorState #js {:doc        (or (if state @state source) "")
+                   (let [state (.create EditorState #js {:doc        (or source "")
                                                          :extensions (make-extensions options)})
                          ^js v (new EditorView
                                  (j/obj :state
