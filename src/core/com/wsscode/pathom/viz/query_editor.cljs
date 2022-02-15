@@ -172,15 +172,17 @@
 
 (defn load-query-editor-index [])
 
+(defn pathom3? [props]
+  (= (get props :ui/pathom-version) 3))
+
 (defn trace-switch? [props]
-  (let [v (get props :ui/pathom-version)]
-    (and v (not= v 3))))
+  (not (pathom3? props)))
 
 (defn run-query! [this]
   (let [{::keys [id]
          :as    props} (fc/props this)
         {:ui/keys         [query-running?]
-         ::keys           [id query request-trace? entity]
+         ::keys           [id query request-trace? entity lenient-mode?]
          :pathom.viz/keys [support-boundary-interface?]
          ::cp/keys        [parser-id]} (get-in (fc/component->state-map this) [::id id])
         {::keys [enable-trace?]
@@ -195,7 +197,8 @@
                         ::cp/client-parser-request query'}
 
                        support-boundary-interface?
-                       (assoc ::cp/client-parser-data (if (map? entity-data) entity-data)))]
+                       (assoc ::cp/client-parser-data (if (map? entity-data) entity-data)
+                              ::cp/lenient-mode? lenient-mode?))]
           (fc/transact! this [(run-query props')
                               (add-query-to-history {::cp/parser-id parser-id
                                                      ::query        (str/trim query)
@@ -285,6 +288,7 @@
                                (random-uuid))]
                     (merge {::id                                    id
                             ::request-trace?                        true
+                            ::lenient-mode?                         false
                             ::query                                 "[]"
                             ::entity                                "{}"
                             ::result                                ""
@@ -302,6 +306,7 @@
                    ::entity
                    ::result
                    ::query-history
+                   ::lenient-mode?
                    ::cp/parser-id
                    (pco/? ::pc/indexes)
                    :pathom.viz/support-boundary-interface?
@@ -353,6 +358,7 @@
   (let [run-query          (pvh/use-callback #(run-query! this))
         css                (css/get-classnames QueryEditor)
         entity             (pvh/use-component-prop this ::entity)
+        lenient-mode?      (pvh/use-component-prop this ::lenient-mode?)
         show-history?      (pvh/use-persistent-state ::show-history? true)
         history-size       (pvh/use-persistent-state ::history-width (or default-history-size 20))
         result-size        (pvh/use-persistent-state ::query-width (or default-query-size 400))
@@ -379,16 +385,19 @@
                                   "Entity data must be a map."))]
     (dom/div :.container
       (dom/div :.toolbar
-        (if (trace-switch? props)
+        (if (pathom3? props)
+          (dom/label {}
+            (ui/checkbox {:checked  @lenient-mode?
+                          :onChange #(fm/toggle! this ::lenient-mode?)})
+            "Lenient Mode")
           (if enable-trace?
-            (dom/label
-              (dom/input {:type     "checkbox"
-                          :checked  request-trace?
-                          :onChange #(fm/toggle! this ::request-trace?)})
+            (dom/label {}
+              (ui/checkbox {:checked  request-trace?
+                            :onChange #(fm/toggle! this ::request-trace?)})
               "Request trace")))
         (dom/div :.flex)
-        (ui/button {:onClick  #(swap! show-history? not)
-                    :style    {:marginRight "6px"}}
+        (ui/button {:onClick #(swap! show-history? not)
+                    :style   {:marginRight "6px"}}
           "History")
         (ui/button {:onClick  #(load-indexes (fc/any->app this) (fc/props this))
                     :disabled query-running?

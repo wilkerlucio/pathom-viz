@@ -43,13 +43,14 @@
 
 (pc/defmutation client-parser-request
   [{::keys [parsers]}
-   {::keys [parser-id client-parser-request client-parser-data]}]
+   {::keys [parser-id client-parser-request client-parser-data lenient-mode?]}]
   {::pc/params [::parser-id ::client-parser-request ::client-parser-data]
    ::pc/output [::client-parser-response]}
   (if-let [parser (get parsers parser-id)]
     (let-chan [response (parser {} (if client-parser-data
                                      {:pathom/eql            client-parser-request
                                       :pathom/entity         client-parser-data
+                                      :pathom/lenient-mode?  lenient-mode?
                                       :pathom/include-stats? true}
                                      client-parser-request))]
       {::client-parser-response response})

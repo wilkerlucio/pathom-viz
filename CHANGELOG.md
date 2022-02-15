@@ -2,6 +2,7 @@
 
 ## [NEXT]
 - Save entity data in query history
+- Support lenient mode in query editor
 
 ## [2022.2.14]
 - Fix situation where Pathom 3 renders a Trace view with blank data

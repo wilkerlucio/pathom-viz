@@ -130,9 +130,9 @@
      "focus:outline-none focus:ring"
      "disabled:opacity-50 disabled:cursor-not-allowed"]))
 
-#_
-(defn button [props & children]
-  (apply dom/button (dom-props {:classes [""]} props) children))
+(def checkbox
+  (styled-component #(domc/input (merge {:type "checkbox"} %))
+    ["outline-none"]))
 
 (fc/defsc Column
   [this props]
