@@ -1,6 +1,6 @@
 # Change Log
 
-## [NEXT]
+## [2022.2.15]
 - Save entity data in query history
 - Support lenient mode setting in query editor
 - Support include stats setting in query editor
