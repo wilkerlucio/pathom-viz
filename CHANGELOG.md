@@ -1,6 +1,6 @@
 # Change Log
 
-## [NEXT]
+## [2022.2.14]
 - Fix situation where Pathom 3 renders a Trace view with blank data
 - Support report from strict errors in Pathom 3
 - Resize panels now uses % instead of absolute sizes for a better app resize flow
