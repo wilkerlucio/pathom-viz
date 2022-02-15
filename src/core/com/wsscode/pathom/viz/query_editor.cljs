@@ -67,8 +67,6 @@
         current-history (history-read parser-id)
         new-history     (history-remove current-history {::query  query
                                                          ::entity entity})]
-    (js/console.log "!! CUR" current-history {::query  query
-                                              ::entity entity})
     (ls/set! store-key new-history)))
 
 (pc/defresolver query-history-resolver
