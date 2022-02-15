@@ -182,6 +182,7 @@
   (let [{::keys [id]
          :as    props} (fc/props this)
         {:ui/keys         [query-running?]
+         :pathom/keys     [include-stats?]
          ::keys           [id query request-trace? entity lenient-mode?]
          :pathom.viz/keys [support-boundary-interface?]
          ::cp/keys        [parser-id]} (get-in (fc/component->state-map this) [::id id])
@@ -198,7 +199,8 @@
 
                        support-boundary-interface?
                        (assoc ::cp/client-parser-data (if (map? entity-data) entity-data)
-                              ::cp/lenient-mode? lenient-mode?))]
+                              ::cp/lenient-mode? lenient-mode?
+                              :pathom/include-stats? include-stats?))]
           (fc/transact! this [(run-query props')
                               (add-query-to-history {::cp/parser-id parser-id
                                                      ::query        (str/trim query)
@@ -274,6 +276,7 @@
    {::keys           [query result request-trace? query-history]
     ::pc/keys        [indexes]
     ::cp/keys        [parser-id]
+    :pathom/keys     [include-stats?]
     :pathom.viz/keys [support-boundary-interface?]
     :ui/keys         [query-running? trace-viewer pathom-version completions]
     :as              props}
@@ -289,6 +292,7 @@
                     (merge {::id                                    id
                             ::request-trace?                        true
                             ::lenient-mode?                         false
+                            :pathom/include-stats?                  true
                             ::query                                 "[]"
                             ::entity                                "{}"
                             ::result                                ""
@@ -302,11 +306,12 @@
    :query       (fn [_]
                   [::id
                    ::request-trace?
+                   ::lenient-mode?
+                   :pathom/include-stats?
                    ::query
                    ::entity
                    ::result
                    ::query-history
-                   ::lenient-mode?
                    ::cp/parser-id
                    (pco/? ::pc/indexes)
                    :pathom.viz/support-boundary-interface?
@@ -384,12 +389,17 @@
                                   (not (map? entity-data))
                                   "Entity data must be a map."))]
     (dom/div :.container
-      (dom/div :.toolbar
+      (dom/div :.toolbar {:classes ["space-x-2"]}
         (if (pathom3? props)
-          (dom/label {}
-            (ui/checkbox {:checked  @lenient-mode?
-                          :onChange #(fm/toggle! this ::lenient-mode?)})
-            "Lenient Mode")
+          (fc/fragment
+            (dom/label {}
+              (ui/checkbox {:checked  @lenient-mode?
+                            :onChange #(fm/toggle! this ::lenient-mode?)})
+              "Lenient Mode")
+            (dom/label {}
+              (ui/checkbox {:checked  include-stats?
+                            :onChange #(fm/toggle! this :pathom/include-stats?)})
+              "Include Stats"))
           (if enable-trace?
             (dom/label {}
               (ui/checkbox {:checked  request-trace?

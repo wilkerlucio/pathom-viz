@@ -43,7 +43,8 @@
 
 (pc/defmutation client-parser-request
   [{::keys [parsers]}
-   {::keys [parser-id client-parser-request client-parser-data lenient-mode?]}]
+   {::keys       [parser-id client-parser-request client-parser-data lenient-mode?]
+    :pathom/keys [include-stats?]}]
   {::pc/params [::parser-id ::client-parser-request ::client-parser-data]
    ::pc/output [::client-parser-response]}
   (if-let [parser (get parsers parser-id)]
@@ -51,7 +52,7 @@
                                      {:pathom/eql            client-parser-request
                                       :pathom/entity         client-parser-data
                                       :pathom/lenient-mode?  lenient-mode?
-                                      :pathom/include-stats? true}
+                                      :pathom/include-stats? include-stats?}
                                      client-parser-request))]
       {::client-parser-response response})
     (throw (ex-info "Parser not found" {::parser-id parser-id}))))
