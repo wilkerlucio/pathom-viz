@@ -1,6 +1,5 @@
 (ns com.wsscode.pathom.viz.timeline
   (:require
-    [com.wsscode.pathom3.connect.built-in.plugins :as pbip]
     [com.wsscode.pathom3.connect.built-in.resolvers :as pbir]
     [com.wsscode.pathom3.connect.indexes :as pci]
     [com.wsscode.pathom3.connect.operation :as pco]
@@ -8,7 +7,6 @@
     [com.wsscode.pathom3.connect.runner :as pcr]
     [com.wsscode.pathom3.connect.runner.stats :as pcrs]
     [com.wsscode.pathom3.interface.eql :as p.eql]
-    [com.wsscode.pathom3.plugin :as p.plugin]
     [com.wsscode.pathom3.viz.plan :as viz-plan]
     [com.wsscode.misc.coll :as coll]))
 
@@ -28,7 +26,7 @@
 (def plan-cache* (atom {}))
 
 (def stats-env-base
-  (-> (p.plugin/register pbip/remove-stats-plugin)
+  (-> {:com.wsscode.pathom3.error/lenient-mode? true}
       (pcp/with-plan-cache plan-cache*)
       (pci/register
         [pcrs/stats-registry

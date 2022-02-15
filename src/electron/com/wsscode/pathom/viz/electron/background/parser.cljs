@@ -15,12 +15,10 @@
 (defonce plan-cache* (atom {}))
 
 (def env
-  (-> (pci/register
+  (-> {:com.wsscode.pathom3.error/lenient-mode? true}
+      (pci/register
         [app-version])
-      (pcp/with-plan-cache plan-cache*)
-      (p.plugin/register
-        [pbip/remove-stats-plugin
-         (pbip/attribute-errors-plugin)])))
+      (pcp/with-plan-cache plan-cache*)))
 
 (defn request [tx]
   (p.a.eql/process env tx))
