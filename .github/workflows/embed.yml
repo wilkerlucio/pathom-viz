@@ -23,7 +23,7 @@ jobs:
 
       - uses: DeLaGuardo/setup-clj-kondo@master
         with:
-          version: '2021.03.31'
+          version: '2022.01.15'
 
       - uses: DeLaGuardo/setup-clojure@master
         with:
