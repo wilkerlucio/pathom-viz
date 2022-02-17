@@ -20,6 +20,15 @@ The standalone app is the easiest way to use Pathom Viz.
 
 A download of binaries is available at the link:https://github.com/wilkerlucio/pathom-viz/releases[releases page].
 
+Note:  On Linux, you may receive the error message `libappindicator3-1 but it is not installable` when installing Pathom viz.  To rectify:
+```
+wget http://ftp.us.debian.org/debian/pool/main/libi/libindicator/libindicator3-7_0.5.0-4_amd64.deb
+wget http://ftp.us.debian.org/debian/pool/main/liba/libappindicator/libappindicator3-1_0.4.92-7_amd64.deb
+sudo apt install ./libindicator3-7_0.5.0-4_amd64.deb
+sudo apt install ./libappindicator3-1_0.4.92-7_amd64.deb
+```
+
+
 === Building the app
 
 If you want to develop the app:
