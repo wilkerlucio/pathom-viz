@@ -1,6 +1,6 @@
 # Change Log
 
-## [NEXT]
+## [2022.2.21]
 - More resilient requests to remote clients, avoid UI locking on invalid responses
 
 ## [2022.2.15]
