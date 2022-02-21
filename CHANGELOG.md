@@ -1,5 +1,8 @@
 # Change Log
 
+## [NEXT]
+- More resilient requests to remote clients, avoid UI locking on invalid responses
+
 ## [2022.2.15]
 - Save entity data in query history
 - Support lenient mode setting in query editor

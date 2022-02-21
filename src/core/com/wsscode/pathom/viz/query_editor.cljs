@@ -95,21 +95,32 @@
      (pco/? ::pci/transient-attrs)]}
    (pco/? :pathom.viz/support-boundary-interface?)])
 
+(defn handle-client-request-process-error [{:keys [state ref] :as env} err]
+  (swap! state update-in ref assoc :ui/query-running? false)
+  (js/console.error "Error parsing response" (pvh/env-parser-response env) err))
+
+(defn handle-client-request-error [{:keys [state ref] :as env}]
+  (swap! state update-in ref assoc :ui/query-running? false)
+  (js/console.error "Client request error" env))
+
 #_:clj-kondo/ignore
 (fm/defmutation run-query [{::keys [request-trace?]}]
   (action [{:keys [state ref] :as env}]
     (swap! state update-in ref assoc :ui/query-running? true))
   (ok-action [{:keys [state ref] :as env}]
     (let [response (pvh/env-parser-response env)]
-      (swap! state update-in ref assoc
-        :ui/query-running? false
-        ::result (pvh/pprint-str (dissoc response :com.wsscode.pathom/trace)))
-      (if-let [trace (timeline/response-trace response)]
-        (pvh/swap-in! env [] assoc-in [:ui/trace-viewer :com.wsscode.pathom/trace] trace)
-        (pvh/swap-in! env [] assoc :ui/trace-viewer nil))))
+      (try
+        (swap! state update-in ref assoc
+          :ui/query-running? false
+          ::result (pvh/pprint-str (dissoc response :com.wsscode.pathom/trace)))
+        (if-let [trace (timeline/response-trace response)]
+          (pvh/swap-in! env [] assoc-in [:ui/trace-viewer :com.wsscode.pathom/trace] trace)
+          (pvh/swap-in! env [] assoc :ui/trace-viewer nil))
+        (catch :default e
+          (handle-client-request-process-error env e)))))
   (error-action [env]
-    (js/console.log "QUERY ERROR" env))
-  (remote [{:keys [ast state ref]}]
+    (handle-client-request-error env))
+  (remote [{:keys [ast]}]
     (cond-> (assoc ast :key `cp/client-parser-request)
       request-trace?
       (update-in [:params ::cp/client-parser-request] conj :com.wsscode.pathom/trace))))
@@ -119,21 +130,24 @@
   (action [{:keys [state ref]}]
     (swap! state update-in ref assoc :ui/query-running? true))
   (ok-action [{:keys [state ref] :as env}]
-    (let [response       (pvh/env-parser-response env)
-          idx            (-> response
-                             p/elide-special-outputs
-                             ensure-pathom2-indexes
-                             ::pc/indexes)
-          pathom-version (if (::pci/indexes response) 3 2)]
-      (swap! state update-in ref assoc
-        :ui/query-running? false
-        :pathom.viz/support-boundary-interface? (or (= 3 pathom-version) (:pathom.viz/support-boundary-interface? response) false)
-        :ui/pathom-version pathom-version
-        :ui/completions (into [] (comp (filter keyword?)
-                                       (remove (or (::pc/autocomplete-ignore idx) #{}))) (keys (::pc/index-attributes idx)))
-        ::pc/indexes idx)))
+    (try
+      (let [response       (pvh/env-parser-response env)
+            idx            (-> response
+                               p/elide-special-outputs
+                               ensure-pathom2-indexes
+                               ::pc/indexes)
+            pathom-version (if (::pci/indexes response) 3 2)]
+        (swap! state update-in ref assoc
+          :ui/query-running? false
+          :pathom.viz/support-boundary-interface? (or (= 3 pathom-version) (:pathom.viz/support-boundary-interface? response) false)
+          :ui/pathom-version pathom-version
+          :ui/completions (into [] (comp (filter keyword?)
+                                         (remove (or (::pc/autocomplete-ignore idx) #{}))) (keys (::pc/index-attributes idx)))
+          ::pc/indexes idx))
+      (catch :default e
+        (handle-client-request-process-error env e))))
   (error-action [env]
-    (js/console.log "QUERY ERROR" env))
+    (handle-client-request-error env))
   (remote [{:keys [ast]}]
     (assoc ast :key `cp/client-parser-request)))
 
