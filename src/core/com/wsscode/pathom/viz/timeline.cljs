@@ -81,7 +81,8 @@
 
 (defn compute-nested-data-children
   [data path start]
-  (let [nested-process (keys (coll/filter-vals
+  (let [data           (merge data (-> data meta ::pcr/run-stats ::pcr/transient-stats))
+        nested-process (keys (coll/filter-vals
                                (fn [x]
                                  (cond
                                    (map? x)
