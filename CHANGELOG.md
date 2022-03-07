@@ -1,5 +1,8 @@
 # Change Log
 
+## [2022.3.7]
+- Support Pathom 3 tracing of transient properties
+
 ## [2022.2.21]
 - More resilient requests to remote clients, avoid UI locking on invalid responses
 
