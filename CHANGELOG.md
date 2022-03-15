@@ -1,6 +1,6 @@
 # Change Log
 
-## [2022.03.15]
+## [2022.3.15]
 - Fix situation where auto-complete stops working when ignores comes explicitly as nil
 
 ## [2022.3.7]
