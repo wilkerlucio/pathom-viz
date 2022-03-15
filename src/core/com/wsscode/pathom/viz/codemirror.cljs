@@ -244,19 +244,20 @@
          (map ::fuzzy/string))))
 
 (defn autocomplete [index cm _options]
-  (let [cur    (.getCursor cm)
-        line   (.-line cur)
-        ch     (.-ch cur)
-        token  (.getTokenAt cm cur)
-        reg    (subs (.-string token) 0 (- ch (.-start token)))
-        blank? (#{"[" "{" " " "("} reg)
-        start  (if blank? cur (-> js/CodeMirror (.Pos line (- ch (count reg)))))
-        end    (if blank? cur (-> js/CodeMirror (.Pos line (gobj/get token "end"))))
-        words  (->> (cm-completions index cm) (mapv first))]
+  (let [cur       (.getCursor cm)
+        line      (.-line cur)
+        ch        (.-ch cur)
+        token     (.getTokenAt cm cur)
+        reg       (subs (.-string token) 0 (- ch (.-start token)))
+        blank?    (#{"[" "{" " " "("} reg)
+        start     (if blank? cur (-> js/CodeMirror (.Pos line (- ch (count reg)))))
+        end       (if blank? cur (-> js/CodeMirror (.Pos line (gobj/get token "end"))))
+        words     (->> (cm-completions index cm) (mapv first))
+        ac-ignore (or (get index ::pc/autocomplete-ignore) #{})]
 
     (if words
       #js {:list (->> words
-                      (remove (get index ::pc/autocomplete-ignore #{}))
+                      (remove ac-ignore)
                       (fuzzy-match blank? reg)
                       sort
                       clj->js)
