@@ -2,25 +2,27 @@
   (:require
     ["cytoscape" :as cytoscape]
     ["cytoscape-dagre" :as cytoscape-dagre]
+    [clojure.string :as str]
+    [com.wsscode.pathom.viz.codemirror6 :as cm6]
+    [com.wsscode.pathom.viz.fulcro]
+    [com.wsscode.pathom.viz.helpers :as pvh]
+    [com.wsscode.pathom.viz.ui.kit :as uip]
+    [com.wsscode.pathom3.connect.built-in.resolvers :as pbir]
     [com.wsscode.pathom3.connect.indexes :as pci]
     [com.wsscode.pathom3.connect.operation :as pco]
     [com.wsscode.pathom3.connect.planner :as pcp]
     [com.wsscode.pathom3.connect.runner :as pcr]
+    [com.wsscode.pathom3.connect.runner.stats :as pcrs]
     [com.wsscode.pathom3.entity-tree :as p.ent]
+    [com.wsscode.pathom3.interface.eql :as p.eql]
     [com.wsscode.pathom3.interface.smart-map :as psm]
+    [com.wsscode.pathom3.plugin :as p.plugin]
     [com.wsscode.pathom3.viz.ui :as ui]
     [edn-query-language.core :as eql]
     [goog.object :as gobj]
     [helix.core :as h]
     [helix.dom :as dom]
-    [helix.hooks :as hooks]
-    [clojure.string :as str]
-    [com.wsscode.pathom.viz.fulcro]
-    [com.wsscode.pathom.viz.ui.kit :as uip]
-    [com.wsscode.pathom.viz.codemirror6 :as cm6]
-    [com.wsscode.pathom.viz.helpers :as pvh]
-    [com.wsscode.pathom3.connect.built-in.resolvers :as pbir]
-    [com.wsscode.pathom3.interface.eql :as p.eql]))
+    [helix.hooks :as hooks]))
 
 (.use cytoscape cytoscape-dagre)
 
@@ -75,11 +77,21 @@
    node-type-class
    node-output-state])
 
+(p.plugin/defplugin silent-errors-plugin
+  {:com.wsscode.pathom3.error/wrap-attribute-error
+   (fn [_attr-error]
+     (fn [_attribute-error _entity _k]
+       nil))})
+
+(defn smart-item-env [stats]
+  (-> (pcrs/run-stats-env stats)
+      (pci/register node-extensions-registry)
+      (p.plugin/register silent-errors-plugin)))
+
 (defn smart-plan [plan]
   (if (psm/smart-map? plan)
     plan
-    (-> (psm/smart-run-stats plan)
-        (psm/sm-update-env pci/register node-extensions-registry))))
+    (psm/smart-map (smart-item-env plan) plan)))
 
 (def query-ast-resolvers
   [(pbir/single-attr-resolver ::eql/query :edn-query-language.ast/node eql/query->ast)

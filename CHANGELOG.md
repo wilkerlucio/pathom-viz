@@ -1,5 +1,8 @@
 # Change Log
 
+## [2022.8.21]
+- Fix node data processing errors leaking to client UI
+
 ## [2022.3.15]
 - Fix situation where auto-complete stops working when ignores comes explicitly as nil
 
