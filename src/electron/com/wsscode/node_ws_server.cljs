@@ -7,7 +7,7 @@
     [com.wsscode.async.processing :as wap]
     [com.wsscode.pathom.viz.transit :as wsst]
     [taoensso.sente.packers.transit :as st]
-    [taoensso.sente.server-adapters.express :as sente-express]
+    [taoensso.sente.server-adapters.community.express :as sente-express]
     [taoensso.timbre :as log]
     [cognitect.transit :as t]))
 

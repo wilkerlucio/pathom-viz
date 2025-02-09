@@ -7,7 +7,7 @@
   com.fulcrologic/fulcro                            {:mvn/version "3.4.16"}
   com.fulcrologic/fulcro-garden-css                 {:mvn/version "3.0.9"}
   com.fulcrologic/guardrails                        {:mvn/version "1.1.4"}
-  com.taoensso/sente                                {:mvn/version "1.16.0"}
+  com.taoensso/sente                                {:mvn/version "1.20.0"}
   com.wsscode/async                                 {:mvn/version "2021.01.15"}
   com.wsscode/fuzzy                                 {:mvn/version "1.0.0"}
   com.wsscode/pathom                                {:mvn/version "2.3.1"}
