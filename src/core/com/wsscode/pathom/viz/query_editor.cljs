@@ -112,7 +112,7 @@
       (try
         (swap! state update-in ref assoc
           :ui/query-running? false
-          ::result (pvh/pprint-str (dissoc response :com.wsscode.pathom/trace)))
+          ::result (pvh/pprint-str (dissoc response :com.wsscode.pathom/trace :com.wsscode.pathom3.trace/trace)))
         (if-let [trace (timeline/response-trace response)]
           (pvh/swap-in! env [] assoc-in [:ui/trace-viewer :com.wsscode.pathom/trace] trace)
           (pvh/swap-in! env [] assoc :ui/trace-viewer nil))

@@ -1,5 +1,6 @@
 (ns com.wsscode.pathom.viz.timeline
   (:require
+    [com.wsscode.misc.coll :as coll]
     [com.wsscode.pathom3.connect.built-in.resolvers :as pbir]
     [com.wsscode.pathom3.connect.indexes :as pci]
     [com.wsscode.pathom3.connect.operation :as pco]
@@ -7,8 +8,7 @@
     [com.wsscode.pathom3.connect.runner :as pcr]
     [com.wsscode.pathom3.connect.runner.stats :as pcrs]
     [com.wsscode.pathom3.interface.eql :as p.eql]
-    [com.wsscode.pathom3.viz.plan :as viz-plan]
-    [com.wsscode.misc.coll :as coll]))
+    [com.wsscode.pathom3.viz.plan :as viz-plan]))
 
 (def timeline-env
   (pci/register
@@ -233,9 +233,31 @@
                          :com.wsscode.pathom3.connect.planner/keys [graph]}]
   (vary-meta entity-tree assoc ::pcr/run-stats graph))
 
+(defn pathom3-trace-detail-span [{:com.wsscode.pathom3.trace/keys [start-time attributes end-time span-type]} first-item-time]
+  {:start    (- start-time first-item-time)
+   :duration (- end-time start-time)
+   :event    (or (-> attributes :com.wsscode.pathom3.trace/label) (str span-type))
+   :path     (:com.wsscode.pathom3.path/path attributes [])
+   :style    (merge {:fill "#af9df4"} (:com.wsscode.pathom3.trace/style attributes))})
+
+(defn pathom3-trace->viz-tree
+  [{:com.wsscode.pathom3.trace/keys [start-time attributes end-time span-type span-children]} first-item-time]
+  (let [first-item-time (or first-item-time start-time)
+        {children false details true} (group-by #(-> % :com.wsscode.pathom3.trace/attributes :com.wsscode.pathom3.trace/internal-span? boolean) span-children)]
+    {:start    (- start-time first-item-time)
+     :duration (- end-time start-time)
+     :name     (or (-> attributes :com.wsscode.pathom3.trace/label) (str span-type))
+     :path     (:com.wsscode.pathom3.path/path attributes [])
+     :details  (mapv #(pathom3-trace-detail-span % first-item-time) details)
+     :children (mapv #(pathom3-trace->viz-tree % first-item-time) children)
+     :style    (some-> attributes :com.wsscode.pathom3.trace/style)}))
+
 (defn response-trace [x]
-  (or (:com.wsscode.pathom/trace x)
-      (if (some-> x meta :com.wsscode.pathom3.connect.runner/run-stats)
-        (compute-timeline-tree x))
-      (if (::pcr/processor-error? x)
-        (-> x p3-error->entity compute-timeline-tree))))
+  (or
+    (:com.wsscode.pathom/trace x)
+    (some-> x :com.wsscode.pathom3.trace/trace :com.wsscode.pathom3.trace/span-children first (pathom3-trace->viz-tree nil))
+    (if (some-> x meta :com.wsscode.pathom3.connect.runner/run-stats)
+      (let [res (compute-timeline-tree x)]
+        res))
+    (if (::pcr/processor-error? x)
+      (-> x p3-error->entity compute-timeline-tree))))

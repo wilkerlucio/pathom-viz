@@ -87,7 +87,8 @@ function layoutTrace (node, {xScale, yScale, barSize}) {
 }
 
 function applyDataStyles(selection) {
-  selection.each(function ({style}) {
+  selection.each(function ({style, data}) {
+    style = style || (data && data.style)
     if (!style) return
 
     const sel = d3.select(this)
@@ -119,10 +120,10 @@ function fixedNumber(n, x) {
   }
 }
 
-function renderTrace(selection, settings) {
+function renderTrace(sel, settings) {
   const {data, transitionDuration, xScale, showDetails, svgHeight} = settings
 
-  const nodeRoots = selection
+  const nodeRoots = sel
     .selectAll('g.pathom-attr-group')
     .data(layoutTrace(data, settings).descendants(), d => {
       return JSON.stringify(d.data.path)
@@ -203,10 +204,10 @@ function renderTrace(selection, settings) {
       if (d.children && d.children.length && d.data.name) {
         d._children = d.children;
         d.children = null;
-        renderTrace(selection, settings);
+        renderTrace(sel, settings);
       } else if (d._children) {
         d.children = d._children;
-        renderTrace(selection, settings);
+        renderTrace(sel, settings);
       }
     })
     .merge(nodeRoots.select('.pathom-attribute-toggle-children'))
@@ -220,6 +221,7 @@ function renderTrace(selection, settings) {
     .attr('class', 'pathom-attribute')
     .attr('width', d => d.x1 - d.x0)
     .attr('height', d => d.y1 - d.y0)
+    .call(applyDataStyles)
     .merge(nodeRoots.select('rect.pathom-attribute'))
     .transition().duration(transitionDuration)
     .attr('width', d => d.x1 - d.x0)
@@ -310,6 +312,7 @@ function updateScale({axisNodes, axisX}) {
 }
 
 export function renderPathomTrace(element, settingsSource) {
+  console.log("!! init trace", settingsSource);
   const settings = initTrace(element, settingsSource)
   const {svg, svgWidth, svgHeight, data} = settings
 
