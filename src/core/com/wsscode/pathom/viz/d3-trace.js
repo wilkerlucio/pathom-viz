@@ -312,7 +312,6 @@ function updateScale({axisNodes, axisX}) {
 }
 
 export function renderPathomTrace(element, settingsSource) {
-  console.log("!! init trace", settingsSource);
   const settings = initTrace(element, settingsSource)
   const {svg, svgWidth, svgHeight, data} = settings
 
