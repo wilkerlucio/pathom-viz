@@ -311,9 +311,47 @@ function updateScale({axisNodes, axisX}) {
     .style("text-anchor", "end")
 }
 
+function createSvgGradientDef(svg) {
+  console.log('!! create on', svg);
+
+  // Create the linearGradient element
+  const linearGradient = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
+  linearGradient.setAttribute("id", "pathom-viz-unknown-duration-gradient");
+  linearGradient.setAttribute("x1", "0%");
+  linearGradient.setAttribute("x2", "100%");
+  linearGradient.setAttribute("y1", "0%");
+  linearGradient.setAttribute("y2", "0%");
+
+  // Create the first stop element
+  const stop1 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+  stop1.setAttribute("offset", "0%");
+  stop1.setAttribute("style", "stop-color:rgb(255,0,0);stop-opacity:1");
+
+  // Create the second stop element
+  const stop2 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+  stop2.setAttribute("offset", "100%");
+  stop2.setAttribute("style", "stop-color:rgb(255,0,0);stop-opacity:0");
+
+  // Append the stop elements to the linearGradient
+  linearGradient.appendChild(stop1);
+  linearGradient.appendChild(stop2);
+
+  // Find or create the defs element
+  let defs = svg.querySelector("defs");
+  if (!defs) {
+    defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    svg.appendChild(defs);
+  }
+
+  // Append the linearGradient to the defs
+  defs.appendChild(linearGradient);
+}
+
 export function renderPathomTrace(element, settingsSource) {
   const settings = initTrace(element, settingsSource)
   const {svg, svgWidth, svgHeight, data} = settings
+
+  createSvgGradientDef(element)
 
   svg
     .attr('width', svgWidth)

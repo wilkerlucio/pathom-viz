@@ -1,6 +1,7 @@
 (ns com.wsscode.pathom.viz.timeline
   (:require
     [com.wsscode.misc.coll :as coll]
+    [com.wsscode.pathom.viz.ui.colors :as colors]
     [com.wsscode.pathom3.connect.built-in.resolvers :as pbir]
     [com.wsscode.pathom3.connect.indexes :as pci]
     [com.wsscode.pathom3.connect.operation :as pco]
@@ -233,24 +234,30 @@
                          :com.wsscode.pathom3.connect.planner/keys [graph]}]
   (vary-meta entity-tree assoc ::pcr/run-stats graph))
 
-(defn pathom3-trace-detail-span [{:com.wsscode.pathom3.trace/keys [start-time attributes end-time span-type]} first-item-time]
-  {:start    (- start-time first-item-time)
-   :duration (- end-time start-time)
+(defn pathom3-duration [{:com.wsscode.pathom3.trace/keys [start-time end-time]} root-span]
+  (- (or end-time (:com.wsscode.pathom3.trace/end-time root-span)) start-time))
+
+(defn pathom3-style [{:com.wsscode.pathom3.trace/keys [end-time attributes]} base-style]
+  (merge (cond-> base-style (not end-time) (assoc :stroke "url(#pathom-viz-unknown-duration-gradient)" :stroke-dasharray "5" :stroke-width "2px")) (some-> attributes :com.wsscode.pathom3.trace/style)))
+
+(defn pathom3-trace-detail-span [{:com.wsscode.pathom3.trace/keys [start-time attributes span-type] :as span} root-span]
+  {:start    (- start-time (:com.wsscode.pathom3.trace/start-time root-span))
+   :duration (pathom3-duration span root-span)
    :event    (or (-> attributes :com.wsscode.pathom3.trace/label) (str span-type))
    :path     (:com.wsscode.pathom3.path/path attributes [])
-   :style    (merge {:fill "#af9df4"} (:com.wsscode.pathom3.trace/style attributes))})
+   :style    (pathom3-style span {:fill (if (:com.wsscode.pathom3.trace/error attributes) colors/operation-error "#af9df4")})})
 
 (defn pathom3-trace->viz-tree
-  [{:com.wsscode.pathom3.trace/keys [start-time attributes end-time span-type span-children]} first-item-time]
-  (let [first-item-time (or first-item-time start-time)
+  [{:com.wsscode.pathom3.trace/keys [start-time attributes span-type span-children] :as span} root-span]
+  (let [root-span       (or root-span span)
         {children false details true} (group-by #(-> % :com.wsscode.pathom3.trace/attributes :com.wsscode.pathom3.trace/internal-span? boolean) span-children)]
-    {:start    (- start-time first-item-time)
-     :duration (- end-time start-time)
+    {:start    (- start-time (:com.wsscode.pathom3.trace/start-time root-span))
+     :duration (pathom3-duration span root-span)
      :name     (or (-> attributes :com.wsscode.pathom3.trace/label) (str span-type))
      :path     (:com.wsscode.pathom3.path/path attributes [])
-     :details  (mapv #(pathom3-trace-detail-span % first-item-time) details)
-     :children (mapv #(pathom3-trace->viz-tree % first-item-time) children)
-     :style    (some-> attributes :com.wsscode.pathom3.trace/style)}))
+     :details  (mapv #(pathom3-trace-detail-span % root-span) details)
+     :children (mapv #(pathom3-trace->viz-tree % root-span) children)
+     :style    (pathom3-style span {})}))
 
 (defn response-trace [x]
   (or
